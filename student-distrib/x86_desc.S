@@ -1,8 +1,14 @@
 # x86_desc.S - Set up x86 segment descriptors, descriptor tables
 # vim:ts=4 noexpandtab
 
-# history
-# add gdt_desc_ptr -- ky
+/*
+ * ECE 391 SP 2022
+ * History:
+ * add gdt_desc_ptr           - Mar 17, keyi
+ * init paging      - Mar 19, keyi
+ * 
+ */
+
 
 #define ASM     1
 #include "x86_desc.h"
@@ -15,6 +21,10 @@
 # add gdt_desc_ptr
 .globl gdt_ptr, gdt_desc_ptr
 .globl idt_desc_ptr, idt
+
+# for paging
+.globl page_directory
+.globl page_table
 
 .align 4
 
@@ -118,3 +128,27 @@ _idt:
     .endr
 
 idt_bottom:
+
+.align 4096 # align 4KB
+# see mp3 doc
+page_directory:
+    # 0-4MB, for page table of 4KB pages
+    .long   0x00000003  # init base addr(will be set when enable), set bit 0&1, present and R/W, bit7=0 for 4KB
+    # 4-8MB, for 4MB kernel page, virtual = physical
+    .long   0x00400083  # set base addr, set bit 0&1&7 set, present, R/W and PS for 4MB
+    # 8MB-4GB, not presented
+    .rept PD_SIZE - 2
+    .long 0 # just set 0 for not presented
+    .endr
+
+page_table:
+    # entry 0-0xB8, before video memory, not presented
+    .rept VIDEO_MEM_INDEX
+    .long 0
+    .endr
+    # entry 0xB8, for video memory
+    .long 0x000B8003 # set base addr, set bit 0&1, present and R/W
+    # other enries, not presented
+    .rept PT_SIZE - VIDEO_MEM_INDEX - 1
+    .long 0
+    .endr
