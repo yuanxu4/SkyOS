@@ -42,6 +42,12 @@ void i8259_init(void) {
 }
 
 /* Enable (unmask) the specified IRQ */
+/* 
+ * Inputs: irq_num -- interrupt request number
+ * Outputs: None
+ * Side Effects: unmask specified IRQ
+ * 
+ */
 void enable_irq(uint32_t irq_num) {
     uint8_t value;
     uint8_t value_master;
@@ -58,6 +64,12 @@ void enable_irq(uint32_t irq_num) {
 }
 
 /* Disable (mask) the specified IRQ */
+/* 
+ * Inputs: irq_num -- interrupt request number
+ * Outputs: None
+ * Side Effects: mask specified IRQ
+ * 
+ */
 void disable_irq(uint32_t irq_num) {
     uint8_t value;
     uint8_t value_master;
@@ -76,6 +88,12 @@ void disable_irq(uint32_t irq_num) {
 }
 
 /* Send end-of-interrupt signal for the specified IRQ */
+/* 
+ * Inputs: irq_num -- interrupt request number
+ * Outputs: None
+ * Side Effects: send EOI signal to specified IRQ
+ * 
+ */
 void send_eoi(uint32_t irq_num) {
     uint8_t value;
     
