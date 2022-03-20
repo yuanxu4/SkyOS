@@ -152,3 +152,5 @@ page_table:
     .rept PT_SIZE - VIDEO_MEM_INDEX - 1
     .long 0
     .endr
+
+    # may use .macro to set addr for every entry
