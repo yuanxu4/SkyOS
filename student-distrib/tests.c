@@ -66,8 +66,8 @@ int idt_dereference_test(){
 }
 
 int keyboard_test(){
+	clear();
 	TEST_HEADER;
-	while(1){}
 }
 
 /* Checkpoint 2 tests */

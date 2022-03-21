@@ -157,11 +157,11 @@ void entry(unsigned long magic, unsigned long addr)
         ltr(KERNEL_TSS);
     }
 
-    /* Init the PIC */
-    i8259_init();
-
     /* Init IDT table */
     idt_init();
+
+    /* Init the PIC */
+    i8259_init();
 
     /* keyboard init */
     keyboard_init();
@@ -169,6 +169,7 @@ void entry(unsigned long magic, unsigned long addr)
     /* rtc ini*/
     rtc_init();
     enable_irq(RTC_IRQ);
+    rtc_read_R3();
 
     /* Enable paging */
     enable_paging();
@@ -180,8 +181,8 @@ void entry(unsigned long magic, unsigned long addr)
     /* Do not enable the following until after you have set up your
      * IDT correctly otherwise QEMU will triple fault and simple close
      * without showing you any output */
-    /*printf("Enabling Interrupts\n");
-    sti();*/
+    printf("Enabling Interrupts\n");
+    sti();
 
 #ifdef RUN_TESTS
     /* Run tests */

@@ -128,7 +128,7 @@ void idt_init(){
 }
 
 void print_exception(uint32_t exception_num){
-    clear();
+    //clear();
     printf(" Detect exception %x\n", exception_num);
     printf(" --------pretend it is a BLUE SCREEN---------\n");
     while(1){}
@@ -136,7 +136,7 @@ void print_exception(uint32_t exception_num){
 }
 
 void print_syscall(uint32_t syscall_num){
-    clear();
+    //clear();
     printf(" Your syscall is %x, but not implement now\n", syscall_num);
     while(1){}
 }

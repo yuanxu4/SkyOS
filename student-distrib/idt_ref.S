@@ -5,43 +5,7 @@
 #include "keyboard.h"
 
 
-/*
- * IDT_EXCEPTION_0
- * description: exception handler used to handle diferent exception
- * input: none
- * output: the exception number
- * return: none
- */
-.globl IDT_EXCEPTION_0
-IDT_EXCEPTION_0:
-    # save_pre_reg
-    pushf
-    pushl %eax
-    pushl %ebx
-    pushl %ecx
-    pushl %edx
-    pushl %ebp
-    pushl %esi
-    pushl %edi
-    push %fs
-    push %es
-    push %ds
-    pushl $0
-    call print_exception
-    addl $4, %esp
-    # restore_pre_reg
-    pop %ds
-    pop %es
-    pop %fs
-    popl %edi
-    popl %esi
-    popl %ebp
-    popl %edx
-    popl %ecx
-    popl %ebx
-    popl %eax
-    popf
-    iret
+
 
 
 /*
@@ -1065,7 +1029,6 @@ IDT_INTERUPT_33:
     popl %ebx
     popl %eax
     popf
-    addl $4, %esp
     iret
 
 
@@ -1105,7 +1068,6 @@ IDT_INTERUPT_40:
     popl %ebx
     popl %eax
     popf
-    addl $4, %esp
     iret
 
 
@@ -1143,6 +1105,44 @@ IDT_SYSCALL:
    popl %ebx
    popl %eax
    popf
+    iret
+
+/*
+ * IDT_EXCEPTION_0
+ * description: exception handler used to handle diferent exception
+ * input: none
+ * output: the exception number
+ * return: none
+ */
+.globl IDT_EXCEPTION_0
+IDT_EXCEPTION_0:
+    # save_pre_reg
+    pushf
+    pushl %eax
+    pushl %ebx
+    pushl %ecx
+    pushl %edx
+    pushl %ebp
+    pushl %esi
+    pushl %edi
+    push %fs
+    push %es
+    push %ds
+    pushl $0
+    call print_exception
+    addl $4, %esp
+    # restore_pre_reg
+    pop %ds
+    pop %es
+    pop %fs
+    popl %edi
+    popl %esi
+    popl %ebp
+    popl %edx
+    popl %ecx
+    popl %ebx
+    popl %eax
+    popf
     iret
 
 
