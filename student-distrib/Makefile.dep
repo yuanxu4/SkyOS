@@ -6,4 +6,5 @@ idt.o: idt.c idt.h types.h x86_desc.h lib.h i8259.h
 kernel.o: kernel.c multiboot.h types.h x86_desc.h lib.h i8259.h debug.h \
   tests.h idt.h
 lib.o: lib.c lib.h types.h
+paging.o: paging.c
 tests.o: tests.c tests.h x86_desc.h types.h lib.h

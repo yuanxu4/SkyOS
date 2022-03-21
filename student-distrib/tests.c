@@ -74,6 +74,7 @@ int idt_dereference_test(){
 /* Test suite entry point */
 void launch_tests(){
 	TEST_OUTPUT("idt_test", idt_test());
-	TEST_OUTPUT("idt_test", idt_dereference_test());
+	TEST_OUTPUT("idt_div0_test", idt_div0_test());
+	TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
 	// launch your tests here
 }
