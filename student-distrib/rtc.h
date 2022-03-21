@@ -19,6 +19,8 @@
 #ifndef RTC_H
 #define RTC_H
 
+#ifndef ASM
+
 #define RTC_IRQ 8
 
 #include "types.h"
@@ -28,6 +30,8 @@ void rtc_init();
 void rtc_interrupt_handler();
 
 void rtc_read_R3();
+
+#endif
 
 #endif
 
