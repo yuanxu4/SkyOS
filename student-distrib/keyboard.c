@@ -8,6 +8,18 @@
 #include "lib.h"
 #include  "i8259.h"
 
+/* keyboard init
+ * 
+ * Inputs: void
+ * Outputs: void
+ * Side Effects: handle keyboard output to terminal when
+ * interrupt occurs
+ */
+void keyboard_init(void){
+    enable_irq(KEYBARD_IRQ);
+}
+
+
 /* Keyboard_handler called when IDT want to handle the interrupt
  * 
  * Inputs: void
@@ -15,7 +27,7 @@
  * Side Effects: handle keyboard output to terminal when
  * interrupt occurs
  */
-asmlinkage void keyboard_handler(void){
+void keyboard_handler(void){
     uint8_t scancode;
     /* scancode input from keyboard */
     scancode = inb(KEYBOARD_PORT);
