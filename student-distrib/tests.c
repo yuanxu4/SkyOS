@@ -23,7 +23,7 @@
 #define TEST_PRINT(fmt, ...)                                  \
 	do                                                        \
 	{                                                         \
-		printf("[TEST %s]" fmt, __FUNCTION__, ##__VA_ARGS__); \
+		printf(fmt, ##__VA_ARGS__); \
 	} while (0)
 
 #else
@@ -100,19 +100,19 @@ int paging_test()
 	// check cr0 pg,pe set
 	if ((cr_0 & 0x80000001) == 0)
 	{
-		TEST_PRINT("Error!!!\nCR0 is %x\n", cr_0);
+		TEST_PRINT("Error!!!  CR0 is %x\n", cr_0);
 		result = FAIL;
 	}
 	// if equal, means cr3 base addr,PCD(0),PWT(0) all right, ignored as 0
 	if ((PD_t *)cr_3 != &page_directory)
 	{
-		TEST_PRINT("Error!!!\nCR3 is %x, and page directory addr is %x\n", cr_3, &page_directory);
+		TEST_PRINT("Error!!!  CR3 is %x, and page directory addr is %x\n", cr_3, &page_directory);
 		result = FAIL;
 	}
 	// check cr4 pse set
 	if ((cr_4 & 0x00000010) == 0)
 	{
-		TEST_PRINT("Error!!!\nCR4 is %x\n", cr_4);
+		TEST_PRINT("Error!!!  CR4 is %x\n", cr_4);
 		result = FAIL;
 	}
 	// check pde
@@ -120,33 +120,33 @@ int paging_test()
 	tmp = (uint32_t *)(page_directory.pde[0] & 0xFFFFF000);
 	if ((PT_t *)tmp != &page_table)
 	{
-		TEST_PRINT("Error!!!\nPT base addr in PD is %x, but actually %x", tmp, &page_table);
+		TEST_PRINT("Error!!!  PT base addr in PD is %x, but actually %x", tmp, &page_table);
 		result = FAIL;
 	}
 	// entry 0, check others, like ps, p
-	if ((page_directory.pde[0] & 0x000000FF) != 0x00000003)
+	if ((page_directory.pde[0] & 0x00000003) != 0x00000003)
 	{
-		TEST_PRINT("Error!!!\nPT is %x, set wrongly", page_directory.pde[0]);
+		TEST_PRINT("PT is %x, set wrongly", page_directory.pde[0]);
 		result = FAIL;
 	}
 	// entry 1, pba, high10bits
 	tmp = (void *)(page_directory.pde[1] & 0xFFC00000);
 	if (tmp != (void *)0x00400000)
 	{
-		TEST_PRINT("Error!!!\nKernel Page base addr in PD is %x, but actually %x", tmp, 0x00400000);
+		TEST_PRINT("Error!!!  Kernel Page base addr in PD is %x, but actually %x", tmp, 0x00400000);
 		result = FAIL;
 	}
 	// entry 1, check others, like ps, p
-	if ((page_directory.pde[1] & 0x000000FF) != 0x00000083)
+	if ((page_directory.pde[1] & 0x00000083) != 0x00000083)
 	{
-		TEST_PRINT("Error!!!\nKernel Page is %x, set wrongly", page_directory.pde[0]);
+		TEST_PRINT("Error!!!  Kernel Page is %x, set wrongly\n", page_directory.pde[0]);
 		result = FAIL;
 	}
 	return result;
 	// check video memory
 	if (page_table.pte[VIDEO_MEM_INDEX] != 0x000B8003)
 	{
-		TEST_PRINT("Error!!!\nPTE for video memory is %x", page_table.pte[VIDEO_MEM_INDEX]);
+		TEST_PRINT("Error!!!  PTE for video memory is %x", page_table.pte[VIDEO_MEM_INDEX]);
 		result = FAIL;
 	}
 	// check other present
@@ -154,7 +154,7 @@ int paging_test()
 	{
 		if ((page_table.pte[i] & 0x00000001))
 		{
-			TEST_PRINT("Error!!!\nPTE %d is present", i);
+			TEST_PRINT("Error!!!  PTE %d is present", i);
 			result = FAIL;
 		}
 	}
@@ -162,38 +162,38 @@ int paging_test()
 	{
 		if ((page_table.pte[i] & 0x00000001))
 		{
-			TEST_PRINT("Error!!!\nPTE %d is present", i);
+			TEST_PRINT("Error!!!  PTE %d is present", i);
 			result = FAIL;
 		}
 	}
 	// dereference test
 	// dereference in video memory
-	tmp = (uint32_t *)(0xB8000 + 8);
-	if (*tmp)
-	{
-		/* fine */
-	}
-	// dereference in kernel page 4-8MB
-	tmp = (uint32_t *)(0x400000 + 8);
-	if (*tmp)
-	{
-		/* fine */
-	}
+	// tmp = (uint32_t *)(0xB8000 + 8);
+	// if (*tmp)
+	// {
+	// 	/* fine */
+	// }
+	// // dereference in kernel page 4-8MB
+	// tmp = (uint32_t *)(0x400000 + 8);
+	// if (*tmp)
+	// {
+	// 	/* fine */
+	// }
 
-	// dereference in 0-4MB outside video memory
-	tmp = (uint32_t *)(0xB8000 - 8);
-	if (*tmp)
-	{
-		/* should fault */
-		result = FAIL;
-	}
-	// dereference partly <8MB, partly >8MB
-	tmp = (uint32_t *)(0x800000 - 4);
-	if ((long long)*tmp)
-	{
-		/* should fault */
-		result = FAIL;
-	}
+	// // dereference in 0-4MB outside video memory
+	// tmp = (uint32_t *)(0xB8000 - 8);
+	// if (*tmp)
+	// {
+	// 	/* should fault */
+	// 	result = FAIL;
+	// }
+	// // dereference partly <8MB, partly >8MB
+	// tmp = (uint32_t *)(0x800000 - 4);
+	// if ((long long)*tmp)
+	// {
+	// 	/* should fault */
+	// 	result = FAIL;
+	// }
 	return result;
 }
 
@@ -205,7 +205,7 @@ int paging_test()
 /* Test suite entry point */
 void launch_tests()
 {
-	TEST_OUTPUT("idt_test", idt_test());
+	// TEST_OUTPUT("idt_test", idt_test());
 	TEST_OUTPUT("paging_test", paging_test());
 	// launch your tests here
 }
