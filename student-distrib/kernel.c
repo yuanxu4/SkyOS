@@ -17,6 +17,7 @@
 #include "debug.h"
 #include "tests.h"
 #include "idt.h"
+#include "rtc.h"
 #include "keyboard.h"
 
 #define RUN_TESTS
@@ -161,6 +162,10 @@ void entry(unsigned long magic, unsigned long addr)
 
     /* keyboard init */
     keyboard_init();
+
+    /* rtc ini*/
+    rtc_init();
+    enable_irq(RTC_IRQ);
 
     /* Init IDT table */
     idt_init();

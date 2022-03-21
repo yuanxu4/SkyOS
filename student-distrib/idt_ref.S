@@ -1,6 +1,8 @@
 #define ASM     1
 
 #include "idt.h"
+#include "rtc.h"
+#include "keyboard.h"
 
 
 /*
@@ -1088,9 +1090,9 @@ IDT_INTERUPT_40:
     push %fs
     push %es
     push %ds
-    pushl $40
-    call print_exception
-    addl $4, %esp
+#    pushl $40
+    call rtc_interrupt_handler
+#    addl $4, %esp
     # restore_pre_reg
     pop %ds
     pop %es

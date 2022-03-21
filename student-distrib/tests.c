@@ -67,7 +67,6 @@ int idt_dereference_test(){
 
 int keyboard_test(){
 	TEST_HEADER;
-	clear();
 	while(1){}
 }
 
