@@ -160,15 +160,15 @@ void entry(unsigned long magic, unsigned long addr)
     /* Init the PIC */
     i8259_init();
 
+    /* Init IDT table */
+    idt_init();
+
     /* keyboard init */
     keyboard_init();
 
     /* rtc ini*/
     rtc_init();
     enable_irq(RTC_IRQ);
-
-    /* Init IDT table */
-    idt_init();
 
     /* Enable paging */
     enable_paging();
