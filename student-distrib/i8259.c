@@ -43,6 +43,12 @@ void i8259_init(void) {
 }
 
 /* Enable (unmask) the specified IRQ */
+/* 
+ * Inputs: irq_num -- interrupt request number
+ * Outputs: None
+ * Side Effects: unmask specified IRQ
+ * 
+ */
 void enable_irq(uint32_t irq_num) {
     uint8_t value;
     uint8_t value_master;
@@ -53,40 +59,61 @@ void enable_irq(uint32_t irq_num) {
         irq_num-=8;
         value = inb(SLAVE_8259_DATA)&(~(1<<irq_num));
         outb(value, SLAVE_8259_DATA);
-        value_master = inb(MASTER_8259_DATA)&(~(0x02));
+        /* unmask the IR2 in master PIC*/
+        value_master = inb(MASTER_8259_DATA)&(~(0x04));
         outb(value_master, MASTER_8259_DATA);
     }
 }
 
 /* Disable (mask) the specified IRQ */
+/* 
+ * Inputs: irq_num -- interrupt request number
+ * Outputs: None
+ * Side Effects: mask specified IRQ
+ * 
+ */
 void disable_irq(uint32_t irq_num) {
     uint8_t value;
     uint8_t value_master;
+    /* irq of Master PIC*/
     if (irq_num < 8){
-        value = inb(MASTER_8259_DATA)|(1<<irq_num);
+        value = inb(MASTER_8259_DATA)|(0x01<<irq_num);
         outb(value, MASTER_8259_DATA);
     }else{
+        /* irq of Slave PIC */
         irq_num-=8;
-        value = inb(SLAVE_8259_DATA)|(1<<irq_num);
+        value = inb(SLAVE_8259_DATA)|(0x01<<irq_num);
         outb(value, SLAVE_8259_DATA);
+        /* if all slave PIC masked mask master's IR2 */
         if (value == 0xFF){
-            value_master = inb(MASTER_8259_DATA)|0x02;
+            /* mask master IRQ */
+            value_master = inb(MASTER_8259_DATA)|0x04;
             outb(value_master, MASTER_8259_DATA);
         }
     }
 }
 
 /* Send end-of-interrupt signal for the specified IRQ */
+/* 
+ * Inputs: irq_num -- interrupt request number
+ * Outputs: None
+ * Side Effects: send EOI signal to specified IRQ
+ * https://wiki.osdev.org/8259_PIC
+ */
 void send_eoi(uint32_t irq_num) {
     uint8_t value;
-    
+    uint8_t value_master;
     if (irq_num >= 8){
+        /* irq of Slave PIC */
+        irq_num-=8;
         value = irq_num | EOI;
-        outb(value,SLAVE_8259_DATA);
-        outb( 2 | EOI, MASTER_8259_DATA);
+        /* send EOI to master PIC */
+        value_master = 2 | EOI;
+        outb(value,SLAVE_8259_COMMAND);
+        outb(value_master, MASTER_8259_COMMAND);
     }else{
         value = irq_num | EOI;
-        outb(value,MASTER_8259_DATA);
+        outb(value,MASTER_8259_COMMAND);
     }
     
 }
