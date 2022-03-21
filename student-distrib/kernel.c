@@ -17,6 +17,7 @@
 #include "debug.h"
 #include "tests.h"
 #include "idt.h"
+#include "keyboard.h"
 
 #define RUN_TESTS
 
@@ -158,9 +159,12 @@ void entry(unsigned long magic, unsigned long addr)
     /* Init the PIC */
     i8259_init();
 
+    /* keyboard init */
+    keyboard_init();
+
     /* Init IDT table */
     idt_init();
-    
+
     /* Enable paging */
     enable_paging();
 

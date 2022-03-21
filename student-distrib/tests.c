@@ -65,6 +65,12 @@ int idt_dereference_test(){
 	return FAIL;
 }
 
+int keyboard_test(){
+	TEST_HEADER;
+	clear();
+	while(1){}
+}
+
 /* Checkpoint 2 tests */
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
@@ -74,7 +80,8 @@ int idt_dereference_test(){
 /* Test suite entry point */
 void launch_tests(){
 	TEST_OUTPUT("idt_test", idt_test());
-	TEST_OUTPUT("idt_div0_test", idt_div0_test());
-	TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
+//	TEST_OUTPUT("idt_div0_test", idt_div0_test());
+//	TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
+	TEST_OUTPUT("Keyboard_test", keyboard_test());
 	// launch your tests here
 }

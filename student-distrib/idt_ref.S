@@ -1048,9 +1048,9 @@ IDT_INTERUPT_33:
     push %fs
     push %es
     push %ds
-    pushl $33
-    call print_exception
-    addl $4, %esp
+#    pushl $33
+    call keyboard_handler
+#    addl $4, %esp
     # restore_pre_reg
     pop %ds
     pop %es

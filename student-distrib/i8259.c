@@ -18,7 +18,8 @@ uint8_t slave_mask;  /* IRQs 8-15 */
  * initialization control words
  */
 void i8259_init(void) {
-    
+    master_mask = 0xFF;
+    slave_mask = 0xFF;   
 
     /* SPIN_LOCK_IRQSAVE???? */
 
@@ -37,8 +38,8 @@ void i8259_init(void) {
     outb(ICW4,SLAVE_8259_DATA);
 
     /* restore mask of all IRQ */
-    outb(master_mask, MASTER_8259_DATA);
-    outb(slave_mask, SLAVE_8259_DATA);
+    outb(0xFF, MASTER_8259_DATA);
+    outb(0XFF, SLAVE_8259_DATA);
 }
 
 /* Enable (unmask) the specified IRQ */
