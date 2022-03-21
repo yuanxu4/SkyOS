@@ -46,6 +46,24 @@ int idt_test(){
 }
 
 // add more tests here
+int idt_div0_test(){
+	TEST_HEADER;
+
+	unsigned long div = 10;
+	unsigned long zero = 0;
+	unsigned result = div / zero;
+
+	return FAIL;
+}
+
+int idt_dereference_test(){
+	unsigned long i = 1;
+	// unsigned long* invalid_ptr = (unsigned long *)i;
+	// unsigned long j = *(invalid_ptr);
+	unsigned long j = *((unsigned long *) i);
+
+	return FAIL;
+}
 
 /* Checkpoint 2 tests */
 /* Checkpoint 3 tests */
@@ -56,5 +74,6 @@ int idt_test(){
 /* Test suite entry point */
 void launch_tests(){
 	TEST_OUTPUT("idt_test", idt_test());
+	TEST_OUTPUT("idt_test", idt_dereference_test());
 	// launch your tests here
 }

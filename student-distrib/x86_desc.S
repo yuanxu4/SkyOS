@@ -1,6 +1,9 @@
 # x86_desc.S - Set up x86 segment descriptors, descriptor tables
 # vim:ts=4 noexpandtab
 
+# history
+# add gdt_desc_ptr -- ky
+
 #define ASM     1
 #include "x86_desc.h"
 
@@ -9,7 +12,8 @@
 .globl ldt_size, tss_size
 .globl gdt_desc, ldt_desc, tss_desc
 .globl tss, tss_desc_ptr, ldt, ldt_desc_ptr
-.globl gdt_ptr
+# add gdt_desc_ptr
+.globl gdt_ptr, gdt_desc_ptr
 .globl idt_desc_ptr, idt
 
 .align 4
@@ -33,6 +37,14 @@ _tss:
     .byte 0
     .endr
 tss_bottom:
+
+# add GDT descriptor pointer, used in boot.S
+# the same as idt_desc_ptr
+.align 4
+    .word 0 # Padding
+gdt_desc_ptr:
+    .word gdt_bottom - gdt - 1 # limit, size of gdt - 1, 2B
+    .long gdt # base, addr of the first entry in gdt, 4B
 
     .align  16
 gdt:

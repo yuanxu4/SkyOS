@@ -1,6 +1,8 @@
 #ifndef IDT_H
 #define IDT_H
 
+#ifndef ASM
+
 /*** include lib ***/
 #include "types.h"
 
@@ -59,6 +61,6 @@ void print_exception(uint32_t exception_num);
 void print_syscall(uint32_t syscall_num);
 
 
-
+#endif
 
 #endif

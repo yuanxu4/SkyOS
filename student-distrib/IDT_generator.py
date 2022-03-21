@@ -1,9 +1,9 @@
 f = open("idt_ref.S", "w")
-
+f.write("#define ASM     1\n")
 f.write('''#include "idt.h"\n\n\n''')
 
 # write exception handler
-exception_num = [0,1,2,3,4,5,6,7,9,15,16,18,19,20,21,28,31]
+exception_num = [0,1,2,3,4,5,6,7,9,15,16,18,19,20,28,31]
 
 for i in exception_num:
     f.write('''/*

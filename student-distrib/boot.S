@@ -1,6 +1,9 @@
 # boot.S - start point for the kernel after GRUB gives us control
 # vim:ts=4 noexpandtab
 
+# history
+# load gdt -- ky
+
 #define ASM     1
 
 #include "multiboot.h"
@@ -25,6 +28,7 @@ _start:
 
 continue:
     # Load the GDT
+    lgdt gdt_desc_ptr
 
     # Load CS with the new descriptor value
     ljmp    $KERNEL_CS, $keep_going

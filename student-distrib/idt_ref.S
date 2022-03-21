@@ -1,3 +1,5 @@
+#define ASM     1
+
 #include "idt.h"
 
 
@@ -548,45 +550,6 @@ IDT_EXCEPTION_20:
 
 
 /*
- * IDT_EXCEPTION_21
- * description: exception handler used to handle diferent exception
- * input: none
- * output: the exception number
- * return: none
- */
-.globl IDT_EXCEPTION_21
-IDT_EXCEPTION_21:
-    # save_pre_reg
-    pushf
-    pushl %eax
-    pushl %ebx
-    pushl %ecx
-    pushl %edx
-    pushl %ebp
-    pushl %esi
-    pushl %edi
-    push %fs
-    push %es
-    push %ds
-    pushl $21
-    call print_exception
-    addl $4, %esp
-    # restore_pre_reg
-    pop %ds
-    pop %es
-    pop %fs
-    popl %edi
-    popl %esi
-    popl %ebp
-    popl %edx
-    popl %ecx
-    popl %ebx
-    popl %eax
-    popf
-    iret
-
-
-/*
  * IDT_EXCEPTION_28
  * description: exception handler used to handle diferent exception
  * input: none
@@ -1086,7 +1049,7 @@ IDT_INTERUPT_33:
     push %es
     push %ds
     pushl $33
-    call keyboard_handler
+    call print_exception
     addl $4, %esp
     # restore_pre_reg
     pop %ds
@@ -1126,7 +1089,7 @@ IDT_INTERUPT_40:
     push %es
     push %ds
     pushl $40
-    call RTC_handler
+    call print_exception
     addl $4, %esp
     # restore_pre_reg
     pop %ds
