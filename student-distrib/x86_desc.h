@@ -37,6 +37,8 @@
 #define SIZE_4MB 0x400000
 // index of video memory in PT, from lib.c
 #define VIDEO_MEM_INDEX 0xB8
+// about the size of the video memory:
+// 1B*80*25*2=4KB
 
 #ifndef ASM
 

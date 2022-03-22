@@ -35,3 +35,16 @@ Description:
 Solution:
     enable_irq unmask the wrong pin of Master PIC, should unmask pin 2 but unmask pin 1.
 
+<--------------------------------------------------------->
+                          BUG 3                          
+<--------------------------------------------------------->
+Time:
+    2022.3.20.
+Creator:
+    Keyi
+Description:
+    with enabling paging, some other initializations fail.
+Reason:
+    Other initializations may need to access the memory are not present after enabling paging.
+Solution:
+    call enable_paging after all the init is done.
