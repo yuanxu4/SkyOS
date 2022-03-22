@@ -23,3 +23,15 @@ Description:
 Solution:
     uncomment the code in kernel.c "sti();"
 
+<--------------------------------------------------------->
+                          BUG 2                          
+<--------------------------------------------------------->
+Time:
+    2022.3.20.
+Creator:
+    Haina Lou
+Description:
+    interrupts of RTC cannot be raised correctly.
+Solution:
+    enable_irq unmask the wrong pin of Master PIC, should unmask pin 2 but unmask pin 1.
+
