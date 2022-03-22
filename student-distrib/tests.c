@@ -126,6 +126,24 @@ int idt_dereference_test(){
 
 	return result;
 }
+/* pic_garbage_test - Example
+ *
+ * Asserts that first 10 IDT entries are not NULL
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: None
+ * Coverage: enable_irq
+ * Files: x86_desc.h/S
+ */
+int pic_garbage_test()
+{
+	TEST_HEADER;
+	int result = PASS;
+	
+	enable_irq(17);
+	enable_irq(-1);
+	return result;
+}
 
 /* 
  * 
@@ -264,4 +282,5 @@ void launch_tests(){
 	//TEST_OUTPUT("paging_test", paging_test());
 	//TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
 	//TEST_OUTPUT("Keyboard_test", keyboard_test());
+	//TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
 }

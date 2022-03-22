@@ -55,6 +55,10 @@ void i8259_init(void) {
 void enable_irq(uint32_t irq_num) {
     uint8_t value;
     uint8_t value_master;
+    if (irq_num>15 || irq_num < 0){
+        printf("IRQ number out of range!\n");
+        return;
+    }
     /* less than 8 means irq of master PIC */
     if (irq_num < 8){
         value = inb(MASTER_8259_DATA)&(~(0x01<<irq_num)); //0x01 bit mask, active low
@@ -80,6 +84,10 @@ void enable_irq(uint32_t irq_num) {
 void disable_irq(uint32_t irq_num) {
     uint8_t value;
     uint8_t value_master;
+    if (irq_num>15 || irq_num < 0){
+        printf("IRQ number out of range!\n");
+        return;
+    }
     /* irq of Master PIC*/
     if (irq_num < 8){
         value = inb(MASTER_8259_DATA)|(0x01<<irq_num);//0x01 bit mask
