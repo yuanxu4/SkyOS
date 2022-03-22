@@ -127,6 +127,15 @@ int idt_dereference_test(){
 	return result;
 }
 
+/* 
+ * 
+ * keyboard test
+ * Inputs: None
+ * Outputs: PASS
+ * Side Effects: None
+ * Coverage: keyboard test
+ * Files: x86_desc.h/S
+ */
 int keyboard_test(){
 	clear();
 	TEST_HEADER;

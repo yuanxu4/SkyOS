@@ -66,7 +66,7 @@ void scancode_output(uint8_t scancode){
         putc('\n');
     }
     /* if scancode is in right range*/
-    if(scancode>=0 && scancode <= SIMPLE_CASE){
+    if(scancode <= SIMPLE_CASE){
         /* find corresponding keycode */
         output_char = scancode_simple_lowcase[scancode];
         putc(output_char);
