@@ -3,6 +3,10 @@
  * created: 3/20/2022
  * by: Haina Lou
  */
+#ifndef KEYBOARD_H
+#define KEYBOARD_H
+
+#ifndef ASM
 
 #include "types.h"
 #define KEYBOARD_PORT   0x60
@@ -10,3 +14,10 @@
 #define SIMPLE_CASE     0x36
 #define ENTER           0X1c
 
+
+
+void keyboard_init(void);
+
+#endif
+
+#endif
