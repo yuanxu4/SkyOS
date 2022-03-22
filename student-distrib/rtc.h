@@ -22,11 +22,11 @@
 #define RTC_IRQ 8
 
 #include "types.h"
-
+/* just for rtc init */
 void rtc_init();
-
+/* the handler for rtc interrupt */
 void rtc_interrupt_handler();
-
+/* the refresh for rtc*/
 void rtc_read_R3();
 
 #endif
