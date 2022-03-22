@@ -93,11 +93,11 @@ int idt_div0_test(){
 
 /* 
  * 
- * Asserts that first 10 IDT entries are not NULL
+ * check for the dereference
  * Inputs: None
  * Outputs: PASS/FAIL
  * Side Effects: None
- * Coverage: Load IDT, IDT definition
+ * Coverage: paging, idt
  * Files: x86_desc.h/S
  */
 int idt_dereference_test(){
@@ -142,7 +142,7 @@ int keyboard_test(){
 	return PASS;
 }
 
-/* paging Test - Example
+/* paging Test
  *
  * Asserts that first 10 IDT entries are not NULL
  * Inputs: None

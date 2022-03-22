@@ -59,7 +59,7 @@ void idt_init(){
 
     /** init syscall vectors **/
     idt[IDT_BY_SYSCALL_START].present = 0;
-    idt[IDT_BY_SYSCALL_START].dpl = 3;
+    idt[IDT_BY_SYSCALL_START].dpl = 3;          //for syscal the dpl is 3
     idt[IDT_BY_SYSCALL_START].reserved0 = 0;
     idt[IDT_BY_SYSCALL_START].size = 1;
     idt[IDT_BY_SYSCALL_START].reserved1 = 1;
@@ -127,6 +127,13 @@ void idt_init(){
 
 }
 
+/*
+ * print_exception
+ * description: it is a help function for idt test to print the exception num and into the blue screen
+ * input: exception_num
+ * output: the detected exception and blue screen
+ * return: none
+ */
 void print_exception(uint32_t exception_num){
     clear();
     printf(" Detect exception %x\n", exception_num);
@@ -135,6 +142,13 @@ void print_exception(uint32_t exception_num){
 
 }
 
+/*
+ * print_syscall
+ * description: it is a help function for idt test to print the syscall num and into the blue screen
+ * input: exception_num
+ * output: the syscall num
+ * return: none
+ */
 void print_syscall(uint32_t syscall_num){
     clear();
     printf(" Your syscall is %x, but not implement now\n", syscall_num);
