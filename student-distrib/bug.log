@@ -1,0 +1,12 @@
+<--------------------------------------------------------->
+                          BUG 0                          
+<--------------------------------------------------------->
+Time:
+    2022.3.20.
+Creator:
+    Sam
+Description:
+    the IDT entry for the interrupt has error. The asm code should not addl $4 when reach the end
+    of the interrupt since the interrupt will not push the interrupt num automaticly
+Solution:
+    delete the line of "addl $4, %esp"
