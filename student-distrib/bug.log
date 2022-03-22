@@ -10,3 +10,16 @@ Description:
     of the interrupt since the interrupt will not push the interrupt num automaticly
 Solution:
     delete the line of "addl $4, %esp"
+
+<--------------------------------------------------------->
+                          BUG 1                          
+<--------------------------------------------------------->
+Time:
+    2022.3.20.
+Creator:
+    Sam
+Description:
+    the keyboard will not rasie a interrupt when the key is pressed. The breakpoint in IDT won't stop.
+Solution:
+    uncomment the code in kernel.c "sti();"
+
