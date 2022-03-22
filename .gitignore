@@ -112,3 +112,7 @@ dkms.conf
 *.qcow
 source/
 
+# added
+student-distrib/mp3.img
+student-distrib/bootimg
+student-distrib/Makefile.dep

@@ -89,7 +89,7 @@ enable_paging:
     orl %eax, %ecx
     movl %ecx, page_directory
 # set regs
-    # cr3: bit 31-12, Page-Directory Base; bit 4,3, PCD,PWT, both 0; other ignored
+    # cr3: bit 31-12, Page-Directory Base; bit 4,3, PCD,PWT, both 0; other ignored,0
     movl $page_directory, %eax # the addr of PD, (aligned 4KB) 0xXXXXX000
     # andl $0xFFFFFFE7, %eax cr3
     movl %eax, %cr3
