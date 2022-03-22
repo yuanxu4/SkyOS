@@ -105,7 +105,7 @@ for i in exception_with_errcode:
 
 # write exception with handler
 interupt = [33,40]
-fun = ["keyboard_handler", "RTC_handler"]
+fun = ["keyboard_handler", "rtc_interrupt_handler"]
 
 for i in interupt:
     f.write('''/*
@@ -135,13 +135,13 @@ for i in interupt:
     push %fs
     push %es
     push %ds\n''')
-    f.write("    pushl $")
-    f.write(str(i))
-    f.write("\n")
+   #  f.write("    pushl $")
+   #  f.write(str(i))
+   #  f.write("\n")
     f.write("    call ")
     f.write(fun[interupt.index(i)])
     f.write("\n")
-    f.write("    addl $4, %esp\n")
+   #  f.write("    addl $4, %esp\n")
     f.write("    # restore_pre_reg\n")
     f.write('''    pop %ds
     pop %es
@@ -154,7 +154,6 @@ for i in interupt:
     popl %ebx
     popl %eax
     popf\n''')
-    f.write("    addl $4, %esp\n")
     f.write("    iret\n\n\n")
 
 # syscall

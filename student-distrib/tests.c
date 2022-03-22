@@ -46,16 +46,33 @@ int idt_test(){
 }
 
 // add more tests here
+/* IDT_div0_test
+ * 
+ * Inputs: None
+ * Outputs: the exception 0 or fail
+ * Side Effects: None
+ * Coverage: the exception 0 ---- div 0
+ * Files: x86_desc.h/S
+ */
 int idt_div0_test(){
 	TEST_HEADER;
 
-	unsigned long div = 10;
-	unsigned long zero = 0;
-	unsigned result = div / zero;
+	unsigned long div = 10;		//random chosed num
+	unsigned long zero = 0;		//0
+	unsigned result = div / zero;	//implement div 0
 
 	return FAIL;
 }
 
+/* 
+ * 
+ * Asserts that first 10 IDT entries are not NULL
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: None
+ * Coverage: Load IDT, IDT definition
+ * Files: x86_desc.h/S
+ */
 int idt_dereference_test(){
 	unsigned long i = 1;
 	// unsigned long* invalid_ptr = (unsigned long *)i;
