@@ -85,7 +85,8 @@ int idt_div0_test(){
 
 	unsigned long div = 10;		//random chosed num
 	unsigned long zero = 0;		//0
-	unsigned result = div / zero;	//implement div 0
+	unsigned result;
+	result = div / zero;	//implement div 0
 
 	return FAIL;
 }
@@ -100,17 +101,36 @@ int idt_div0_test(){
  * Files: x86_desc.h/S
  */
 int idt_dereference_test(){
-	unsigned long i = 1;
-	// unsigned long* invalid_ptr = (unsigned long *)i;
-	// unsigned long j = *(invalid_ptr);
-	unsigned long j = *((unsigned long *) i);
+	TEST_HEADER;
+	int result = PASS;
+	// // test1: dereference in 0-4MB outside video memory
+	// uint32_t *tmp;
+	// tmp = (uint32_t *)(0xB8000 - 8);
+	// // TEST_PRINT("tmp is %x", tmp);
+	// if (*tmp)
+	// {
+	// 	/* should fault */
+	// 	result = FAIL;
+	// }
 
-	return FAIL;
+
+	// test2: dereference partly <8MB, partly >8MB
+	long long *tmp2;
+	tmp2 = (long long *)(0x800000 - 4);
+	TEST_PRINT("tmp2 is %x\n", tmp2);
+	if (*tmp2)
+	{
+		/* should fault */
+		result = FAIL;
+	}
+
+	return result;
 }
 
 int keyboard_test(){
 	clear();
 	TEST_HEADER;
+	return PASS;
 }
 
 /* paging Test - Example
@@ -130,7 +150,6 @@ int paging_test()
 	int result = PASS;
 	uint32_t cr_0, cr_3, cr_4;
 	uint32_t *tmp;
-	long long *tmp2;
 	// get regs
 	asm volatile("movl %%cr0, %0\n\t"
 				 "movl %%cr3, %1\n\t"
@@ -221,23 +240,6 @@ int paging_test()
 	{
 		/* fine */
 	}
-
-	// // dereference in 0-4MB outside video memory
-	// tmp = (uint32_t *)(0xB8000 - 8);
-	// // TEST_PRINT("tem is %x", tmp);
-	// if (*tmp)
-	// {
-	// 	/* should fault */
-	// 	result = FAIL;
-	// }
-	// dereference partly <8MB, partly >8MB
-	tmp2 = (long long *)(0x800000 - 4);
-	TEST_PRINT("tem is %x\n", tmp);
-	if (*tmp2)
-	{
-		/* should fault */
-		result = FAIL;
-	}
 	return result;
 }
 
@@ -249,8 +251,8 @@ int paging_test()
 /* Test suite entry point */
 void launch_tests(){
 	TEST_OUTPUT("idt_test", idt_test());
-	// TEST_OUTPUT("idt_div0_test", idt_div0_test());
-	// TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
-	TEST_OUTPUT("paging_test", paging_test());
-	//TEST_OUTPUT("Keyboard_test", keyboard_test());
+	//TEST_OUTPUT("idt_div0_test", idt_div0_test());	
+	//TEST_OUTPUT("paging_test", paging_test());
+	//TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
+	TEST_OUTPUT("Keyboard_test", keyboard_test());
 }

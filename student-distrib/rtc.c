@@ -38,7 +38,6 @@
 #define RTC_RATE_128    9 
 #define RTC_RATE_2      15  
 
-
 void rtc_read_R3();
 
 /* 
