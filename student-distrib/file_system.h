@@ -19,15 +19,18 @@
 
 #define FILE_NAME_LENGTH 32
 #define BLOCK_SIZE 0x1000                                         // 4KB, size of block in this file system
-#define DIR_ENTRY_SIZE 0x40                                       // 64B, size of directory entry in boot block
+#define DIR_ENTRY_SIZE 64                                         // 64B, size of directory entry in boot block
 #define NUM_DIR_ENTRY ((BLOCK_SIZE / DIR_ENTRY_SIZE) - 1)         // 63, number of directory entries in boot block
-#define INDEX_DATA_BLOCK_SIZE 0x4                                 // 4B, size of the index of data block in inode
+#define INDEX_DATA_BLOCK_SIZE 4                                   // 4B, size of the index of data block in inode
 #define NUM_DATA_BLOCK ((BLOCK_SIZE / INDEX_DATA_BLOCK_SIZE) - 1) // 1023, number of data blocks in inode
 #define MAX_NUM_OPEN 8                                            // max number of opening files in one task
 #define NUM_FILE_TYPE 4                                           // number of file types, rtc, dir, file, std
 // value of “flags” in file arrat to indicate this file descriptor is “in-use.” or not
 #define IN_USE 1
 #define NOT_IN_USE 0
+
+#define STDIN_FD 0  // file desc of stdin
+#define STDOUT_FD 1 // file desc of stdout
 
 /* structures of File System Utilities in 8.1 */
 
@@ -124,21 +127,28 @@ int32_t dir_read(int32_t fd, void *buf, int32_t nbytes);
 int32_t dir_write(int32_t fd, const void *buf, int32_t nbytes);
 int32_t dir_close(int32_t fd);
 
-// tmp declaration!!!
-int32_t terminal_open(const uint8_t *filename);
-int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes);
-int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes);
-int32_t terminal_close(int32_t fd);
-
 // seems not necessary now
-// Operation of rtc
+// Operation of rtc for user
 int32_t rtc_user_open(const uint8_t *filename);
 int32_t rtc_user_read(int32_t fd, void *buf, int32_t nbytes);
 int32_t rtc_user_write(int32_t fd, const void *buf, int32_t nbytes);
 int32_t rtc_user_close(int32_t fd);
 
+// tmp declaration!!!
+// used for stdin / stdout
+int32_t terminal_open(const uint8_t *filename);
+int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes);
+int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes);
+int32_t terminal_close(int32_t fd);
+int32_t stdout_read(int32_t fd, void *buf, int32_t nbytes);
+int32_t stdin_write(int32_t fd, const void *buf, int32_t nbytes);
+
 // help function
-void set_entry(int32_t index, int32_t file_type);
-int32_t find_not_used_fd();
+void set_entry(int32_t fd, int32_t file_type);
+int32_t find_unused_fd();
+// used in test
+int32_t get_file_size(uint32_t inode);
+int32_t get_num_opening();
+int32_t close_opening();
 
 #endif // _FILE_SYSTEM_H

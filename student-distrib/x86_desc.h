@@ -190,7 +190,7 @@ typedef struct __attribute__((packed)) PTE_4KB
 // notes: here we use uint32_t since PDE, PTE are actually uint32_t
 // we can cast type when necessary
 // Page-Table (for 4KB)
-typedef struct __attribute__((aligned(SIZE_4KB))) PT
+typedef struct PT
 {
     uint32_t pte[PT_SIZE];
 } PT_t;
