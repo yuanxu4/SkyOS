@@ -4,6 +4,7 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "i8259.h"
+#include "asmlink.h"
 
 /*** functions ***/
 
@@ -166,4 +167,8 @@ void syscall_err(uint32_t invalid_call){
     clear();
     printf("System call %x is not valid check twice!!!\n", invalid_call);
     while(1){}
+}
+
+regcall void system_read(uint32_t syscall, uint32_t* filename ){
+    
 }
