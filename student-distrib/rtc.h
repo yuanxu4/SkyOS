@@ -22,12 +22,27 @@
 #define RTC_IRQ 8
 
 #include "types.h"
+
 /* just for rtc init */
 void rtc_init();
+
 /* the handler for rtc interrupt */
 void rtc_interrupt_handler();
+
 /* the refresh for rtc*/
-void rtc_read_R3();
+void rtc_reset_R3();
+
+/* the open system call for rtc */
+int32_t rtc_open(const uint8_t* filename);
+
+/* the read system call for rtc */
+int32_t rtc_read( int32_t fd, void* buf, int32_t nbytes );
+
+/* the write system call for rtc */
+int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes);
+
+/* the close system call for rtc */
+int32_t rtc_close( int32_t fd);
 
 #endif
 
