@@ -1111,29 +1111,57 @@ IDT_INTERUPT_40:
 IDT_SYSCALL:
     # save_pre_reg
     pushf
-   pushl %eax
-   pushl %ebx
-   pushl %ecx
-   pushl %edx
-   pushl %ebp
-   pushl %esi
-   pushl %edi
-   push %fs
-   push %es
-   push %ds
-    call print_syscall
+    pushl %eax
+    pushl %ebx
+    pushl %ecx
+    pushl %edx
+    pushl %ebp
+    pushl %esi
+    pushl %edi
+    push %fs
+    push %es
+    push %ds
+    # check if the call is valid
+    cmpl $10, %eax
+    jae invalid_syscall
+    # call handler according to eax
+    call *syscall_table(, %eax, 4)
+    jmp finish_syscall
+
+    # encounter err
+invalid_syscall:
+    pushl %eax
+    call syscall_err
+    addl $4, %esp
+
+finish_syscall:
+
     # restore_pre_reg
     pop %ds
-   pop %es
-   pop %fs
-   popl %edi
-   popl %esi
-   popl %ebp
-   popl %edx
-   popl %ecx
-   popl %ebx
-   popl %eax
-   popf
+    pop %es
+    pop %fs
+    popl %edi
+    popl %esi
+    popl %ebp
+    popl %edx
+    popl %ecx
+    popl %ebx
+    # do not pop eax
+    addl $4, %esp
+#    popl %eax
+    popf
     iret
+
+syscall_table:
+.long system_halt
+.long system_execute
+.long system_read
+.long system_write
+.long system_open
+.long system_close
+.long system_getargs
+.long system_vidmap
+.long system_set_handler
+.long system_sigreturn
 
 

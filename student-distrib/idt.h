@@ -60,6 +60,9 @@ void print_exception(uint32_t exception_num);
 /** cp1 indentify syscall **/
 void print_syscall(uint32_t syscall_num);
 
+/** cp2 syscall_err **/
+void syscall_err(uint32_t invalid_call);
+
 
 #endif
 

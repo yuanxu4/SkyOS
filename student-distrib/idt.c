@@ -154,3 +154,16 @@ void print_syscall(uint32_t syscall_num){
     printf(" Your syscall is %x, but not implement now\n", syscall_num);
     while(1){}
 }
+
+/*
+ * syscall_err
+ * description: it will disp a err info on screen when user call a invalid system call
+ * input: invalid_call
+ * output: num is not a syscall
+ * return: none
+ */
+void syscall_err(uint32_t invalid_call){
+    clear();
+    printf("System call %x is not valid check twice!!!\n", invalid_call);
+    while(1){}
+}
