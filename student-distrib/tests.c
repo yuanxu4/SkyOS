@@ -10,6 +10,8 @@
 #include "lib.h"
 #include "i8259.h"
 #include "file_system.h"
+#include "keyboard.h"
+#include "rtc.h"
 
 #define PASS 1
 #define FAIL 0
@@ -161,7 +163,6 @@ int pic_garbage_test()
 int keyboard_test()
 {
 	clear();
-	TEST_HEADER;
 	return PASS;
 }
 
@@ -276,6 +277,7 @@ int paging_test()
 }
 
 /* Checkpoint 2 tests */
+
 
 int file_sys_test()
 {
@@ -469,18 +471,90 @@ int file_sys_test()
 	return result;
 }
 
+
+int rtc_test() {
+	clear();
+    TEST_HEADER;
+	int result = PASS;
+	
+	
+    int32_t rate;
+    int32_t ret,i,j;
+
+    const uint32_t valid_rate[5] = {2, 4, 32, 128, 1024};
+    const uint32_t invalid_rate[5] = {3, 6, 48, 1000, 2048};
+    const uint32_t test_count = 6;
+
+	printf("try to open the rtc !!\n");
+    int32_t fd = rtc_open((uint8_t *) "rtc");
+	printf("rtc open success\n");
+
+    for (i = 0; i < 5; i++) {
+        rate = valid_rate[i];
+        printf("setting the rate into %uHz ing...\n", rate);
+		ret = rtc_write(fd, &rate, 4);
+        if (0 != ret) {
+            printf("fail with %d\n", ret);
+            result = FAIL;
+        }
+        for (j = 0; j < test_count*valid_rate[i]; j++) {
+            rtc_read(fd, NULL, 0);
+            printf("1");
+		}
+    }
+	for (i = 0; i < 5; i++) {
+        rate = invalid_rate[i];
+        printf("setting the rate into invalid %uHz...\n", rate);
+		ret = rtc_write(fd, &rate, 4);
+        if (0 == ret) {
+			printf("fail with the invalid argument test\n");
+            result = FAIL;
+        }else {
+			printf("faild!!!\n");
+		}
+    }
+    rtc_close(fd);
+	return result;
+}
+
+int terminal_test(){
+	clear();
+	int32_t cnt;
+    uint8_t buf[32];
+	uint8_t* buf2 = "391OS> ";
+
+   while (1){
+	   if (-1 == (cnt = terminal_write (1, buf2, 7))) {
+			printf("ERROR writing the terminal! \n");
+		}
+	    if (-1 == (cnt = terminal_read (0, buf, 31))) {
+		printf("ERROR reading the terminal! \n");
+		}else{
+			printf("keyboard buffer is %s \n", buf); 
+		}
+   }
+
+   return 0;
+    
+    
+}
+
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
 
 /* Test suite entry point */
-void launch_tests()
-{
-	// TEST_OUTPUT("idt_test", idt_test());
-	// TEST_OUTPUT("idt_div0_test", idt_div0_test());
-	// TEST_OUTPUT("paging_test", paging_test());
-	// TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
-	// TEST_OUTPUT("Keyboard_test", keyboard_test());
-	// TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
+
+void launch_tests(){
+	//keyboard_test();
+	//TEST_OUTPUT("idt_test", idt_test());
+	//TEST_OUTPUT("idt_div0_test", idt_div0_test());	
+	//TEST_OUTPUT("paging_test", paging_test());
+	//TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
+	//TEST_OUTPUT("Keyboard_test", keyboard_test());
+	//TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
+	//TEST_OUTPUT("terminal test", terminal_test());
+	//TEST_OUTPUT("rtc_test", rtc_test());
 	TEST_OUTPUT("file_sys_test", file_sys_test());
+
 }
