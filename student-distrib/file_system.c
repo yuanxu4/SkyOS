@@ -13,6 +13,7 @@
 
 #include "file_system.h"
 #include "lib.h"
+#include "keyboard.h"
 // #include "terminal.h"
 
 #define PRINT_MODE 1
