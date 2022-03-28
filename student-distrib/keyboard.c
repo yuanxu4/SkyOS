@@ -12,7 +12,7 @@ static uint8_t kb_buf[kb_bufsize];
 /* flag used to decide when can copy */
 static volatile uint8_t copy_flag;
 static uint8_t char_num;
-static uint32_t cur_num;
+//static uint32_t cur_num;
 /* keycode flag*/
 static uint8_t cap_on_flag, l_shift_on_flag, r_shift_on_flag, l_ctrl_on_flag, r_ctrl_on_flag;
 /* no shift no capson character and numbers */
@@ -80,7 +80,9 @@ void keyboard_handler(void)
     /* set flag */
     set_flag(scancode);
     /* handle scancode and print to terminal */
-    scancode_output(scancode);
+    if ((scancode < keynum)&& (scancode_simple_lowcase[scancode] != 0)){
+        scancode_output(scancode);
+    }
 
     send_eoi(KEYBARD_IRQ);
 }
@@ -136,7 +138,7 @@ void set_flag(uint8_t scancode){
  */
 void check_space(uint8_t output_char) {
     if(output_char == '\b') {
-        if((char_num > 0) && (char_num != kb_bufsize)){
+        if(char_num > 0){
             if (kb_buf[char_num-1] == '\t') {   // delete all space if \t
                 putc('\b');
                 putc('\b');
@@ -153,27 +155,19 @@ void check_space(uint8_t output_char) {
  */
 void put_changebuf(uint8_t output_char) {
     if(output_char == '\b'){        // if backspace 
-        if((char_num != 0) && ((char_num != kb_bufsize)|| (char_num == cur_num))){
+        if(char_num != 0){
             putc(output_char);
-            if(char_num != kb_bufsize){
-                kb_buf[char_num - 1] = 0;   // reset to 0 
-            }
+            kb_buf[char_num - 1] = 0;   // reset to 0 
             char_num --;        // number of characters in buffer decrement
-            cur_num --;
-        }else if(char_num == kb_bufsize) {
-            putc(output_char);      // if larger than buffer size only putc
-            cur_num --;
+            //cur_num --;
         }
     }else{
-        putc(output_char);      
-        cur_num++;
-        if (char_num < kb_bufsize){
+        //cur_num++;
+        if (char_num < kb_bufsize-1){
+            putc(output_char);      
             kb_buf[char_num] = output_char;
             char_num ++;
         }else{
-            if(output_char == '\t'){    // if output char number + 3
-                cur_num += 3;
-            }
             kb_buf[kb_bufsize-1] = '\n';
         }
     }
@@ -199,7 +193,7 @@ void scancode_output(uint8_t scancode)
             kb_buf[kb_bufsize-1] = '\n';
         }
         char_num = 0;
-        cur_num = 0;
+        //cur_num = 0;
         copy_flag = 1;
     }
 
@@ -209,7 +203,8 @@ void scancode_output(uint8_t scancode)
         /* find corresponding keycode */
         /* press ctrl+ l */
         if(l_ctrl_on_flag && (scancode == L)){
-            clear();                
+            clear(); 
+            printf("%s\n",kb_buf);               
         }
         /* shift and capslock all on */
         else if ((l_shift_on_flag||r_shift_on_flag) && (cap_on_flag)){
