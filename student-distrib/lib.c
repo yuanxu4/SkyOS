@@ -29,6 +29,14 @@ void clear(void)
     update_cursor(0,0);
 }
 
+void align_space(int32_t size){
+    while (screen_x<size)
+    {
+        putc(' ');
+    }
+    
+}
+
 /* Standard printf().
  * Only supports the following format strings:
  * %%  - print a literal '%' character

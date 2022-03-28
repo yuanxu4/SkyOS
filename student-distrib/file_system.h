@@ -24,7 +24,7 @@
 #define INDEX_DATA_BLOCK_SIZE 4                                   // 4B, size of the index of data block in inode
 #define NUM_DATA_BLOCK ((BLOCK_SIZE / INDEX_DATA_BLOCK_SIZE) - 1) // 1023, number of data blocks in inode
 #define MAX_NUM_OPEN 8                                            // max number of opening files in one task
-#define NUM_FILE_TYPE 4                                           // number of file types, rtc, dir, file, std
+#define NUM_FILE_TYPE 5                                           // number of file types, rtc, dir, file, stdin, stdout
 // value of “flags” in file arrat to indicate this file descriptor is “in-use.” or not
 #define IN_USE 1
 #define NOT_IN_USE 0
@@ -150,5 +150,9 @@ int32_t find_unused_fd();
 int32_t get_file_size(uint32_t inode);
 int32_t get_num_opening();
 int32_t close_opening();
+
+int32_t show_addr();
+int32_t get_file_name();
+int32_t get_file_num();
 
 #endif // _FILE_SYSTEM_H

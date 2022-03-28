@@ -27,6 +27,7 @@
 #define TEST_PRINT(fmt, ...)        \
 	do                              \
 	{                               \
+		printf("[INFO] ");        \
 		printf(fmt, ##__VA_ARGS__); \
 	} while (0)
 
@@ -44,6 +45,8 @@ static inline void assertion_failure()
 	   reserved by Intel */
 	asm volatile("int $15");
 }
+
+int8_t file_buf[FILE_NAME_LENGTH]; // buffer, avoid out of range
 
 /* Checkpoint 1 tests */
 
@@ -281,20 +284,19 @@ int paging_test()
 
 int file_sys_test()
 {
+	clear();
 	TEST_HEADER;
 	int result = PASS;
-
 	int32_t fd;					  // file desc
-	int8_t buf[FILE_NAME_LENGTH]; // buffer, avoid out of range
+
 	// 8 files, 1 root, 2 small files, 2 executables, 2 largefiles, 1 invaild file
-	const char *flie_list[8] = {".", "frame0.txt", "frame1.txt", "grep", "ls", "fish", "verylargetextwithverylongname.tx", "wqevfwrtvwev"};
+	char *flie_list[8] = {".", "frame0.txt", "frame1.txt", "grep", "ls", "fish", "verylargetextwithverylongname.tx", "wqevfwrtvwev"};
 	int32_t tmp;
-	dentry_t *tmp_dentry;
+	dentry_t tmp_dentry;
 	int i;
 
-	clear();
-
 	// open root
+	TEST_PRINT("try to open the root directory\n\n");
 	fd = file_sys_open((const uint8_t *)flie_list[0]);
 	if (fd != 2)
 	{
@@ -302,16 +304,16 @@ int file_sys_test()
 		close_opening();
 		return FAIL;
 	}
-
 	// read file names in root
-	TEST_PRINT("read the root directory\n");
-	for (i = 0; i < NUM_DIR_ENTRY; i++)
+	TEST_PRINT("read the root directory and display all files\n\n");
+	// get_file_name();
+	for (i = 0; i < get_file_num(); i++)
 	{
-		tmp = file_sys_read(fd, buf, FILE_NAME_LENGTH);
+		tmp = file_sys_read(fd, file_buf, FILE_NAME_LENGTH);
 		if (tmp > 0)
 		{
-			// write -1 fail, 0 succ
-			if (file_sys_write(STDOUT_FD, buf, tmp))
+			// write -1 fail
+			if (-1==file_sys_write(STDOUT_FD, file_buf, tmp))
 			{
 				TEST_PRINT("fail to write in stdout\n");
 				close_opening();
@@ -319,49 +321,47 @@ int file_sys_test()
 			}
 			// check file type and size
 			// -1 fail, 0 succ
-			if (read_dentry_by_name((const uint8_t *)buf, tmp_dentry))
+			if (read_dentry_by_name((const uint8_t *)file_buf, &tmp_dentry))
 			{
-				TEST_PRINT("\nfail to find file name\n");
+				TEST_PRINT("fail to find file name\n");
 				close_opening();
 				return FAIL;
 			}
-			switch (tmp_dentry->file_type)
+			align_space(FILE_NAME_LENGTH+4);
+			if (tmp_dentry.file_type ==2)
 			{
-			case 0:
-				TEST_PRINT("file type: RTC\n");
-				break;
-			case 1:
-				TEST_PRINT("file type: directory\n");
-				break;
-			case 2:
-				TEST_PRINT("file type: regular file, size(B): %d\n", get_file_size(tmp_dentry->inode_num));
-				break;
-			default:
-				TEST_PRINT("file type: ???\n");
-				break;
+				printf("file type: 2, size(B): %d\n", get_file_size(tmp_dentry.inode_num));
+			}
+			else
+			{
+				printf("file type: %d, size(B): 0\n", tmp_dentry.file_type);
 			}
 		}
 		else
 		{
-			TEST_PRINT("\nfail to read file name at %d\n", i);
+			TEST_PRINT("fail to read file name at %d\n", i);
 		}
 	}
+continue_test();
+TEST_PRINT("continue to read, should print \"reach to the end\"", i);
 	// should return 0 and print reach to the end\n
-	tmp = file_sys_read(fd, buf, FILE_NAME_LENGTH);
-	if (!tmp)
+	tmp = file_sys_read(fd, file_buf, FILE_NAME_LENGTH);
+	if (tmp)
 	{
 		TEST_PRINT("fail in test reading at end., read returns %d\n", tmp);
 		close_opening();
 		return FAIL;
 	}
+continue_test();
 	// try to test stdin and stdout
-	if (!file_sys_write(STDIN_FD, buf, tmp))
+	TEST_PRINT("try to write in stdin, read in stdout, close stdout, all should fail\n");
+	if (!file_sys_write(STDIN_FD, file_buf, tmp))
 	{
 		TEST_PRINT("wrongly write in stdin\n");
 		close_opening();
 		return FAIL;
 	}
-	if (!file_sys_read(STDOUT_FD, buf, FILE_NAME_LENGTH))
+	if (!file_sys_read(STDOUT_FD, file_buf, FILE_NAME_LENGTH))
 	{
 		TEST_PRINT("wrongly read in stdout\n");
 		close_opening();
@@ -373,18 +373,15 @@ int file_sys_test()
 		close_opening();
 		return FAIL;
 	}
-
+	printf("\n");
+	TEST_PRINT("Cooooool!!!! pass all tests about root, so close the root\n");
 	close_opening();
-
-	TEST_PRINT("cooooool!!!! pass test about root\n ");
-	TEST_PRINT("then try to open 6 vaild regular files\n");
-	TEST_PRINT("but the file system wants to sleep! \n");
+	TEST_PRINT("then try to open and read 6 vaild regular files without closing anyone\n");
 
 	// open 6 vaild regular files, never close until fail
 	for (i = 1; i < 7; i++)
 	{
-		TEST_PRINT("press a key to awake it (and test stdin craftily)\n");
-		file_sys_read(STDIN_FD, buf, FILE_NAME_LENGTH);
+continue_test();
 		clear();
 		TEST_PRINT("try to open file %s\n", flie_list[i]);
 		fd = file_sys_open((const uint8_t *)flie_list[i]);
@@ -395,24 +392,24 @@ int file_sys_test()
 			close_opening();
 			return FAIL;
 		}
-		if (read_dentry_by_name((const uint8_t *)buf, tmp_dentry))
+		if (read_dentry_by_name((const uint8_t *)flie_list[i], &tmp_dentry))
 		{
-			TEST_PRINT("fail to find file\n");
+			TEST_PRINT("fail to find file, %s\n", file_buf);
 			close_opening();
 			return FAIL;
 		}
-		if (tmp_dentry->file_type != 2)
+		if (tmp_dentry.file_type != 2)
 		{
 			TEST_PRINT("get wrong file type\n");
 			close_opening();
 			return FAIL;
 		}
-		TEST_PRINT("the size of file is %d. below is the content\n", get_file_size(tmp_dentry->inode_num));
+		TEST_PRINT("the size of file is %d. below is the content\n", get_file_size(tmp_dentry.inode_num));
 
 		// read file 32B one time
 		do
 		{
-			tmp = file_sys_read(fd, buf, FILE_NAME_LENGTH);
+			tmp = file_sys_read(fd, file_buf, FILE_NAME_LENGTH);
 			switch (tmp)
 			{
 			case 0:
@@ -422,20 +419,21 @@ int file_sys_test()
 				close_opening();
 				return FAIL;
 			default:
-				if (file_sys_write(STDOUT_FD, buf, tmp))
+				if (-1==file_sys_write(STDOUT_FD, file_buf, tmp))
 				{
-					TEST_PRINT("fail to display file\n");
+					TEST_PRINT("fail to display file, %d\n", tmp);
 					close_opening();
 					return FAIL;
 				}
 				break;
 			}
 		} while (tmp);
-		TEST_PRINT("done...\n");
+		TEST_PRINT("have read %d th file(%s) with size %d B\n", i, flie_list[i],get_file_size(tmp_dentry.inode_num));
 	}
+continue_test();
 	// here, 8 files opening
 	TEST_PRINT("now we should reach the max number of opening file\n");
-	TEST_PRINT("CHECK: the number of opening files is %d\n", get_num_opening());
+	printf("Check: the number of opening files is %d\n", get_num_opening());
 	if (get_num_opening() != 8)
 	{
 		TEST_PRINT("fail in test opening files\n");
@@ -443,30 +441,29 @@ int file_sys_test()
 		return FAIL;
 	}
 
-	TEST_PRINT("press a key to open root again\n");
-
+TEST_PRINT("try to open root again, should fail\n");
 	fd = file_sys_open((const uint8_t *)flie_list[0]);
 	if (fd != -1)
 	{
 		TEST_PRINT("wrongly open %s\n", flie_list[0]);
-		// should close other opening files for safty
 		close_opening();
 		return FAIL;
 	}
+continue_test();
 	TEST_PRINT("to test opening invaild file, close one file first\n");
 	file_sys_close(get_num_opening() - 1);
-	TEST_PRINT("CHECK: the number of opening files is %d\n", get_num_opening());
-	TEST_PRINT("try to open invaild file\n");
+	printf("Check: the number of opening files is %d\n", get_num_opening());
+	TEST_PRINT("try to open invaild file, should fail\n");
 	fd = file_sys_open((const uint8_t *)flie_list[7]);
 	if (fd != -1)
 	{
 		TEST_PRINT("wrongly open an invaild file %s\n", flie_list[0]);
-		// should close other opening files for safty
 		close_opening();
 		return FAIL;
 	}
-	clear();
-	TEST_PRINT("The file system wins :((((\n");
+	continue_test();
+
+	TEST_PRINT("The file system WINs... Sooooooooo sad :((((\n");
 	close_opening();
 	return result;
 }
@@ -521,7 +518,7 @@ int terminal_test(){
 	clear();
 	int32_t cnt;
     uint8_t buf[32];
-	uint8_t* buf2 = "391OS> ";
+	int8_t* buf2 = "391OS> ";
 
    while (1){
 	   if (-1 == (cnt = terminal_write (1, buf2, 7))) {
@@ -537,6 +534,12 @@ int terminal_test(){
    return 0;
     
     
+}
+
+void continue_test()
+{
+	printf("\n-------press ENTER to awake it (and test stdin craftily)---------\n");
+	file_sys_read(STDIN_FD, file_buf, FILE_NAME_LENGTH);
 }
 
 /* Checkpoint 3 tests */

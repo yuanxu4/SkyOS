@@ -43,6 +43,32 @@ static data_block_t *data_blocks;
 static jump_table_t op_table_total[NUM_FILE_TYPE]; // op table with 12 ops
 static file_array_t file_array;
 
+
+
+int32_t show_addr(){
+    PRINT("ADDR\n");
+    PRINT("boot block: %#x\n", boot_block);
+    PRINT("inode: %#x\n", inodes);
+    PRINT("op_table_total: %#x\n", op_table_total);
+    PRINT("file array: %#x\n", &file_array);
+    return 0;
+}
+
+int32_t get_file_num()
+{
+    return boot_block->dir_count;
+}
+
+int32_t get_file_name()
+{
+    int i;
+    for (i =0; i<15; i++)
+    {
+        PRINT("index %d, name: %s, %d\n", i, boot_block->dentries[i].file_name, strlen((const int8_t*)&boot_block->dentries[i].file_name));
+    }
+    return 0;
+}
+
 // help functions
 /*
  * void set_entry(int32_t index, int32_t file_type)
@@ -55,7 +81,8 @@ static file_array_t file_array;
  */
 void set_entry(int32_t fd, int32_t file_type)
 {
-    file_array.entries[fd].op_tbl_ptr = op_table_total + file_type;
+    file_array.entries[fd].op_tbl_ptr = &op_table_total[file_type];
+    // PRINT("%#d, %#d, %#d\n",file_array.entries[fd].op_tbl_ptr, op_table_total, op_table_total+file_type);
     file_array.entries[fd].inode = 0;
     file_array.entries[fd].file_position = 0;
     file_array.entries[fd].flags = IN_USE;
@@ -178,18 +205,20 @@ int32_t file_sys_init(module_t *fs)
 
     op_table_total[3].open = terminal_open;
     op_table_total[3].read = terminal_read;
-    op_table_total[3].write = terminal_write;
+    op_table_total[3].write = stdin_write;
     op_table_total[3].close = terminal_close;
+
+    op_table_total[4].open = terminal_open;
+    op_table_total[4].read = stdout_read;
+    op_table_total[4].write = terminal_write;
+    op_table_total[4].close = terminal_close;
 
     // init stdin and stdout
     // stdin is a read-only file which corresponds to keyboard input.
+    // stdout is a write-only file corresponding to terminal output.
     // terminal operations should be implemented in terminal.c by haina
     set_entry(STDIN_FD, 3);
-    file_array.entries[STDIN_FD].op_tbl_ptr->write = stdin_write;
-
-    // stdout is a write-only file corresponding to terminal output.
-    set_entry(STDOUT_FD, 3);
-    file_array.entries[STDOUT_FD].op_tbl_ptr->read = stdout_read;
+    set_entry(STDOUT_FD, 4);
 
     file_array.num_opening = 2;
 
@@ -198,7 +227,7 @@ int32_t file_sys_init(module_t *fs)
     {
         file_array.entries[i].flags = NOT_IN_USE;
     }
-
+    PRINT("init fs\n");
     return 0;
 }
 
@@ -213,27 +242,29 @@ int32_t file_sys_init(module_t *fs)
  */
 int32_t file_sys_open(const uint8_t *filename)
 {
-    dentry_t *copied_dentry;
+    dentry_t copied_dentry;
+    // PRINT("addr copy dentry: %#x\n", &copied_dentry);
     int32_t fd = -1; // the returned file descriptor if succuss
     // reach max opening
     if (file_array.num_opening >= MAX_NUM_OPEN)
     {
-        PRINT("fail to open %s. number of opening files is max.\n", filename);
+        PRINT("fail to open %s . number of opening files is max.\n", filename);
         return -1;
     }
+    // PRINT("start read dentry\n");
     // return != 0, fail to find the file
-    if (read_dentry_by_name(filename, copied_dentry))
+    if (read_dentry_by_name(filename, &copied_dentry))
     {
-        PRINT("fail to open %s. non-existent file.\n", filename);
+        PRINT("fail to open %s . non-existent file.\n", filename);
         return -1;
     }
     // unknown file type, should never happen correctly
-    if (copied_dentry->file_type > 2)
+    if (copied_dentry.file_type > 2)
     {
-        PRINT("fail to open %s. unknown file type\n", filename);
+        PRINT("fail to open %s . unknown file type\n", filename);
         return -1;
     }
-    fd = op_table_total[copied_dentry->file_type].open(filename); // set flag included
+    fd = op_table_total[copied_dentry.file_type].open(filename); // set flag included
     // fail to open, should never happen correctly
     if (fd < 0)
     {
@@ -255,9 +286,14 @@ int32_t file_sys_open(const uint8_t *filename)
 int32_t file_sys_close(int32_t fd)
 {
     // fd is invalid
-    if (fd < 2 || fd >= MAX_NUM_OPEN)
+    if (fd ==0 ||fd== 1)
     {
-        PRINT("fail to close file. invaild file descriptor\n");
+        PRINT("fail to close. cannot close stdin/stdout\n");
+        return -1;
+    }
+     if (fd<0 || fd >= MAX_NUM_OPEN) 
+    {
+        PRINT("fail to close file. invaild file descriptor %d\n", fd);
         return -1;
     }
     // file not opening
@@ -340,8 +376,9 @@ int32_t read_dentry_by_name(const uint8_t *fname, dentry_t *dentry)
     int i; // just for loop
 
     // length of the file name > 32
-    if (strlen((const int8_t *)fname) > FILE_NAME_LENGTH)
+    if (strlen((const int8_t *)fname) > FILE_NAME_LENGTH+1)
     {
+        PRINT("name too loooooong, which is %d\n",strlen((const int8_t *)fname));
         return -1;
     }
     // traverse dentries
@@ -412,7 +449,7 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length
     // offset reach the end of the file
     if (offset >= file_len)
     {
-        PRINT("read nothing. reach to the end\n");
+        PRINT("\n\nread nothing. reach to the end\n");
         return 0;
     }
     uint32_t copy_size = MIN((file_len - offset), length);                       // size to copy
@@ -455,10 +492,10 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length
  */
 int32_t file_open(const uint8_t *filename)
 {
-    dentry_t *file_dentry;
+    dentry_t file_dentry;
     int32_t fd;
     // actually need not check but need to get dentry
-    if (read_dentry_by_name(filename, file_dentry))
+    if (read_dentry_by_name(filename, &file_dentry))
     {
         return -1;
     }
@@ -467,7 +504,7 @@ int32_t file_open(const uint8_t *filename)
     if (fd != -1)
     {
         set_entry(fd, 2); // type is 2 for regular file
-        file_array.entries[fd].inode = file_dentry->inode_num;
+        file_array.entries[fd].inode = file_dentry.inode_num;
     }
     return fd;
 }
@@ -584,7 +621,7 @@ int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
     int32_t copy_size = MIN(nbytes, FILE_NAME_LENGTH);   // size to copy
     if (pst >= boot_block->dir_count)
     {
-        PRINT("read nothing in directory. reach to the end\n");
+        PRINT("\nread nothing in directory. reach to the end\n");
         return 0;
     }
     // copy
@@ -606,7 +643,7 @@ int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
  */
 int32_t dir_write(int32_t fd, const void *buf, int32_t nbytes)
 {
-    PRINT("fail to write. read only\n");
+    PRINT("fail to write . read only\n");
     return -1;
 }
 
@@ -644,7 +681,7 @@ int32_t rtc_user_write(int32_t fd, const void *buf, int32_t nbytes)
  */
 int32_t stdout_read(int32_t fd, void *buf, int32_t nbytes)
 {
-    PRINT("fail to read. write only\n");
+    PRINT("fail to read in stdout. write only\n");
     return -1;
 }
 
@@ -661,6 +698,6 @@ int32_t stdout_read(int32_t fd, void *buf, int32_t nbytes)
  */
 int32_t stdin_write(int32_t fd, const void *buf, int32_t nbytes)
 {
-    PRINT("fail to write. read only\n");
+    PRINT("fail to write in stdin. read only\n");
     return -1;
 }

@@ -192,15 +192,16 @@ int32_t terminal_init(){
     return 0;
 }
 
-int32_t terminal_open(int32_t fd, void* buf, int32_t nbytes){
+int32_t terminal_open(const uint8_t *filename){
     return 0;
 }
 
-int32_t terminal_close(int32_t fd, void* buf, int32_t nbytes){
+int32_t terminal_close(int32_t fd){
     return 0;    
 }
 
-int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
+int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes){
+    // printf("terminal_read");    
     int i;
     int32_t copied;
     uint8_t* to;
@@ -237,7 +238,8 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
     
 }
 
-int32_t terminal_write(int32_t fd, void* buf, int32_t nbytes){
+int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes){
+    
     int i;
     uint8_t output_char;
     if (NULL == buf) return -1; 
@@ -246,6 +248,7 @@ int32_t terminal_write(int32_t fd, void* buf, int32_t nbytes){
         output_char = ((uint8_t*)buf)[i];
         putc(output_char);
     }
+    // printf("\nterminal_write, return %d\n",nbytes);
     return nbytes;  
 }
 
