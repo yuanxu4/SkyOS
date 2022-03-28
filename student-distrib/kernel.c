@@ -7,6 +7,7 @@
  * History:
  * add gdt_desc_ptr           - Mar 17, keyi
  * add init paging part      - Mar 19, keyi
+ * add file system - Mar 27, keyi
  *
  */
 
@@ -19,6 +20,7 @@
 #include "idt.h"
 #include "rtc.h"
 #include "keyboard.h"
+#include "file_system.h"
 
 #define RUN_TESTS
 
@@ -167,9 +169,14 @@ void entry(unsigned long magic, unsigned long addr)
     keyboard_init();
 
     /* rtc ini*/
-    rtc_init();
-    enable_irq(RTC_IRQ);
-    rtc_read_R3();
+    // rtc_init();
+    // enable_irq(RTC_IRQ);
+    // rtc_read_R3();
+
+    if (mbi->mods_count > 0)
+    {
+        file_sys_init((module_t *)mbi->mods_addr);
+    }
 
     /* Enable paging */
     enable_paging();

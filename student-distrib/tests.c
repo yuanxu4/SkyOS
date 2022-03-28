@@ -293,24 +293,23 @@ int file_sys_test()
 	clear();
 
 	// open root
-	fd = open((const uint8_t *)flie_list[0]);
+	fd = file_sys_open((const uint8_t *)flie_list[0]);
 	if (fd != 2)
 	{
 		TEST_PRINT("fail in test open root, fd is %d\n", fd);
 		close_opening();
 		return FAIL;
 	}
-	// read file names in root
 
+	// read file names in root
 	TEST_PRINT("read the root directory\n");
 	for (i = 0; i < NUM_DIR_ENTRY; i++)
 	{
-		// size read
-		tmp = read(fd, buf, FILE_NAME_LENGTH);
+		tmp = file_sys_read(fd, buf, FILE_NAME_LENGTH);
 		if (tmp > 0)
 		{
 			// write -1 fail, 0 succ
-			if (write(STDOUT_FD, buf, tmp))
+			if (file_sys_write(STDOUT_FD, buf, tmp))
 			{
 				TEST_PRINT("fail to write in stdout\n");
 				close_opening();
@@ -346,7 +345,7 @@ int file_sys_test()
 		}
 	}
 	// should return 0 and print reach to the end\n
-	tmp = read(fd, buf, FILE_NAME_LENGTH);
+	tmp = file_sys_read(fd, buf, FILE_NAME_LENGTH);
 	if (!tmp)
 	{
 		TEST_PRINT("fail in test reading at end., read returns %d\n", tmp);
@@ -354,19 +353,19 @@ int file_sys_test()
 		return FAIL;
 	}
 	// try to test stdin and stdout
-	if (!write(STDIN_FD, buf, tmp))
+	if (!file_sys_write(STDIN_FD, buf, tmp))
 	{
 		TEST_PRINT("wrongly write in stdin\n");
 		close_opening();
 		return FAIL;
 	}
-	if (!read(STDOUT_FD, buf, FILE_NAME_LENGTH))
+	if (!file_sys_read(STDOUT_FD, buf, FILE_NAME_LENGTH))
 	{
 		TEST_PRINT("wrongly read in stdout\n");
 		close_opening();
 		return FAIL;
 	}
-	if (!close(STDOUT_FD))
+	if (!file_sys_close(STDOUT_FD))
 	{
 		TEST_PRINT("wrongly close stdout\n");
 		close_opening();
@@ -383,10 +382,10 @@ int file_sys_test()
 	for (i = 1; i < 7; i++)
 	{
 		TEST_PRINT("press a key to awake it (and test stdin craftily)\n");
-		read(STDIN_FD, buf, FILE_NAME_LENGTH);
+		file_sys_read(STDIN_FD, buf, FILE_NAME_LENGTH);
 		clear();
 		TEST_PRINT("try to open file %s\n", flie_list[i]);
-		fd = open((const uint8_t *)flie_list[i]);
+		fd = file_sys_open((const uint8_t *)flie_list[i]);
 		if (fd < 2)
 		{
 			TEST_PRINT("fail to open %s\n", flie_list[i]);
@@ -411,7 +410,7 @@ int file_sys_test()
 		// read file 32B one time
 		do
 		{
-			tmp = read(fd, buf, FILE_NAME_LENGTH);
+			tmp = file_sys_read(fd, buf, FILE_NAME_LENGTH);
 			switch (tmp)
 			{
 			case 0:
@@ -421,7 +420,7 @@ int file_sys_test()
 				close_opening();
 				return FAIL;
 			default:
-				if (write(STDOUT_FD, buf, tmp))
+				if (file_sys_write(STDOUT_FD, buf, tmp))
 				{
 					TEST_PRINT("fail to display file\n");
 					close_opening();
@@ -444,7 +443,7 @@ int file_sys_test()
 
 	TEST_PRINT("press a key to open root again\n");
 
-	fd = open((const uint8_t *)flie_list[0]);
+	fd = file_sys_open((const uint8_t *)flie_list[0]);
 	if (fd != -1)
 	{
 		TEST_PRINT("wrongly open %s\n", flie_list[0]);
@@ -453,10 +452,10 @@ int file_sys_test()
 		return FAIL;
 	}
 	TEST_PRINT("to test opening invaild file, close one file first\n");
-	close(get_num_opening() - 1);
+	file_sys_close(get_num_opening() - 1);
 	TEST_PRINT("CHECK: the number of opening files is %d\n", get_num_opening());
 	TEST_PRINT("try to open invaild file\n");
-	fd = open((const uint8_t *)flie_list[7]);
+	fd = file_sys_open((const uint8_t *)flie_list[7]);
 	if (fd != -1)
 	{
 		TEST_PRINT("wrongly open an invaild file %s\n", flie_list[0]);

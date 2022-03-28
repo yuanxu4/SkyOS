@@ -17,7 +17,7 @@
 #include "multiboot.h"
 #include "types.h"
 
-#define FILE_NAME_LENGTH 32
+#define FILE_NAME_LENGTH 32                                       // 32B, the max length of file name
 #define BLOCK_SIZE 0x1000                                         // 4KB, size of block in this file system
 #define DIR_ENTRY_SIZE 64                                         // 64B, size of directory entry in boot block
 #define NUM_DIR_ENTRY ((BLOCK_SIZE / DIR_ENTRY_SIZE) - 1)         // 63, number of directory entries in boot block
