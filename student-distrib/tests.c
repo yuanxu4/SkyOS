@@ -515,7 +515,9 @@ int rtc_test()
 			printf("faild!!!\n");
 		}
 	}
+	printf("Try to close rtc\n");
 	rtc_close(fd);
+	printf("Successfully close rtc\n");
 	return result;
 }
 
