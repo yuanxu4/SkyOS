@@ -170,9 +170,9 @@ void entry(unsigned long magic, unsigned long addr)
 
     terminal_init();
     /* rtc ini*/
-    // rtc_init();
-    // enable_irq(RTC_IRQ);
-    // rtc_read_R3();
+    rtc_init();
+    enable_irq(RTC_IRQ);
+    rtc_reset_R3();
 
     if (mbi->mods_count > 0)
     {
