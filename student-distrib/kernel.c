@@ -165,11 +165,12 @@ void entry(unsigned long magic, unsigned long addr)
 
     /* keyboard init */
     keyboard_init();
-
+    
+    terminal_init();
     /* rtc ini*/
     rtc_init();
-    enable_irq(RTC_IRQ);
-    rtc_read_R3();
+    // enable_irq(RTC_IRQ);
+    // rtc_read_R3();
 
     /* Enable paging */
     enable_paging();

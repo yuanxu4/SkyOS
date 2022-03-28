@@ -9,6 +9,7 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "i8259.h"
+#include "keyboard.h"
 
 #define PASS 1
 #define FAIL 0
@@ -157,7 +158,6 @@ int pic_garbage_test()
  */
 int keyboard_test(){
 	clear();
-	TEST_HEADER;
 	return PASS;
 }
 
@@ -272,13 +272,34 @@ int paging_test()
 }
 
 /* Checkpoint 2 tests */
+void terminal_test(){
+	clear();
+	int32_t cnt;
+    uint8_t buf[32];
+	uint8_t* buf2 = "391OS> ";
+
+   while (1){
+	   if (-1 == (cnt = terminal_write (1, buf2, 7))) {
+			printf("ERROR writing the terminal! \n");
+		}
+	   if (-1 == (cnt = terminal_read (0, buf, 31))) {
+		printf("ERROR reading the terminal! \n");
+		}else{
+			printf("keyboard buffer is %s \n", buf); 
+		}
+   }
+    
+    
+}
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
 
 /* Test suite entry point */
 void launch_tests(){
-	TEST_OUTPUT("idt_test", idt_test());
+	terminal_test();
+	//keyboard_test();
+	//TEST_OUTPUT("idt_test", idt_test());
 	//TEST_OUTPUT("idt_div0_test", idt_div0_test());	
 	//TEST_OUTPUT("paging_test", paging_test());
 	//TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
