@@ -78,7 +78,7 @@ void rtc_init() {
  * 
  */
  void rtc_interrupt_handler() {
-    // just for test 
+    /* just for test */
     test_interrupts();
     rtc_read_R3();  
     send_eoi(RTC_IRQ);
@@ -97,7 +97,7 @@ void rtc_init() {
 void rtc_read_R3() {
 
     uint32_t flags;
-    cli_and_save(flags);
+    cli_and_save(flags);              
     outb(RTC_REGISTER_C, RTC_INDEX_PORT);  // set the index of register C
     inb(RTC_DATA_PORT);                 // read the register C
     restore_flags(flags);
