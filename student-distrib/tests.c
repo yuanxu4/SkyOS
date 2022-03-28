@@ -8,7 +8,7 @@
 #include "tests.h"
 #include "x86_desc.h"
 #include "lib.h"
-#include "i8259.h"
+#include "rtc.h"
 
 #define PASS 1
 #define FAIL 0
@@ -272,6 +272,35 @@ int paging_test()
 }
 
 /* Checkpoint 2 tests */
+int rtc_test() {
+    TEST_HEADER;
+	int result = PASS;
+	
+	
+    int32_t rate;
+    int32_t ret;
+
+    const uint32_t valid_rate[5] = {2, 4, 16, 128, 1024};
+    const uint32_t test_count = 5;
+
+    int32_t fd = rtc_open((uint8_t *) "rtc");
+
+    for (uint32_t i = 0; i < 5; i++) {
+        rate = valid_rate[i];
+        printf("setting the rate into %uHz", rate);
+		ret = rtc_write(fd, &rate, 4);
+        if (0 != ret) {
+            printf("fail with %d\n", ret);
+            result = FAIL;
+        }
+        for (uint32_t j = 0; j < test_count*valid_rate[i]; j++) {
+            rtc_read(fd, NULL, 0);
+            printf("1");
+		}
+    }
+    rtc_close(fd);
+	return result;
+}
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
