@@ -12,6 +12,7 @@ static uint8_t kb_buf [kb_bufsize];
 /* flag used to decide when can copy */
 static volatile uint8_t copy_flag;
 static uint8_t char_num;
+static uint32_t cur_num;
 /* keycode flag*/
 static uint8_t cap_on_flag, l_shift_on_flag,r_shift_on_flag, l_ctrl_on_flag,r_ctrl_on_flag;
 /* no shift no capson character and numbers */
@@ -116,20 +117,71 @@ void set_flag(uint8_t scancode){
 
 }
 
+/* check_space()
+ * 
+ * Inputs: scancode -- the keyboard scancode
+ * Outputs: void
+ * return: 1 if you need to delet 4 space, 0 if not
+ */
+void check_space(uint8_t output_char) {
+    if(output_char == '\b') {
+        if((char_num > 0) && (char_num != kb_bufsize)){
+            if (kb_buf[char_num-1] == '\t') {
+                putc('\b');
+                putc('\b');
+                putc('\b');
+            }
+        }
+    }
+}
+/* put_changebuf()
+ * 
+ * Inputs: output_char -- the output char
+ * Outputs: void
+ * return: none
+ */
+void put_changebuf(uint8_t output_char) {
+    if(output_char == '\b'){
+        if((char_num != 0) && ((char_num != kb_bufsize)|| (char_num == cur_num))){
+            putc(output_char);
+            if(char_num != kb_bufsize){
+                kb_buf[char_num - 1] = 0;
+            }
+            char_num --;
+            cur_num --;
+        }else if(char_num == kb_bufsize) {
+            putc(output_char);
+            cur_num --;
+        }
+    }else{
+        putc(output_char);
+        cur_num++;
+        if (char_num < kb_bufsize){
+            kb_buf[char_num] = output_char;
+            char_num ++;
+        }else{
+            if(output_char == '\t'){
+                cur_num += 3;
+            }
+            kb_buf[kb_bufsize-1] = '\n';
+        }
+    }
+}
+
 /* scancode_output()
  * 
  * Inputs: void
- * Outputs: void
+ * Outputs: voidf
  * Side Effects: output corresponding keycode to console
  * interrupt occurs
  */
 void scancode_output(uint8_t scancode){
     uint8_t output_char;
-    
 
     /* press Enter */
     if (scancode == ENTER && (copy_flag==0)){
         char_num = 0;
+        cur_num = 0;
         copy_flag = 1;
         kb_buf[kb_bufsize-1] = '\n';
     }
@@ -142,41 +194,21 @@ void scancode_output(uint8_t scancode){
         }
         else if ((l_shift_on_flag||r_shift_on_flag) && (cap_on_flag)){
             output_char = scancode_bothon[scancode];
-            putc(output_char);
-            if (char_num < kb_bufsize){
-                kb_buf[char_num-1] = output_char;
-                char_num ++;
-            }else{
-                kb_buf[kb_bufsize-1] = '\n';
-            }            
+            check_space(output_char);
+            put_changebuf(output_char);        
         }
         else if (l_shift_on_flag||r_shift_on_flag){
             output_char = scancode_shifton[scancode];
-            putc(output_char);
-            if (char_num < kb_bufsize){
-                kb_buf[char_num-1] = output_char;
-                char_num ++;
-            }else{
-                kb_buf[kb_bufsize-1] = '\n';
-            }
+            check_space(output_char);
+            put_changebuf(output_char);
         }else if(cap_on_flag){
             output_char = scancode_capson[scancode];
-            putc(output_char);
-            if (char_num < kb_bufsize){
-                kb_buf[char_num-1] = output_char;
-                char_num ++;
-            }else{
-                kb_buf[kb_bufsize-1] = '\n';
-            }
+            check_space(output_char);
+            put_changebuf(output_char);
         }else{
             output_char = scancode_simple_lowcase[scancode];
-            putc(output_char);
-            if (char_num < kb_bufsize){
-                kb_buf[char_num-1] = output_char;
-                char_num ++;
-            }else{
-                kb_buf[kb_bufsize-1] = '\n';
-            }
+            check_space(output_char);
+            put_changebuf(output_char);
         }
     }
 }

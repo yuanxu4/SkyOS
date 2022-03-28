@@ -352,6 +352,6 @@ void launch_tests(){
 	//TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
 	//TEST_OUTPUT("Keyboard_test", keyboard_test());
 	//TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
-	//TEST_OUTPUT("terminal test", terminal_test());
-	TEST_OUTPUT("rtc_test", rtc_test());
+	TEST_OUTPUT("terminal test", terminal_test());
+	//TEST_OUTPUT("rtc_test", rtc_test());
 }
