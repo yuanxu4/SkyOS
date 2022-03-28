@@ -31,7 +31,7 @@
     } while (0)
 
 #endif
-
+// get the min between a and b
 #define MIN(a, b) (a > b ? b : a)
 
 // File System Utilities, define a file system
@@ -42,32 +42,6 @@ static data_block_t *data_blocks;
 // File System Abstractions
 static jump_table_t op_table_total[NUM_FILE_TYPE]; // op table with 12 ops
 static file_array_t file_array;
-
-
-
-int32_t show_addr(){
-    PRINT("ADDR\n");
-    PRINT("boot block: %#x\n", boot_block);
-    PRINT("inode: %#x\n", inodes);
-    PRINT("op_table_total: %#x\n", op_table_total);
-    PRINT("file array: %#x\n", &file_array);
-    return 0;
-}
-
-int32_t get_file_num()
-{
-    return boot_block->dir_count;
-}
-
-int32_t get_file_name()
-{
-    int i;
-    for (i =0; i<15; i++)
-    {
-        PRINT("index %d, name: %s, %d\n", i, boot_block->dentries[i].file_name, strlen((const int8_t*)&boot_block->dentries[i].file_name));
-    }
-    return 0;
-}
 
 // help functions
 /*
@@ -110,6 +84,29 @@ int32_t find_unused_fd()
     }
     return -1;
 }
+
+/*
+ * int32_t get_file_num()
+ * help function to get number of files in system
+ * Inputs:  none
+ * Outputs: None
+ * Side Effects: none
+ * return value: number of files
+ */
+int32_t get_file_num()
+{
+    return boot_block->dir_count;
+}
+
+// int32_t get_file_name()
+// {
+//     int i;
+//     for (i = 0; i < 15; i++)
+//     {
+//         PRINT("index %d, name: %s, %d\n", i, boot_block->dentries[i].file_name, strlen((const int8_t *)&boot_block->dentries[i].file_name));
+//     }
+//     return 0;
+// }
 
 /*
  * int32_t get_file_size(uint32_t inode)
@@ -286,12 +283,12 @@ int32_t file_sys_open(const uint8_t *filename)
 int32_t file_sys_close(int32_t fd)
 {
     // fd is invalid
-    if (fd ==0 ||fd== 1)
+    if (fd == 0 || fd == 1)
     {
         PRINT("fail to close. cannot close stdin/stdout\n");
         return -1;
     }
-     if (fd<0 || fd >= MAX_NUM_OPEN) 
+    if (fd < 0 || fd >= MAX_NUM_OPEN)
     {
         PRINT("fail to close file. invaild file descriptor %d\n", fd);
         return -1;
@@ -376,16 +373,16 @@ int32_t read_dentry_by_name(const uint8_t *fname, dentry_t *dentry)
     int i; // just for loop
 
     // length of the file name > 32
-    if (strlen((const int8_t *)fname) > FILE_NAME_LENGTH+1)
+    if (strlen((const int8_t *)fname) > MAX_LEN_FILE_NAME + 1)
     {
-        PRINT("name too loooooong, which is %d\n",strlen((const int8_t *)fname));
+        PRINT("name too loooooong, which is %d\n", strlen((const int8_t *)fname));
         return -1;
     }
     // traverse dentries
     for (i = 0; i < boot_block->dir_count; i++)
     {
         // check names, 0 means the same, i.e. find
-        if (!strncmp((const int8_t *)fname, (const int8_t *)boot_block->dentries[i].file_name, FILE_NAME_LENGTH))
+        if (!strncmp((const int8_t *)fname, (const int8_t *)boot_block->dentries[i].file_name, MAX_LEN_FILE_NAME))
         {
             // copy and return
             *dentry = boot_block->dentries[i];
@@ -618,7 +615,7 @@ int32_t dir_close(int32_t fd)
 int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
 {
     uint32_t pst = file_array.entries[fd].file_position; // position in directory
-    int32_t copy_size = MIN(nbytes, FILE_NAME_LENGTH);   // size to copy
+    int32_t copy_size = MIN(nbytes, MAX_LEN_FILE_NAME);  // size to copy
     if (pst >= boot_block->dir_count)
     {
         PRINT("\nread nothing in directory. reach to the end\n");

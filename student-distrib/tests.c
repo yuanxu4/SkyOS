@@ -27,7 +27,7 @@
 #define TEST_PRINT(fmt, ...)        \
 	do                              \
 	{                               \
-		printf("[INFO] ");        \
+		printf("[INFO] ");          \
 		printf(fmt, ##__VA_ARGS__); \
 	} while (0)
 
@@ -46,7 +46,7 @@ static inline void assertion_failure()
 	asm volatile("int $15");
 }
 
-int8_t file_buf[FILE_NAME_LENGTH]; // buffer, avoid out of range
+int8_t file_buf[MAX_LEN_FILE_NAME]; // buffer, avoid out of range
 
 /* Checkpoint 1 tests */
 
@@ -281,13 +281,12 @@ int paging_test()
 
 /* Checkpoint 2 tests */
 
-
 int file_sys_test()
 {
 	clear();
 	TEST_HEADER;
 	int result = PASS;
-	int32_t fd;					  // file desc
+	int32_t fd; // file desc
 
 	// 8 files, 1 root, 2 small files, 2 executables, 2 largefiles, 1 invaild file
 	char *flie_list[8] = {".", "frame0.txt", "frame1.txt", "grep", "ls", "fish", "verylargetextwithverylongname.tx", "wqevfwrtvwev"};
@@ -309,11 +308,11 @@ int file_sys_test()
 	// get_file_name();
 	for (i = 0; i < get_file_num(); i++)
 	{
-		tmp = file_sys_read(fd, file_buf, FILE_NAME_LENGTH);
+		tmp = file_sys_read(fd, file_buf, MAX_LEN_FILE_NAME);
 		if (tmp > 0)
 		{
 			// write -1 fail
-			if (-1==file_sys_write(STDOUT_FD, file_buf, tmp))
+			if (-1 == file_sys_write(STDOUT_FD, file_buf, tmp))
 			{
 				TEST_PRINT("fail to write in stdout\n");
 				close_opening();
@@ -327,8 +326,8 @@ int file_sys_test()
 				close_opening();
 				return FAIL;
 			}
-			align_space(FILE_NAME_LENGTH+4);
-			if (tmp_dentry.file_type ==2)
+			align_space(MAX_LEN_FILE_NAME + 4);
+			if (tmp_dentry.file_type == 2)
 			{
 				printf("file type: 2, size(B): %d\n", get_file_size(tmp_dentry.inode_num));
 			}
@@ -342,17 +341,17 @@ int file_sys_test()
 			TEST_PRINT("fail to read file name at %d\n", i);
 		}
 	}
-continue_test();
-TEST_PRINT("continue to read, should print \"reach to the end\"", i);
+	continue_test();
+	TEST_PRINT("continue to read, should print \"reach to the end\"", i);
 	// should return 0 and print reach to the end\n
-	tmp = file_sys_read(fd, file_buf, FILE_NAME_LENGTH);
+	tmp = file_sys_read(fd, file_buf, MAX_LEN_FILE_NAME);
 	if (tmp)
 	{
 		TEST_PRINT("fail in test reading at end., read returns %d\n", tmp);
 		close_opening();
 		return FAIL;
 	}
-continue_test();
+	continue_test();
 	// try to test stdin and stdout
 	TEST_PRINT("try to write in stdin, read in stdout, close stdout, all should fail\n");
 	if (!file_sys_write(STDIN_FD, file_buf, tmp))
@@ -361,7 +360,7 @@ continue_test();
 		close_opening();
 		return FAIL;
 	}
-	if (!file_sys_read(STDOUT_FD, file_buf, FILE_NAME_LENGTH))
+	if (!file_sys_read(STDOUT_FD, file_buf, MAX_LEN_FILE_NAME))
 	{
 		TEST_PRINT("wrongly read in stdout\n");
 		close_opening();
@@ -381,7 +380,7 @@ continue_test();
 	// open 6 vaild regular files, never close until fail
 	for (i = 1; i < 7; i++)
 	{
-continue_test();
+		continue_test();
 		clear();
 		TEST_PRINT("try to open file %s\n", flie_list[i]);
 		fd = file_sys_open((const uint8_t *)flie_list[i]);
@@ -409,7 +408,7 @@ continue_test();
 		// read file 32B one time
 		do
 		{
-			tmp = file_sys_read(fd, file_buf, FILE_NAME_LENGTH);
+			tmp = file_sys_read(fd, file_buf, MAX_LEN_FILE_NAME);
 			switch (tmp)
 			{
 			case 0:
@@ -419,7 +418,7 @@ continue_test();
 				close_opening();
 				return FAIL;
 			default:
-				if (-1==file_sys_write(STDOUT_FD, file_buf, tmp))
+				if (-1 == file_sys_write(STDOUT_FD, file_buf, tmp))
 				{
 					TEST_PRINT("fail to display file, %d\n", tmp);
 					close_opening();
@@ -428,9 +427,9 @@ continue_test();
 				break;
 			}
 		} while (tmp);
-		TEST_PRINT("have read %d th file(%s) with size %d B\n", i, flie_list[i],get_file_size(tmp_dentry.inode_num));
+		TEST_PRINT("have read %d th file(%s) with size %d B\n", i, flie_list[i], get_file_size(tmp_dentry.inode_num));
 	}
-continue_test();
+	continue_test();
 	// here, 8 files opening
 	TEST_PRINT("now we should reach the max number of opening file\n");
 	printf("Check: the number of opening files is %d\n", get_num_opening());
@@ -441,7 +440,7 @@ continue_test();
 		return FAIL;
 	}
 
-TEST_PRINT("try to open root again, should fail\n");
+	TEST_PRINT("try to open root again, should fail\n");
 	fd = file_sys_open((const uint8_t *)flie_list[0]);
 	if (fd != -1)
 	{
@@ -449,7 +448,7 @@ TEST_PRINT("try to open root again, should fail\n");
 		close_opening();
 		return FAIL;
 	}
-continue_test();
+	continue_test();
 	TEST_PRINT("to test opening invaild file, close one file first\n");
 	file_sys_close(get_num_opening() - 1);
 	printf("Check: the number of opening files is %d\n", get_num_opening());
@@ -468,78 +467,88 @@ continue_test();
 	return result;
 }
 
-
-int rtc_test() {
+int rtc_test()
+{
 	clear();
-    TEST_HEADER;
+	TEST_HEADER;
 	int result = PASS;
-	
-	
-    int32_t rate;
-    int32_t ret,i,j;
 
-    const uint32_t valid_rate[5] = {2, 4, 32, 128, 1024};
-    const uint32_t invalid_rate[5] = {3, 6, 48, 1000, 2048};
-    const uint32_t test_count = 6;
+	int32_t rate;
+	int32_t ret, i, j;
+
+	const uint32_t valid_rate[5] = {2, 4, 32, 128, 1024};
+	const uint32_t invalid_rate[5] = {3, 6, 48, 1000, 2048};
+	const uint32_t test_count = 6;
 
 	printf("try to open the rtc !!\n");
-    int32_t fd = rtc_open((uint8_t *) "rtc");
+	int32_t fd = rtc_open((uint8_t *)"rtc");
 	printf("rtc open success\n");
 
-    for (i = 0; i < 5; i++) {
-        rate = valid_rate[i];
-        printf("setting the rate into %uHz ing...\n", rate);
+	for (i = 0; i < 5; i++)
+	{
+		rate = valid_rate[i];
+		printf("setting the rate into %uHz ing...\n", rate);
 		ret = rtc_write(fd, &rate, 4);
-        if (0 != ret) {
-            printf("fail with %d\n", ret);
-            result = FAIL;
-        }
-        for (j = 0; j < test_count*valid_rate[i]; j++) {
-            rtc_read(fd, NULL, 0);
-            printf("1");
+		if (0 != ret)
+		{
+			printf("fail with %d\n", ret);
+			result = FAIL;
 		}
-    }
-	for (i = 0; i < 5; i++) {
-        rate = invalid_rate[i];
-        printf("setting the rate into invalid %uHz...\n", rate);
+		for (j = 0; j < test_count * valid_rate[i]; j++)
+		{
+			rtc_read(fd, NULL, 0);
+			printf("1");
+		}
+	}
+	for (i = 0; i < 5; i++)
+	{
+		rate = invalid_rate[i];
+		printf("setting the rate into invalid %uHz...\n", rate);
 		ret = rtc_write(fd, &rate, 4);
-        if (0 == ret) {
+		if (0 == ret)
+		{
 			printf("fail with the invalid argument test\n");
-            result = FAIL;
-        }else {
+			result = FAIL;
+		}
+		else
+		{
 			printf("faild!!!\n");
 		}
-    }
-    rtc_close(fd);
+	}
+	rtc_close(fd);
 	return result;
 }
 
-int terminal_test(){
+int terminal_test()
+{
 	clear();
 	int32_t cnt;
-    uint8_t buf[32];
-	int8_t* buf2 = "391OS> ";
+	uint8_t buf[32];
+	int8_t *buf2 = "391OS> ";
 
-   while (1){
-	   if (-1 == (cnt = terminal_write (1, buf2, 7))) {
+	while (1)
+	{
+		if (-1 == (cnt = terminal_write(1, buf2, 7)))
+		{
 			printf("ERROR writing the terminal! \n");
 		}
-	    if (-1 == (cnt = terminal_read (0, buf, 31))) {
-		printf("ERROR reading the terminal! \n");
-		}else{
-			printf("keyboard buffer is %s \n", buf); 
+		if (-1 == (cnt = terminal_read(0, buf, 31)))
+		{
+			printf("ERROR reading the terminal! \n");
 		}
-   }
+		else
+		{
+			printf("keyboard buffer is %s \n", buf);
+		}
+	}
 
-   return 0;
-    
-    
+	return 0;
 }
 
 void continue_test()
 {
 	printf("\n-------press ENTER to awake it (and test stdin craftily)---------\n");
-	file_sys_read(STDIN_FD, file_buf, FILE_NAME_LENGTH);
+	file_sys_read(STDIN_FD, file_buf, MAX_LEN_FILE_NAME);
 }
 
 /* Checkpoint 3 tests */
@@ -548,16 +557,16 @@ void continue_test()
 
 /* Test suite entry point */
 
-void launch_tests(){
-	//keyboard_test();
-	//TEST_OUTPUT("idt_test", idt_test());
-	//TEST_OUTPUT("idt_div0_test", idt_div0_test());	
-	//TEST_OUTPUT("paging_test", paging_test());
-	//TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
-	//TEST_OUTPUT("Keyboard_test", keyboard_test());
-	//TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
-	//TEST_OUTPUT("terminal test", terminal_test());
-	//TEST_OUTPUT("rtc_test", rtc_test());
+void launch_tests()
+{
+	// keyboard_test();
+	// TEST_OUTPUT("idt_test", idt_test());
+	// TEST_OUTPUT("idt_div0_test", idt_div0_test());
+	// TEST_OUTPUT("paging_test", paging_test());
+	// TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
+	// TEST_OUTPUT("Keyboard_test", keyboard_test());
+	// TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
+	// TEST_OUTPUT("terminal test", terminal_test());
+	// TEST_OUTPUT("rtc_test", rtc_test());
 	TEST_OUTPUT("file_sys_test", file_sys_test());
-
 }

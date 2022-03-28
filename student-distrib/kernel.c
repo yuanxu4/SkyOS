@@ -167,7 +167,7 @@ void entry(unsigned long magic, unsigned long addr)
 
     /* keyboard init */
     keyboard_init();
-    
+
     terminal_init();
     /* rtc ini*/
     // rtc_init();
