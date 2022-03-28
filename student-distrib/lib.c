@@ -233,7 +233,7 @@ void putc(uint8_t c) {
     else if (c == '\t')
     {
         /* need modify */
-        if ((screen_x == NUM_COLS-1) && (screen_y == NUM_ROWS-1))
+        if ((screen_x >= NUM_COLS-4) && (screen_y == NUM_ROWS-1))
         {
             for (j = 0; j<NUM_ROWS-1; j++){
                 for (k = 0; k<NUM_COLS; k++){

@@ -241,6 +241,11 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
     to = buf;
     from = kb_buf;
     if ((NULL == buf)||(NULL == kb_buf)) return -1;
+    if (fd != 0)    return -1;
+    /* the read bytes cannot be more than maximum buffer size */
+    if (nbytes > kb_bufsize){
+        nbytes = kb_bufsize;
+    }
     
     copied = 0;
     while ('\n' != *from) {
@@ -272,7 +277,8 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
 int32_t terminal_write(int32_t fd, void* buf, int32_t nbytes){
     int i;
     uint8_t output_char;
-    if (NULL == buf) return -1; 
+    if (NULL == buf) return -1;
+    if (fd != 1)    return -1; 
     
     for (i = 0; i < nbytes; i++){
         output_char = ((uint8_t*)buf)[i];
