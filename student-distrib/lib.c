@@ -191,8 +191,26 @@ void update_cursor(int x, int y)
 void putc(uint8_t c) {
     int i,j,k;
     if(c == '\n' || c == '\r') {
-        screen_y++;
-        screen_x = 0;
+        if (screen_y == NUM_ROWS-1)
+        {
+            for (j = 0; j<NUM_ROWS-1; j++){
+                for (k = 0; k<NUM_COLS; k++){
+                    *(uint8_t *)(video_mem + ((NUM_COLS * j + k) << 1)) =
+                    *(uint8_t *)(video_mem + ((NUM_COLS * (j+1) + k) << 1));
+                }
+            }
+            /* last line of screen */
+            for (k=0; k<NUM_COLS; k++){
+                *(uint8_t *)(video_mem + ((NUM_COLS * (NUM_ROWS-1) + k) << 1)) = ' ';
+                *(uint8_t *)(video_mem + ((NUM_COLS * (NUM_ROWS-1) + k) << 1) + 1) = ATTRIB;            
+            }           
+            screen_x = 0;
+            screen_y = NUM_ROWS - 1;
+        }else{
+            screen_y++;
+            screen_x = 0;
+        }
+        
     }
     else if (c == 0){
         /* do nothing */

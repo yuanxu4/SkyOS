@@ -282,7 +282,7 @@ void terminal_test(){
 	   if (-1 == (cnt = terminal_write (1, buf2, 7))) {
 			printf("ERROR writing the terminal! \n");
 		}
-	   if (-1 == (cnt = terminal_read (0, buf, 31))) {
+	    if (-1 == (cnt = terminal_read (0, buf, 31))) {
 		printf("ERROR reading the terminal! \n");
 		}else{
 			printf("keyboard buffer is %s \n", buf); 
