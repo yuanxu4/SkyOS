@@ -7,17 +7,17 @@
 #include "types.h"
 
 /*** default number ***/
-#define IDT_BY_INTEL_START 0x00   //interupt defined by intel 0x00 - 0x1F
-#define IDT_BY_INTEL_END   0x1F
-#define IDT_BY_PIC_START   0x20   //interupt defined by PIC 0x20 - 0x2F
-#define IDT_BY_PIC_END     0x2F
-#define IDT_BY_SYSCALL_START    0x80    //interupt defined by system call 0x80
+#define IDT_BY_INTEL_START 0x00 // interupt defined by intel 0x00 - 0x1F
+#define IDT_BY_INTEL_END 0x1F
+#define IDT_BY_PIC_START 0x20 // interupt defined by PIC 0x20 - 0x2F
+#define IDT_BY_PIC_END 0x2F
+#define IDT_BY_SYSCALL_START 0x80 // interupt defined by system call 0x80
 
-#define IDT_BY_KEYBOARD    0x21     //interupt by keyboard
-#define IDT_BY_RTC         0x28     //interupt by RTC
+#define IDT_BY_KEYBOARD 0x21 // interupt by keyboard
+#define IDT_BY_RTC 0x28      // interupt by RTC
 
 /*** define function ***/
-void idt_init();    //idt initialize function
+void idt_init(); // idt initialize function
 
 /** exception handlers **/
 extern void IDT_EXCEPTION_0();
@@ -48,8 +48,8 @@ extern void IDT_EXCEPTION_30();
 extern void IDT_EXCEPTION_31();
 
 /** interupt handlers **/
-extern void IDT_INTERUPT_33();     //keyboard
-extern void IDT_INTERUPT_40();     //RTC
+extern void IDT_INTERUPT_33(); // keyboard
+extern void IDT_INTERUPT_40(); // RTC
 
 /** syscall handlers **/
 extern void IDT_SYSCALL();
@@ -59,7 +59,6 @@ void print_exception(uint32_t exception_num);
 
 /** cp1 indentify syscall **/
 void print_syscall(uint32_t syscall_num);
-
 
 #endif
 
