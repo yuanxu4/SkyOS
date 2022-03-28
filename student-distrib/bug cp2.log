@@ -10,3 +10,61 @@ Description:
 Solution:
     this is caused by the when we check the character in buffer we compare with the "\t" not '\t'
     this lead to different hex value and fail to delete the 4 space.
+
+<--------------------------------------------------------->
+                          BUG 1                          
+<--------------------------------------------------------->
+Time:
+    2022.3.27.
+Creator:
+    Haina Lou
+Description:
+    When the keyboard buffer is filled with 127 bytes, we forget to add '\n' to the end of buffer instead we add ' '
+    and the shared flag which is used to check if we press enter has be changed to ' ' strangely
+Reason:
+    maybe there is memory leak or stack overlap
+Solution:
+    add '\n' to the end of keyboard buffer after reaching 127 bytes.
+
+<--------------------------------------------------------->
+                          BUG 2                          
+<--------------------------------------------------------->
+Time:
+    2022.3.27.
+Creator:
+    Haina Lou
+Description:
+    When we press tab at the last four characters of screen, the screen will not get scrolled down and new
+    character will start at the beginning of line. 
+Reason:
+    The checking scrollling logic is not met with the tab condition
+Solution:
+    if Screen_x is at the range of last four space and screen_y is last line, it will scroll down.
+
+<--------------------------------------------------------->
+                          BUG 3                          
+<--------------------------------------------------------->
+Time:
+    2022.3.28.
+Creator:
+    Keyi
+Description:
+    Get an exception E in file system function file_sys_open ()
+Reason:
+    That means there is a wrong dereference occurred. Then I check every pointer used and find the error is in “dentry_t *copied_dentry;” I want to use a dentry object to store the result of read_dentry_by_name (). However, I use the uninitialized pointer (it’s 0x00000080 when I find this bug), so the error happens when the function tries to dereference it.
+Solution:
+Change to “dentry_t copied_dentry;” and pass &copied_dentry into read_dentry_by_name ().
+
+<--------------------------------------------------------->
+                          BUG 3                          
+<--------------------------------------------------------->
+Time:
+    2022.3.28.
+Creator:
+    Keyi
+Description:
+    During the test, when I try to write something into stdout, contents are display on the screen, but test says it fails.
+Reason:
+    I use terminal_write () as the write function of stdout. And I think it should return 0 for success and -1 for failure, so in the test code, I check if the return value is 0. However, the function terminal_write () not written by me returns the number of bytes written. So, the return value should be nonzero for success. Then test program says it is wrong.
+Solution:
+Change the test code to march the interfaces of functions.
