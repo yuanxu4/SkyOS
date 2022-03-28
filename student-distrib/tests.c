@@ -9,6 +9,7 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "i8259.h"
+#include "file_system.h"
 #include "keyboard.h"
 #include "rtc.h"
 
@@ -23,9 +24,9 @@
 
 #define TEST_PRINT_MODE 1
 #if TEST_PRINT_MODE
-#define TEST_PRINT(fmt, ...)                                  \
-	do                                                        \
-	{                                                         \
+#define TEST_PRINT(fmt, ...)        \
+	do                              \
+	{                               \
 		printf(fmt, ##__VA_ARGS__); \
 	} while (0)
 
@@ -76,26 +77,27 @@ int idt_test()
 
 // add more tests here
 /* IDT_div0_test
- * 
+ *
  * Inputs: None
  * Outputs: the exception 0 or fail
  * Side Effects: None
  * Coverage: the exception 0 ---- div 0
  * Files: x86_desc.h/S
  */
-int idt_div0_test(){
+int idt_div0_test()
+{
 	TEST_HEADER;
 
-	unsigned long div = 10;		//random chosed num
-	unsigned long zero = 0;		//0
+	unsigned long div = 10; // random chosed num
+	unsigned long zero = 0; // 0
 	unsigned result;
-	result = div / zero;	//implement div 0
+	result = div / zero; // implement div 0
 
 	return FAIL;
 }
 
-/* 
- * 
+/*
+ *
  * check for the dereference
  * Inputs: None
  * Outputs: PASS/FAIL
@@ -103,7 +105,8 @@ int idt_div0_test(){
  * Coverage: paging, idt
  * Files: x86_desc.h/S
  */
-int idt_dereference_test(){
+int idt_dereference_test()
+{
 	TEST_HEADER;
 	int result = PASS;
 	// // test1: dereference in 0-4MB outside video memory
@@ -115,7 +118,6 @@ int idt_dereference_test(){
 	// 	/* should fault */
 	// 	result = FAIL;
 	// }
-
 
 	// test2: dereference partly <8MB, partly >8MB
 	long long *tmp2;
@@ -129,6 +131,7 @@ int idt_dereference_test(){
 
 	return result;
 }
+
 /* pic_garbage_test - Example
  *
  * Asserts that first 10 IDT entries are not NULL
@@ -142,14 +145,14 @@ int pic_garbage_test()
 {
 	TEST_HEADER;
 	int result = PASS;
-	
+
 	enable_irq(17);
 	enable_irq(-1);
 	return result;
 }
 
-/* 
- * 
+/*
+ *
  * keyboard test
  * Inputs: None
  * Outputs: PASS
@@ -157,7 +160,8 @@ int pic_garbage_test()
  * Coverage: keyboard test
  * Files: x86_desc.h/S
  */
-int keyboard_test(){
+int keyboard_test()
+{
 	clear();
 	return PASS;
 }
@@ -273,6 +277,201 @@ int paging_test()
 }
 
 /* Checkpoint 2 tests */
+
+
+int file_sys_test()
+{
+	TEST_HEADER;
+	int result = PASS;
+
+	int32_t fd;					  // file desc
+	int8_t buf[FILE_NAME_LENGTH]; // buffer, avoid out of range
+	// 8 files, 1 root, 2 small files, 2 executables, 2 largefiles, 1 invaild file
+	const char *flie_list[8] = {".", "frame0.txt", "frame1.txt", "grep", "ls", "fish", "verylargetextwithverylongname.tx", "wqevfwrtvwev"};
+	int32_t tmp;
+	dentry_t *tmp_dentry;
+	int i;
+
+	clear();
+
+	// open root
+	fd = file_sys_open((const uint8_t *)flie_list[0]);
+	if (fd != 2)
+	{
+		TEST_PRINT("fail in test open root, fd is %d\n", fd);
+		close_opening();
+		return FAIL;
+	}
+
+	// read file names in root
+	TEST_PRINT("read the root directory\n");
+	for (i = 0; i < NUM_DIR_ENTRY; i++)
+	{
+		tmp = file_sys_read(fd, buf, FILE_NAME_LENGTH);
+		if (tmp > 0)
+		{
+			// write -1 fail, 0 succ
+			if (file_sys_write(STDOUT_FD, buf, tmp))
+			{
+				TEST_PRINT("fail to write in stdout\n");
+				close_opening();
+				return FAIL;
+			}
+			// check file type and size
+			// -1 fail, 0 succ
+			if (read_dentry_by_name((const uint8_t *)buf, tmp_dentry))
+			{
+				TEST_PRINT("\nfail to find file name\n");
+				close_opening();
+				return FAIL;
+			}
+			switch (tmp_dentry->file_type)
+			{
+			case 0:
+				TEST_PRINT("file type: RTC\n");
+				break;
+			case 1:
+				TEST_PRINT("file type: directory\n");
+				break;
+			case 2:
+				TEST_PRINT("file type: regular file, size(B): %d\n", get_file_size(tmp_dentry->inode_num));
+				break;
+			default:
+				TEST_PRINT("file type: ???\n");
+				break;
+			}
+		}
+		else
+		{
+			TEST_PRINT("\nfail to read file name at %d\n", i);
+		}
+	}
+	// should return 0 and print reach to the end\n
+	tmp = file_sys_read(fd, buf, FILE_NAME_LENGTH);
+	if (!tmp)
+	{
+		TEST_PRINT("fail in test reading at end., read returns %d\n", tmp);
+		close_opening();
+		return FAIL;
+	}
+	// try to test stdin and stdout
+	if (!file_sys_write(STDIN_FD, buf, tmp))
+	{
+		TEST_PRINT("wrongly write in stdin\n");
+		close_opening();
+		return FAIL;
+	}
+	if (!file_sys_read(STDOUT_FD, buf, FILE_NAME_LENGTH))
+	{
+		TEST_PRINT("wrongly read in stdout\n");
+		close_opening();
+		return FAIL;
+	}
+	if (!file_sys_close(STDOUT_FD))
+	{
+		TEST_PRINT("wrongly close stdout\n");
+		close_opening();
+		return FAIL;
+	}
+
+	close_opening();
+
+	TEST_PRINT("cooooool!!!! pass test about root\n ");
+	TEST_PRINT("then try to open 6 vaild regular files\n");
+	TEST_PRINT("but the file system wants to sleep! \n");
+
+	// open 6 vaild regular files, never close until fail
+	for (i = 1; i < 7; i++)
+	{
+		TEST_PRINT("press a key to awake it (and test stdin craftily)\n");
+		file_sys_read(STDIN_FD, buf, FILE_NAME_LENGTH);
+		clear();
+		TEST_PRINT("try to open file %s\n", flie_list[i]);
+		fd = file_sys_open((const uint8_t *)flie_list[i]);
+		if (fd < 2)
+		{
+			TEST_PRINT("fail to open %s\n", flie_list[i]);
+			// should close other opening files for safty
+			close_opening();
+			return FAIL;
+		}
+		if (read_dentry_by_name((const uint8_t *)buf, tmp_dentry))
+		{
+			TEST_PRINT("fail to find file\n");
+			close_opening();
+			return FAIL;
+		}
+		if (tmp_dentry->file_type != 2)
+		{
+			TEST_PRINT("get wrong file type\n");
+			close_opening();
+			return FAIL;
+		}
+		TEST_PRINT("the size of file is %d. below is the content\n", get_file_size(tmp_dentry->inode_num));
+
+		// read file 32B one time
+		do
+		{
+			tmp = file_sys_read(fd, buf, FILE_NAME_LENGTH);
+			switch (tmp)
+			{
+			case 0:
+				break;
+			case -1:
+				TEST_PRINT("fail to read completely\n");
+				close_opening();
+				return FAIL;
+			default:
+				if (file_sys_write(STDOUT_FD, buf, tmp))
+				{
+					TEST_PRINT("fail to display file\n");
+					close_opening();
+					return FAIL;
+				}
+				break;
+			}
+		} while (tmp);
+		TEST_PRINT("done...\n");
+	}
+	// here, 8 files opening
+	TEST_PRINT("now we should reach the max number of opening file\n");
+	TEST_PRINT("CHECK: the number of opening files is %d\n", get_num_opening());
+	if (get_num_opening() != 8)
+	{
+		TEST_PRINT("fail in test opening files\n");
+		close_opening();
+		return FAIL;
+	}
+
+	TEST_PRINT("press a key to open root again\n");
+
+	fd = file_sys_open((const uint8_t *)flie_list[0]);
+	if (fd != -1)
+	{
+		TEST_PRINT("wrongly open %s\n", flie_list[0]);
+		// should close other opening files for safty
+		close_opening();
+		return FAIL;
+	}
+	TEST_PRINT("to test opening invaild file, close one file first\n");
+	file_sys_close(get_num_opening() - 1);
+	TEST_PRINT("CHECK: the number of opening files is %d\n", get_num_opening());
+	TEST_PRINT("try to open invaild file\n");
+	fd = file_sys_open((const uint8_t *)flie_list[7]);
+	if (fd != -1)
+	{
+		TEST_PRINT("wrongly open an invaild file %s\n", flie_list[0]);
+		// should close other opening files for safty
+		close_opening();
+		return FAIL;
+	}
+	clear();
+	TEST_PRINT("The file system wins :((((\n");
+	close_opening();
+	return result;
+}
+
+
 int rtc_test() {
 	clear();
     TEST_HEADER;
@@ -339,11 +538,13 @@ int terminal_test(){
     
     
 }
+
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
 
 /* Test suite entry point */
+
 void launch_tests(){
 	//keyboard_test();
 	//TEST_OUTPUT("idt_test", idt_test());
@@ -353,5 +554,7 @@ void launch_tests(){
 	//TEST_OUTPUT("Keyboard_test", keyboard_test());
 	//TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
 	//TEST_OUTPUT("terminal test", terminal_test());
-	TEST_OUTPUT("rtc_test", rtc_test());
+	//TEST_OUTPUT("rtc_test", rtc_test());
+	TEST_OUTPUT("file_sys_test", file_sys_test());
+
 }
