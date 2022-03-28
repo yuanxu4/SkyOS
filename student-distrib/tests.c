@@ -50,29 +50,44 @@ int idt_test(){
 
 /* Checkpoint 2 tests */
 int rtc_test() {
+	clear();
     TEST_HEADER;
 	int result = PASS;
 	
 	
     int32_t rate;
-    int32_t ret;
+    int32_t ret,i,j;
 
-    const uint32_t valid_rate[5] = {2, 4, 16, 128, 1024};
-    const uint32_t test_count = 5;
+    const uint32_t valid_rate[5] = {2, 4, 32, 128, 1024};
+    const uint32_t invalid_rate[5] = {3, 6, 48, 1000, 2048};
+    const uint32_t test_count = 6;
 
+	printf("try to open the rtc !!\n");
     int32_t fd = rtc_open((uint8_t *) "rtc");
+	printf("rtc open success\n");
 
-    for (uint32_t i = 0; i < 5; i++) {
+    for (i = 0; i < 5; i++) {
         rate = valid_rate[i];
-        printf("setting the rate into %uHz", rate);
+        printf("setting the rate into %uHz ing...\n", rate);
 		ret = rtc_write(fd, &rate, 4);
         if (0 != ret) {
             printf("fail with %d\n", ret);
             result = FAIL;
         }
-        for (uint32_t j = 0; j < test_count*valid_rate[i]; j++) {
+        for (j = 0; j < test_count*valid_rate[i]; j++) {
             rtc_read(fd, NULL, 0);
             printf("1");
+		}
+    }
+	for (i = 0; i < 5; i++) {
+        rate = invalid_rate[i];
+        printf("setting the rate into invalid %uHz...\n", rate);
+		ret = rtc_write(fd, &rate, 4);
+        if (0 == ret) {
+			printf("fail with the invalid argument test\n");
+            result = FAIL;
+        }else {
+			printf("faild!!!\n");
 		}
     }
     rtc_close(fd);

@@ -184,6 +184,7 @@ int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes) {
     outb(RTC_REGISTER_A, RTC_INDEX_PORT);   // reset the index
     outb((prev & 0xF0) | rate, RTC_DATA_PORT); // set the rate to the frequency
     restore_flags(flags);
+    return 0;
 
 }
 
