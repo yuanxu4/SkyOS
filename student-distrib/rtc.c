@@ -170,7 +170,7 @@ int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes) {
     int32_t frequency = *(int32_t*) buf;
     int32_t rate = RTC_RATE_2 + 1;
     /* check for the valid rate*/
-    if( (RTC_MAX_FRE < frequency) || (RTC_MIN_FRE > frequency) || (frequency & (frequency - 1) != 0))
+    if( (RTC_MAX_FRE < frequency) || (RTC_MIN_FRE > frequency) || ((frequency & (frequency - 1)) != 0))
         return -1;
     /* frequency =  32768 >> (rate-1) */
     while(frequency != 1) {
