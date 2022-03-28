@@ -521,30 +521,29 @@ int rtc_test()
 	return result;
 }
 
-int terminal_test()
-{
-	clear();
+int terminal_test(){
+	clear();	// clear the screen
 	int32_t cnt;
-	uint8_t buf[32];
-	int8_t *buf2 = "391OS> ";
+    int8_t buf[32];		
+	uint8_t* buf2 = (uint8_t*)"391OS> ";
 
-	while (1)
-	{
-		if (-1 == (cnt = terminal_write(1, buf2, 7)))
-		{
+   while (1){
+	    if (-1 == (cnt = terminal_write (1, buf2, 7))) {	// write the and terminal read
 			printf("ERROR writing the terminal! \n");
 		}
-		if (-1 == (cnt = terminal_read(0, buf, 31)))
-		{
+	    if (-1 == (cnt = terminal_read (0, buf, 32))) {
 			printf("ERROR reading the terminal! \n");
+		}else{
+			printf("\n");
+			printf("keyboard buffer is %s \n", buf); 
 		}
-		else
-		{
-			printf("keyboard buffer is %s \n", buf);
+		printf("Writing terminal read value: ");
+		if (-1 == (cnt = terminal_write (1, buf, 32))) {	
+			printf("ERROR writing the terminal! \n");
+		}else{			
+			printf("\n");
 		}
-	}
-
-	return 0;
+   }
 }
 
 void continue_test()

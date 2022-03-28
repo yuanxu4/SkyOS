@@ -24,7 +24,8 @@
 #define caps_release 0xBA
 #define l_control 0x1D
 #define l_control_release 0x9D
-#define L 0x26
+#define L               0x26
+#define DELETE_NUM      14
 
 void keyboard_init(void);
 int32_t terminal_init();

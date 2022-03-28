@@ -12,6 +12,7 @@ static uint8_t kb_buf[kb_bufsize];
 /* flag used to decide when can copy */
 static volatile uint8_t copy_flag;
 static uint8_t char_num;
+static uint32_t cur_num;
 /* keycode flag*/
 static uint8_t cap_on_flag, l_shift_on_flag, r_shift_on_flag, l_ctrl_on_flag, r_ctrl_on_flag;
 /* no shift no capson character and numbers */
@@ -84,47 +85,104 @@ void keyboard_handler(void)
     send_eoi(KEYBARD_IRQ);
 }
 
-void set_flag(uint8_t scancode)
-{
-    switch (scancode)
-    {
-    case l_shift:
-        l_shift_on_flag = 1;
-        break;
-    case l_shift_release:
-        l_shift_on_flag = 0;
-        break;
-    case r_shift:
-        r_shift_on_flag = 1;
-        break;
-    case r_shift_release:
-        r_shift_on_flag = 0;
-        break;
-    case caps:
-        if (cap_on_flag == 1)
-        {
-            cap_on_flag = 0;
+
+/* set_flag() 
+ * called when key pressed
+ * Inputs: scancode -- the key we press
+ * Outputs: void
+ * Side Effects: handle keyboard scancode
+ * if it is shift turn on the shift on mode 
+ * if caps on turn on the capslock on mode
+ * and if release the keypress, clear it 
+ * interrupt occurs
+ */
+void set_flag(uint8_t scancode){
+    switch (scancode){
+        case l_shift:
+            l_shift_on_flag = 1;    // turn on th shift on flag
+            break;
+        case l_shift_release:
+            l_shift_on_flag = 0;    // turn off the shift on flag if release
+            break;
+        case r_shift:
+            r_shift_on_flag = 1;
+            break;
+        case r_shift_release:
+            r_shift_on_flag = 0;
+            break;
+        case caps:
+            if (cap_on_flag == 1){  // if the caps has on
+                cap_on_flag = 0;    // caps change back to 0
+            }else{  
+                cap_on_flag = 1;
+            }
+            break;
+        case l_control:
+            l_ctrl_on_flag = 1;
+            break;
+        case l_control_release:
+            l_ctrl_on_flag = 0;
+            break;
+        default:
+            break;
+    }
+}
+
+/* check_space()
+ * 
+ * Inputs: scancode -- the keyboard scancode
+ * Outputs: void
+ * return: 1 if you need to delet 4 space, 0 if not
+ */
+void check_space(uint8_t output_char) {
+    if(output_char == '\b') {
+        if((char_num > 0) && (char_num != kb_bufsize)){
+            if (kb_buf[char_num-1] == '\t') {   // delete all space if \t
+                putc('\b');
+                putc('\b');
+                putc('\b');
+            }
         }
-        else
-        {
-            cap_on_flag = 1;
+    }
+}
+/* put_changebuf()
+ * 
+ * Inputs: output_char -- the output char
+ * Outputs: void
+ * return: none
+ */
+void put_changebuf(uint8_t output_char) {
+    if(output_char == '\b'){        // if backspace 
+        if((char_num != 0) && ((char_num != kb_bufsize)|| (char_num == cur_num))){
+            putc(output_char);
+            if(char_num != kb_bufsize){
+                kb_buf[char_num - 1] = 0;   // reset to 0 
+            }
+            char_num --;        // number of characters in buffer decrement
+            cur_num --;
+        }else if(char_num == kb_bufsize) {
+            putc(output_char);      // if larger than buffer size only putc
+            cur_num --;
         }
-        break;
-    case l_control:
-        l_ctrl_on_flag = 1;
-        break;
-    case l_control_release:
-        l_ctrl_on_flag = 0;
-        break;
-    default:
-        break;
+    }else{
+        putc(output_char);      
+        cur_num++;
+        if (char_num < kb_bufsize){
+            kb_buf[char_num] = output_char;
+            char_num ++;
+        }else{
+            if(output_char == '\t'){    // if output char number + 3
+                cur_num += 3;
+            }
+            kb_buf[kb_bufsize-1] = '\n';
+        }
     }
 }
 
 /* scancode_output()
  *
  * Inputs: void
- * Outputs: void
+ * Outputs: voidf
  * Side Effects: output corresponding keycode to console
  * interrupt occurs
  */
@@ -133,121 +191,120 @@ void scancode_output(uint8_t scancode)
     uint8_t output_char;
 
     /* press Enter */
-    if (scancode == ENTER && (copy_flag == 0))
-    {
+    if (scancode == ENTER && (copy_flag==0)){
+        /* clean all the numbers we count */
+        if (char_num != kb_bufsize){
+            kb_buf[char_num] = '\n';
+        }else{
+            kb_buf[kb_bufsize-1] = '\n';
+        }
         char_num = 0;
+        cur_num = 0;
         copy_flag = 1;
-        kb_buf[kb_bufsize - 1] = '\n';
     }
 
     /* if scancode is in press range */
     if (scancode <= keynum && (copy_flag == 0))
     {
         /* find corresponding keycode */
-        if (l_ctrl_on_flag && (scancode == L))
-        {
-            clear();
+        /* press ctrl+ l */
+        if(l_ctrl_on_flag && (scancode == L)){
+            clear();                
         }
-        else if ((l_shift_on_flag || r_shift_on_flag) && (cap_on_flag))
-        {
+        /* shift and capslock all on */
+        else if ((l_shift_on_flag||r_shift_on_flag) && (cap_on_flag)){
             output_char = scancode_bothon[scancode];
-            putc(output_char);
-            if (char_num < kb_bufsize)
-            {
-                kb_buf[char_num - 1] = output_char;
-                char_num++;
-            }
-            else
-            {
-                kb_buf[kb_bufsize - 1] = '\n';
-            }
+            check_space(output_char);   // check if there is tab  
+            put_changebuf(output_char);     //change the keyboard buffer        
         }
-        else if (l_shift_on_flag || r_shift_on_flag)
-        {
+        /* only shift on */
+        else if (l_shift_on_flag||r_shift_on_flag){
             output_char = scancode_shifton[scancode];
-            putc(output_char);
-            if (char_num < kb_bufsize)
-            {
-                kb_buf[char_num - 1] = output_char;
-                char_num++;
-            }
-            else
-            {
-                kb_buf[kb_bufsize - 1] = '\n';
-            }
-        }
-        else if (cap_on_flag)
-        {
+            check_space(output_char);
+            put_changebuf(output_char);     //change the keyboard buffer
+            /* only capslock on */
+        }else if(cap_on_flag){
             output_char = scancode_capson[scancode];
-            putc(output_char);
-            if (char_num < kb_bufsize)
-            {
-                kb_buf[char_num - 1] = output_char;
-                char_num++;
-            }
-            else
-            {
-                kb_buf[kb_bufsize - 1] = '\n';
-            }
-        }
-        else
-        {
+            check_space(output_char);
+            put_changebuf(output_char);     //change the keyboard buffer
+        }else{
             output_char = scancode_simple_lowcase[scancode];
-            putc(output_char);
-            if (char_num < kb_bufsize)
-            {
-                kb_buf[char_num - 1] = output_char;
-                char_num++;
-            }
-            else
-            {
-                kb_buf[kb_bufsize - 1] = '\n';
-            }
+            check_space(output_char);
+            put_changebuf(output_char);     //change the keyboard buffer
         }
     }
 }
-
-int32_t terminal_init()
-{
+/* terminal_init()
+ * 
+ * Inputs: void
+ * Outputs: void
+ * Side Effects: init terminal 
+ * initliza the copy flag to 0 and 
+ * enable cursor and clear keyboard buffer
+ * 
+ */
+int32_t terminal_init(){
     int i;
     copy_flag = 0;
     /* 25 is the number of rows in the terminal */
-    enable_cursor(0, 25);
-    for (i = 0; i < kb_bufsize; i++)
-    {
-        kb_buf[i] = 0;
+    enable_cursor(0,25); 
+    /* clear all the keyboard buffer*/       
+    for (i = 0; i < kb_bufsize; i++){
+        kb_buf[i] = 0; 
     }
     return 0;
 }
 
-int32_t terminal_open(const uint8_t *filename)
-{
+/* terminal_open()
+ * 
+ * Inputs: void
+ * Outputs: void
+ * Side Effects: open terminal 
+ * 
+ */
+int32_t terminal_open(const uint8_t *filename){
     return 0;
 }
 
-int32_t terminal_close(int32_t fd)
-{
-    return 0;
+/* terminal_close()
+ * 
+ * Inputs: void
+ * Outputs: void
+ * Side Effects: close terminal 
+ * 
+ */
+int32_t terminal_close(int32_t fd){
+    return 0;    
 }
 
-int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
-{
-    // printf("terminal_read");
+/* terminal_read()
+ * 
+ * Inputs: fd 
+ * buf--buffer we store the input of keyboard
+ * nbytes-- the number of bytes we want to read
+ * Outputs: void
+ * Side Effects: read keyboard buf and copy it 
+ * into buf, the maximum bytes in the buf is 128
+ * bytes 
+ * 
+ */
+int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
     int i;
-    int32_t copied;
-    uint8_t *to;
-    uint8_t *from;
-    while (copy_flag == 0)
-    {
-    }
+    int32_t copied;     // number has copied
+    uint8_t* to;        // copy to 
+    uint8_t* from;      // copy from 
+    while(copy_flag == 0){} // read function waiting 
     to = buf;
     from = kb_buf;
-    if ((NULL == buf) || (NULL == kb_buf))
-        return -1;
-
+    if ((NULL == buf)||(NULL == kb_buf)) return -1;
+    if (fd != 0)    return -1;  // if fd is not right
+    /* the read bytes cannot be more than maximum buffer size */
+    if (nbytes > kb_bufsize){       // if the nbytes write larger than bufsize
+        nbytes = kb_bufsize;
+    }
+    
     copied = 0;
-    while ('\n' != *from)
-    {
+    while ('\n' != *from) {     // while has not read the \n
         *to++ = *from++;
         if (++copied == nbytes)
         {
@@ -273,21 +330,29 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
         kb_buf[i] = 0;
     }
     copy_flag = 0;
-    return copied;
+    return copied;  
+    
 }
 
-int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes)
-{
-
+/* terminal_write()
+ * 
+ * Inputs: fd 
+ * buf--buffer we store the input of keyboard
+ * nbytes-- the number of bytes we want to write
+ * Outputs: void
+ * Side Effects: write from keyboard buf
+ *
+ * 
+ */
+int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes){
     int i;
     uint8_t output_char;
-    if (NULL == buf)
-        return -1;
-
-    for (i = 0; i < nbytes; i++)
-    {
-        output_char = ((uint8_t *)buf)[i];
-        putc(output_char);
+    if (NULL == buf) return -1;     // if buf is null
+    if (fd != 1)    return -1;      // if fd is not right number 
+    
+    for (i = 0; i < nbytes; i++){
+        output_char = ((uint8_t*)buf)[i];
+        putc(output_char);      // put all the character out
     }
     // printf("\nterminal_write, return %d\n",nbytes);
     return nbytes;
