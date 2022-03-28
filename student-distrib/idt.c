@@ -213,5 +213,13 @@ regcall int32_t system_open(uint32_t syscall, uint32_t* filename ){
 }
 
 regcall int32_t system_close(int32_t fd){
-    
+    return file_sys_close(fd);
+}
+
+regcall int32_t system_write(int32_t fd, const void *buf, int32_t nbytes){
+    return file_sys_write(fd, buf, nbytes);
+}
+
+regcall int32_t system_read(int32_t fd, void *buf, int32_t nbytes){
+    return file_sys_read(fd, buf, nbytes);
 }
