@@ -151,4 +151,6 @@ int32_t get_file_size(uint32_t inode);
 int32_t get_num_opening();
 int32_t close_opening();
 
+file_array_t* get_file_array();
+
 #endif // _FILE_SYSTEM_H

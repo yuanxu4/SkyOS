@@ -5,6 +5,7 @@
 #include "lib.h"
 #include "i8259.h"
 #include "asmlink.h"
+#include "file_system.h"
 
 /*** functions ***/
 
@@ -169,6 +170,48 @@ void syscall_err(uint32_t invalid_call){
     while(1){}
 }
 
-regcall void system_read(uint32_t syscall, uint32_t* filename ){
+/*
+ * system_opne
+ * description: it classify the file type and call the corresponing handler
+ * input: filename
+ *        syscall
+ * output: none
+ * return 0 for fail other for success
+ */
+regcall int32_t system_open(uint32_t syscall, uint32_t* filename ){
+    /*** check file valid or not ***/
+    int file_check;
+    dentry_t current_dentry;
+    file_check = read_dentry_by_name(filename, &current_dentry);
+    if(file_check == -1){   //if check fail then show it is not a visible file
+        printf("invalid file!!!\n");
+        return -1;
+    }
+
+    /*** call the hanler function by file type ***/
+    uint32_t file_type = current_dentry.file_type;
+    switch (file_type)
+    {
+    case 0:
+        return rtc_open(filename);
+        break;
+
+    case 1:
+        printf("open dir not implenent now\n");
+        break;
+
+    case 2:
+        return file_sys_open(filename);
+        break;
+    
+    default:
+        printf("invalid file type, check again!!!\n");
+        break;
+    }
+
+    return -1;
+}
+
+regcall int32_t system_close(int32_t fd){
     
 }
