@@ -1,0 +1,12 @@
+<--------------------------------------------------------->
+                          BUG 0                          
+<--------------------------------------------------------->
+Time:
+    2022.3.28.
+Creator:
+    Sam
+Description:
+    when we try to delete the space create by TAB, the delete won't delete the 4 space automaticly
+Solution:
+    this is caused by the when we check the character in buffer we compare with the "\t" not '\t'
+    this lead to different hex value and fail to delete the 4 space.
