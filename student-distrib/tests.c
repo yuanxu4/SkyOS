@@ -321,8 +321,8 @@ int rtc_test() {
 int terminal_test(){
 	clear();
 	int32_t cnt;
-    uint8_t buf[128];
-	uint8_t* buf2 = "391OS> ";
+    int8_t buf[128];
+	uint8_t* buf2 = (uint8_t*)"391OS> ";
 
    while (1){
 	   if (-1 == (cnt = terminal_write (1, buf2, 7))) {
