@@ -279,13 +279,15 @@ int rtc_test() {
 	
     int32_t rate;
     int32_t ret;
+	uint32_t i;
+	uint32_t j;
 
     const uint32_t valid_rate[5] = {2, 4, 16, 128, 1024};
     const uint32_t test_count = 5;
 
     int32_t fd = rtc_open((uint8_t *) "rtc");
 
-    for (uint32_t i = 0; i < 5; i++) {
+    for (i = 0; i < 5; i++) {
         rate = valid_rate[i];
         printf("setting the rate into %uHz", rate);
 		ret = rtc_write(fd, &rate, 4);
@@ -293,7 +295,7 @@ int rtc_test() {
             printf("fail with %d\n", ret);
             result = FAIL;
         }
-        for (uint32_t j = 0; j < test_count*valid_rate[i]; j++) {
+        for (j = 0; j < test_count*valid_rate[i]; j++) {
             rtc_read(fd, NULL, 0);
             printf("1");
 		}
@@ -313,4 +315,5 @@ void launch_tests(){
 	//TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
 	//TEST_OUTPUT("Keyboard_test", keyboard_test());
 	//TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
+	TEST_OUTPUT("rtc_test", rtc_test());
 }

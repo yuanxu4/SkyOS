@@ -169,7 +169,7 @@ void entry(unsigned long magic, unsigned long addr)
     /* rtc ini*/
     rtc_init();
     enable_irq(RTC_IRQ);
-    rtc_read_R3();
+    rtc_reset_R3();
 
     /* Enable paging */
     enable_paging();
