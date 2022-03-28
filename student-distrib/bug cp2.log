@@ -56,7 +56,7 @@ Solution:
 Change to “dentry_t copied_dentry;” and pass &copied_dentry into read_dentry_by_name ().
 
 <--------------------------------------------------------->
-                          BUG                           
+                          BUG 4                          
 <--------------------------------------------------------->
 Time:
     2022.3.28.
