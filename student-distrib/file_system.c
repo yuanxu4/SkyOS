@@ -335,7 +335,7 @@ int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes)
 }
 
 /*
- * nt32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes)
+ * int32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes)
  * try to write data from file to buf
  * Inputs:  fd -- The file descriptor of the file to write
  *          buf -- The buffer storing data
@@ -355,6 +355,20 @@ int32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes)
     }
 
     return file_array.entries[fd].op_tbl_ptr->write(fd, buf, nbytes);
+}
+
+/*
+ * int32_t file_load(dentry_t *file, void *vir_addr)
+ * copy a program image in the file system into contiguous physical memory
+ * Inputs:  img_dentry -- The dentry of the program file in system
+ *          vir_addr -- The target address in virtual memory
+ * Outputs: None
+ * Side Effects: none
+ * return value: The number of bytes loaded
+ */
+int32_t file_load(dentry_t *img_dentry, uint8_t *vir_addr)
+{
+    return read_data(img_dentry->inode_num, 0, vir_addr, get_file_size(img_dentry->inode_num));
 }
 
 // 3 reading routines

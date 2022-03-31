@@ -107,6 +107,7 @@ int32_t file_sys_open(const uint8_t *filename);
 int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes);
 int32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes);
 int32_t file_sys_close(int32_t fd);
+int32_t file_load(dentry_t *file, uint8_t *vir_addr);
 
 /* internal functions of file system */
 
