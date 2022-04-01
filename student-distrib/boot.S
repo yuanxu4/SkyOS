@@ -69,7 +69,6 @@ halt:
     jmp     halt
 
 .globl enable_paging
-
 /*
  * enable_paging
  * enable paging: set page directory, used in kernel.c when booting
@@ -108,7 +107,6 @@ enable_paging:
     ret
 
 .globl flush_TLB
-
 /*
  * flush_TLB
  * Flush TLB after swapping page
@@ -122,4 +120,21 @@ flush_TLB:
 # write to cr3 to flush FLB
     movl    %cr3, %eax
     movl    %eax, %cr3
+    ret
 
+.globl curr_task:
+/*
+ * curr_task
+ * get the addr of current task 
+ * Interface: 
+ *  Inputs: none
+ *  Outputs: none
+ *  Return value: the addr of current task 
+ * Side effect: none
+ * Registers: Clobbers eax
+ */
+curr_task:
+# get the 8KB aligned addr of the current task
+    movl    %esp, %eax
+    andl    $0xFFFFE000, %eax
+    ret
