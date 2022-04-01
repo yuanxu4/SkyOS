@@ -14,7 +14,7 @@ static volatile uint8_t copy_flag;
 static uint8_t char_num;
 //static uint32_t cur_num;
 /* keycode flag*/
-static uint8_t cap_on_flag, l_shift_on_flag, r_shift_on_flag, l_ctrl_on_flag, r_ctrl_on_flag;
+static uint8_t cap_on_flag, shift_on_flag, l_ctrl_on_flag, r_ctrl_on_flag;
 /* no shift no capson character and numbers */
 const char scancode_simple_lowcase[keynum] = {
     0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
@@ -57,8 +57,7 @@ void set_flag(uint8_t scancode);
 void keyboard_init(void)
 {
     cap_on_flag = 0;
-    l_shift_on_flag = 0;
-    r_shift_on_flag = 0;
+    shift_on_flag = 0;
     l_ctrl_on_flag = 0;
     r_ctrl_on_flag = 0;
     enable_irq(KEYBARD_IRQ);
@@ -101,16 +100,16 @@ void keyboard_handler(void)
 void set_flag(uint8_t scancode){
     switch (scancode){
         case l_shift:
-            l_shift_on_flag = 1;    // turn on th shift on flag
+            shift_on_flag = 1;    // turn on th shift on flag
             break;
         case l_shift_release:
-            l_shift_on_flag = 0;    // turn off the shift on flag if release
+            shift_on_flag = 0;    // turn off the shift on flag if release
             break;
         case r_shift:
-            r_shift_on_flag = 1;
+            shift_on_flag = 1;
             break;
         case r_shift_release:
-            r_shift_on_flag = 0;
+            shift_on_flag = 0;
             break;
         case caps:
             if (cap_on_flag == 1){  // if the caps has on
@@ -207,13 +206,13 @@ void scancode_output(uint8_t scancode)
             printf("%s\n",kb_buf);               
         }
         /* shift and capslock all on */
-        else if ((l_shift_on_flag||r_shift_on_flag) && (cap_on_flag)){
+        else if ((shift_on_flag) && (cap_on_flag)){
             output_char = scancode_bothon[scancode];
             check_space(output_char);   // check if there is tab  
             put_changebuf(output_char);     //change the keyboard buffer        
         }
         /* only shift on */
-        else if (l_shift_on_flag||r_shift_on_flag){
+        else if (shift_on_flag){
             output_char = scancode_shifton[scancode];
             check_space(output_char);
             put_changebuf(output_char);     //change the keyboard buffer
