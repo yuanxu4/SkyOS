@@ -46,21 +46,22 @@ extern PCB_t *curr_task(); // defined in boot.S
 
 // help functions
 /*
- * void set_entry(int32_t index, int32_t file_type)
+ * void set_entry(file_array_t *fd_array, int32_t fd, int32_t file_type)
  * help function to set entry in file array when opening file
- * Inputs:  fd -- The file desc(index) in file array
+ * Inputs:  fd_array -- given pointer to file array
+ *          fd -- The file desc(index) in file array
  *          file_type -- the type of file
  * Outputs: None
  * Side Effects: set entry in file array
  * return value: none
  */
-void set_entry(int32_t fd, int32_t file_type)
+void set_entry(file_array_t *fd_array, int32_t fd, int32_t file_type)
 {
-    curr_task()->fd_array.entries[fd].op_tbl_ptr = &op_table_total[file_type];
-    // PRINT("%#d, %#d, %#d\n",curr_task()->fd_array.entries[fd].op_tbl_ptr, op_table_total, op_table_total+file_type);
-    curr_task()->fd_array.entries[fd].inode = 0;
-    curr_task()->fd_array.entries[fd].file_position = 0;
-    curr_task()->fd_array.entries[fd].flags = IN_USE;
+    fd_array->entries[fd].op_tbl_ptr = &op_table_total[file_type];
+    // PRINT("%#d, %#d, %#d\n",fd_array->entries[fd].op_tbl_ptr, op_table_total, op_table_total+file_type);
+    fd_array->entries[fd].inode = 0;
+    fd_array->entries[fd].file_position = 0;
+    fd_array->entries[fd].flags = IN_USE;
     return;
 }
 
@@ -179,8 +180,6 @@ int32_t close_opening()
  */
 int32_t file_sys_init(module_t *fs)
 {
-    int i; // loop counter
-
     boot_block = (boot_block_t *)fs->mod_start;
     inodes = (inode_t *)(boot_block + 1);
     data_blocks = (data_block_t *)(inodes + boot_block->inode_count);
@@ -211,21 +210,48 @@ int32_t file_sys_init(module_t *fs)
     op_table_total[4].write = terminal_write;
     op_table_total[4].close = terminal_close;
 
+    init_file_array(&curr_task()->fd_array);
+    PRINT("init fs\n");
+    return 0;
+}
+
+int32_t init_file_array(file_array_t *fd_array)
+{
+    if (fd_array)
+    {
+        return -1;
+    }
+
+    int i; // loop counter
     // init stdin and stdout
     // stdin is a read-only file which corresponds to keyboard input.
     // stdout is a write-only file corresponding to terminal output.
     // terminal operations should be implemented in terminal.c by haina
-    set_entry(STDIN_FD, 3);
-    set_entry(STDOUT_FD, 4);
 
-    curr_task()->fd_array.num_opening = 2;
+    set_entry(fd_array, STDIN_FD, 3);
+    set_entry(fd_array, STDOUT_FD, 4);
+
+    fd_array->num_opening = 2;
 
     // set others as not used
     for (i = 2; i < MAX_NUM_OPEN; i++)
     {
-        curr_task()->fd_array.entries[i].flags = NOT_IN_USE;
+        fd_array->entries[i].flags = NOT_IN_USE;
     }
-    PRINT("init fs\n");
+    return 0;
+}
+
+int32_t deactivate_file_array(file_array_t *fd_array)
+{
+    int fd;
+    if (fd_array)
+    {
+        return -1;
+    }
+    for (fd = 2; fd < MAX_NUM_OPEN; fd++)
+    {
+        file_sys_close(fd); // print info for unopened file
+    }
     return 0;
 }
 
@@ -359,17 +385,50 @@ int32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes)
 }
 
 /*
- * int32_t file_load(dentry_t *file, void *vir_addr)
+ * int32_t file_load(dentry_t *file_dentry, void *vir_addr)
  * copy a program image in the file system into contiguous physical memory
- * Inputs:  img_dentry -- The dentry of the program file in system
+ * Inputs:  file_dentry -- The dentry of the program file in system
  *          vir_addr -- The target address in virtual memory
  * Outputs: None
  * Side Effects: none
  * return value: The number of bytes loaded
  */
-int32_t file_load(dentry_t *img_dentry, uint8_t *vir_addr)
+int32_t file_load(dentry_t *file_dentry, uint8_t *vir_addr)
 {
-    return read_data(img_dentry->inode_num, 0, vir_addr, get_file_size(img_dentry->inode_num));
+    return read_data(file_dentry->inode_num, 0, vir_addr, get_file_size(file_dentry->inode_num));
+}
+
+/*
+ * int32_t is_exe_file(dentry_t *file_dentry)
+ * check if the file is executable
+ * Inputs:  file_dentry -- The dentry of the file
+ * Outputs: None
+ * Side Effects: none
+ * return value: 1 if exe, else 0
+ */
+int32_t is_exe_file(dentry_t *file_dentry)
+{
+    uint8_t buf[SIZE_4B + 1];                           // buffer, for safty
+    read_data(file_dentry->inode_num, 0, buf, SIZE_4B); // read first 4B
+    return (buf[0] == 0x7F) & (buf[1] == 0x45) & (buf[2] == 0x4C) & (buf[3] == 0x46);
+}
+
+/*
+ * uint32_t get_eip(dentry_t *exe_dentry)
+ * get the eip for the exe file
+ * Inputs:  exe_dentry -- The dentry of the exe file
+ * Outputs: None
+ * Side Effects: none
+ * return value: eip
+ */
+uint32_t get_eip(dentry_t *exe_dentry)
+{
+    uint32_t eip = 0;
+    if (SIZE_4B != read_data(exe_dentry->inode_num, EIP_POS, (uint8_t *)&eip, SIZE_4B))
+    {
+        return -1;
+    }
+    return eip;
 }
 
 // 3 reading routines
@@ -515,7 +574,7 @@ int32_t file_open(const uint8_t *filename)
     // available fd, actually need not check
     if (fd != -1)
     {
-        set_entry(fd, 2); // type is 2 for regular file
+        set_entry(&curr_task()->fd_array, fd, 2); // type is 2 for regular file
         curr_task()->fd_array.entries[fd].inode = file_dentry.inode_num;
     }
     return fd;
@@ -595,7 +654,7 @@ int32_t dir_open(const uint8_t *filename)
     // available fd, actually need not check
     if (fd != -1)
     {
-        set_entry(fd, 1); // type is 1 for directory
+        set_entry(&curr_task()->fd_array, fd, 1); // type is 1 for directory
     }
 
     return fd;

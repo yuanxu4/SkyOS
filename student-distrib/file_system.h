@@ -32,6 +32,9 @@
 #define STDIN_FD 0  // file desc of stdin
 #define STDOUT_FD 1 // file desc of stdout
 
+#define SIZE_4B 4  // 4B,
+#define EIP_POS 24 // the starting point in the exe file
+
 /* structures of File System Utilities in 8.1 */
 
 // 64B directory entry
@@ -107,22 +110,31 @@ int32_t file_sys_open(const uint8_t *filename);
 int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes);
 int32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes);
 int32_t file_sys_close(int32_t fd);
-int32_t file_load(dentry_t *file, uint8_t *vir_addr);
+
+// added in cp3
+int32_t file_load(dentry_t *file_dentry, uint8_t *vir_addr);
+int32_t is_exe_file(dentry_t *file_dentry);
+uint32_t get_eip(dentry_t *exe_dentry);
+int32_t init_file_array(file_array_t *fd_array);
+int32_t deactivate_file_array(file_array_t *fd_array);
 
 /* internal functions of file system */
 
 // reading routines
+
 int32_t read_dentry_by_name(const uint8_t *fname, dentry_t *dentry);
 int32_t read_dentry_by_index(uint32_t index, dentry_t *dentry);
 int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length);
 
 // Operation of the regular file
+
 int32_t file_open(const uint8_t *filename);
 int32_t file_read(int32_t fd, void *buf, int32_t nbytes);
 int32_t file_write(int32_t fd, const void *buf, int32_t nbytes);
 int32_t file_close(int32_t fd);
 
 // Operation of the directory file
+
 int32_t dir_open(const uint8_t *filename);
 int32_t dir_read(int32_t fd, void *buf, int32_t nbytes);
 int32_t dir_write(int32_t fd, const void *buf, int32_t nbytes);
@@ -130,6 +142,7 @@ int32_t dir_close(int32_t fd);
 
 // seems not necessary now
 // Operation of rtc for user
+
 int32_t rtc_user_open(const uint8_t *filename);
 int32_t rtc_user_read(int32_t fd, void *buf, int32_t nbytes);
 int32_t rtc_user_write(int32_t fd, const void *buf, int32_t nbytes);
@@ -141,13 +154,16 @@ int32_t rtc_user_close(int32_t fd);
 // int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes);
 // int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes);
 // int32_t terminal_close(int32_t fd);
+
 int32_t stdout_read(int32_t fd, void *buf, int32_t nbytes);
 int32_t stdin_write(int32_t fd, const void *buf, int32_t nbytes);
 
 // help function
-void set_entry(int32_t fd, int32_t file_type);
+
+void set_entry(file_array_t *fd_array, int32_t fd, int32_t file_type);
 int32_t find_unused_fd();
 // used in test
+
 int32_t get_file_size(uint32_t inode);
 int32_t get_num_opening();
 int32_t close_opening();
