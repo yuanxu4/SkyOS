@@ -24,6 +24,7 @@
 #define TASK_PAGE_INFO 0x87                     // flag info of pde for task set PS, U/S, R/W, P flags
 #define KERNEL_UPPER_ADDR 0x800000              // 8MB, the upper addr of kernel page
 #define SIZE_8KB 0x2000                         // size of 8KB
+#define USER_EBP (TASK_VIR_ADDR + SIZE_4MB - 4) // the base addr of user stack, -4 for safty
 
 typedef struct PCB PCB_t;
 struct PCB
@@ -34,10 +35,11 @@ struct PCB
     PCB_t *parent; // parent process
     int32_t state; // the state of the process
     file_array_t fd_array;
-    // uint32_t saved_esp;
-    // uint32_t saved_ebp;
+    uint32_t saved_esp;
+    uint32_t saved_ebp;
     uint32_t kernel_ebp; // ebp of this task in kernel
-    uint32_t kernel_esp; // esp of this task in kernel
+    uint32_t eip;
+    // uint32_t kernel_esp; // esp of this task in kernel
     // uint32_t flags;
     uint8_t *task_name; // process executable name
     uint8_t *args;      // arguments of process

@@ -215,14 +215,21 @@ int32_t file_sys_init(module_t *fs)
     return 0;
 }
 
+/*
+ * int32_t init_file_array(file_array_t *fd_array)
+ * Initialize a file array
+ * Inputs: fd_array -- The pointer to file array
+ * Outputs: None
+ * Side Effects: init file array
+ * return value: 0 when succuss
+ */
 int32_t init_file_array(file_array_t *fd_array)
 {
-    if (fd_array)
+    int i; // loop counter
+    if (fd_array == NULL)
     {
         return -1;
     }
-
-    int i; // loop counter
     // init stdin and stdout
     // stdin is a read-only file which corresponds to keyboard input.
     // stdout is a write-only file corresponding to terminal output.
@@ -241,16 +248,25 @@ int32_t init_file_array(file_array_t *fd_array)
     return 0;
 }
 
+/*
+ * int32_t deactivate_file_array(file_array_t *fd_array)
+ * deactivate a file array
+ * Inputs: fd_array -- The pointer to file array
+ * Outputs: None
+ * Side Effects: init file array
+ * return value: 0 when succuss
+ */
 int32_t deactivate_file_array(file_array_t *fd_array)
 {
     int fd;
-    if (fd_array)
+    if (fd_array == NULL)
     {
         return -1;
     }
+    // close all files
     for (fd = 2; fd < MAX_NUM_OPEN; fd++)
     {
-        file_sys_close(fd); // print info for unopened file
+        file_sys_close(fd); // may print info for unopened file
     }
     return 0;
 }
