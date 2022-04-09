@@ -170,4 +170,10 @@ int32_t close_opening();
 // int32_t get_file_name();
 int32_t get_file_num();
 
+<<<<<<< HEAD
 #endif // _FILE_SYSTEM_H
+=======
+file_array_t* get_file_array();
+
+#endif // _FILE_SYSTEM_H
+>>>>>>> origin/9-syscall

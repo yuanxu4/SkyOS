@@ -34,6 +34,9 @@ int32_t safe_strncpy(int8_t *dest, const int8_t *src, int32_t n);
 
 void align_space(int32_t size);
 
+/* defined in lib.S */
+extern int32_t open(const uint8_t* filename);
+
 /* Port read functions */
 /* Inb reads a byte and returns its value as a zero-extended 32-bit
  * unsigned int */

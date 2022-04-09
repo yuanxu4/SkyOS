@@ -788,3 +788,17 @@ int32_t stdin_write(int32_t fd, const void *buf, int32_t nbytes)
     PRINT("fail to write in stdin. read only\n");
     return -1;
 }
+<<<<<<< HEAD
+=======
+
+/*
+ * get_file_array
+ * description: return the file_array's pointer
+ * input: none
+ * output: none
+ * return pointer to file_array
+ */
+file_array_t* get_file_array(){
+    return &file_array;
+}
+>>>>>>> origin/9-syscall

@@ -4,6 +4,8 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "i8259.h"
+#include "asmlink.h"
+#include "file_system.h"
 
 /*** functions ***/
 
@@ -159,4 +161,78 @@ void print_syscall(uint32_t syscall_num)
     while (1)
     {
     }
+}
+
+/*
+ * syscall_err
+ * description: it will disp a err info on screen when user call a invalid system call
+ * input: invalid_call
+ * output: num is not a syscall
+ * return: none
+ */
+void syscall_err(uint32_t invalid_call){
+    clear();
+    printf("System call %x is not valid check twice!!!\n", invalid_call);
+    while(1){}
+}
+
+/*
+ * system_opne
+ * description: it classify the file type and call the corresponing handler
+ * input: filename
+ *        syscall
+ * output: none
+ * return 0 for fail other for success
+ */
+fastcall int32_t system_open(uint32_t syscall, uint32_t* filename ){
+    /*** check file valid or not ***/
+    int file_check;
+    dentry_t current_dentry;
+    file_check = read_dentry_by_name(filename, &current_dentry);
+    if(file_check == -1){   //if check fail then show it is not a visible file
+        printf("invalid file!!!\n");
+        return -1;
+    }
+
+    /*** call the hanler function by file type ***/
+    uint32_t file_type = current_dentry.file_type;
+    switch (file_type)
+    {
+    case 0:
+        return rtc_open(filename);
+        break;
+
+    case 1:
+        printf("open dir not implenent now\n");
+        break;
+
+    case 2:
+        return file_sys_open(filename);
+        break;
+    
+    default:
+        printf("invalid file type, check again!!!\n");
+        break;
+    }
+
+    return -1;
+}
+
+fastcall int32_t system_close(int32_t fd){
+    return file_sys_close(fd);
+}
+
+fastcall int32_t system_write(int32_t fd, const void *buf, int32_t nbytes){
+    return file_sys_write(fd, buf, nbytes);
+}
+
+fastcall int32_t system_read(int32_t fd, void *buf, int32_t nbytes){
+    return file_sys_read(fd, buf, nbytes);
+}
+
+fastcall int32_t sys_halt (uint8_t status){
+    clear();
+    printf(" halt %x\n", status);
+    printf(" --------pretend it is a BLUE SCREEN---------\n");
+    while(1){}
 }
