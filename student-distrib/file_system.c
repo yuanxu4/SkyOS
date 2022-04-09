@@ -14,7 +14,7 @@
 #include "file_system.h"
 #include "lib.h"
 #include "keyboard.h"
-// #include "terminal.h"
+#include "task.h"
 
 #define PRINT_MODE 1
 #if PRINT_MODE
@@ -41,25 +41,27 @@ static data_block_t *data_blocks;
 
 // File System Abstractions
 static jump_table_t op_table_total[NUM_FILE_TYPE]; // op table with 12 ops
-static file_array_t file_array;
+
+extern PCB_t *curr_task(); // defined in boot.S
 
 // help functions
 /*
- * void set_entry(int32_t index, int32_t file_type)
+ * void set_entry(file_array_t *fd_array, int32_t fd, int32_t file_type)
  * help function to set entry in file array when opening file
- * Inputs:  fd -- The file desc(index) in file array
+ * Inputs:  fd_array -- given pointer to file array
+ *          fd -- The file desc(index) in file array
  *          file_type -- the type of file
  * Outputs: None
  * Side Effects: set entry in file array
  * return value: none
  */
-void set_entry(int32_t fd, int32_t file_type)
+void set_entry(file_array_t *fd_array, int32_t fd, int32_t file_type)
 {
-    file_array.entries[fd].op_tbl_ptr = &op_table_total[file_type];
-    // PRINT("%#d, %#d, %#d\n",file_array.entries[fd].op_tbl_ptr, op_table_total, op_table_total+file_type);
-    file_array.entries[fd].inode = 0;
-    file_array.entries[fd].file_position = 0;
-    file_array.entries[fd].flags = IN_USE;
+    fd_array->entries[fd].op_tbl_ptr = &op_table_total[file_type];
+    // PRINT("%#d, %#d, %#d\n",fd_array->entries[fd].op_tbl_ptr, op_table_total, op_table_total+file_type);
+    fd_array->entries[fd].inode = 0;
+    fd_array->entries[fd].file_position = 0;
+    fd_array->entries[fd].flags = IN_USE;
     return;
 }
 
@@ -77,7 +79,7 @@ int32_t find_unused_fd()
     // start from 2 since 0/1 for stdin/out
     for (fd = 2; fd < MAX_NUM_OPEN; fd++)
     {
-        if (!file_array.entries[fd].flags)
+        if (!curr_task()->fd_array.entries[fd].flags)
         {
             return fd;
         }
@@ -136,7 +138,7 @@ int32_t get_file_size(uint32_t inode)
  */
 int32_t get_num_opening()
 {
-    return file_array.num_opening;
+    return curr_task()->fd_array.num_opening;
 }
 
 /*
@@ -153,12 +155,12 @@ int32_t close_opening()
     int fd;
     for (fd = 2; fd < MAX_NUM_OPEN; fd++)
     {
-        if (file_array.entries[fd].flags)
+        if (curr_task()->fd_array.entries[fd].flags)
         {
             file_sys_close(fd);
             cnt++;
         }
-        if (file_array.num_opening == 2)
+        if (curr_task()->fd_array.num_opening == 2)
         {
             break;
         }
@@ -178,8 +180,6 @@ int32_t close_opening()
  */
 int32_t file_sys_init(module_t *fs)
 {
-    int i; // loop counter
-
     boot_block = (boot_block_t *)fs->mod_start;
     inodes = (inode_t *)(boot_block + 1);
     data_blocks = (data_block_t *)(inodes + boot_block->inode_count);
@@ -210,21 +210,64 @@ int32_t file_sys_init(module_t *fs)
     op_table_total[4].write = terminal_write;
     op_table_total[4].close = terminal_close;
 
+    init_file_array(&curr_task()->fd_array);
+    PRINT("init fs\n");
+    return 0;
+}
+
+/*
+ * int32_t init_file_array(file_array_t *fd_array)
+ * Initialize a file array
+ * Inputs: fd_array -- The pointer to file array
+ * Outputs: None
+ * Side Effects: init file array
+ * return value: 0 when succuss
+ */
+int32_t init_file_array(file_array_t *fd_array)
+{
+    int i; // loop counter
+    if (fd_array == NULL)
+    {
+        return -1;
+    }
     // init stdin and stdout
     // stdin is a read-only file which corresponds to keyboard input.
     // stdout is a write-only file corresponding to terminal output.
     // terminal operations should be implemented in terminal.c by haina
-    set_entry(STDIN_FD, 3);
-    set_entry(STDOUT_FD, 4);
 
-    file_array.num_opening = 2;
+    set_entry(fd_array, STDIN_FD, 3);
+    set_entry(fd_array, STDOUT_FD, 4);
+
+    fd_array->num_opening = 2;
 
     // set others as not used
     for (i = 2; i < MAX_NUM_OPEN; i++)
     {
-        file_array.entries[i].flags = NOT_IN_USE;
+        fd_array->entries[i].flags = NOT_IN_USE;
     }
-    PRINT("init fs\n");
+    return 0;
+}
+
+/*
+ * int32_t deactivate_file_array(file_array_t *fd_array)
+ * deactivate a file array
+ * Inputs: fd_array -- The pointer to file array
+ * Outputs: None
+ * Side Effects: init file array
+ * return value: 0 when succuss
+ */
+int32_t deactivate_file_array(file_array_t *fd_array)
+{
+    int fd;
+    if (fd_array == NULL)
+    {
+        return -1;
+    }
+    // close all files
+    for (fd = 2; fd < MAX_NUM_OPEN; fd++)
+    {
+        file_sys_close(fd); // may print info for unopened file
+    }
     return 0;
 }
 
@@ -234,7 +277,7 @@ int32_t file_sys_init(module_t *fs)
  * try to open a file in the file system
  * Inputs:  filename -- The name of the file to open
  * Outputs: None
- * Side Effects: change file_array
+ * Side Effects: change curr_task()->fd_array
  * return value: -1 for failure, the file descriptor for succuss
  */
 int32_t file_sys_open(const uint8_t *filename)
@@ -243,7 +286,7 @@ int32_t file_sys_open(const uint8_t *filename)
     // PRINT("addr copy dentry: %#x\n", &copied_dentry);
     int32_t fd = -1; // the returned file descriptor if succuss
     // reach max opening
-    if (file_array.num_opening >= MAX_NUM_OPEN)
+    if (curr_task()->fd_array.num_opening >= MAX_NUM_OPEN)
     {
         PRINT("fail to open %s . number of opening files is max.\n", filename);
         return -1;
@@ -268,7 +311,7 @@ int32_t file_sys_open(const uint8_t *filename)
         PRINT("fail to open file. unknown reason\n");
         return -1;
     }
-    file_array.num_opening++; // inc
+    curr_task()->fd_array.num_opening++; // inc
     return fd;
 }
 
@@ -277,7 +320,7 @@ int32_t file_sys_open(const uint8_t *filename)
  * try to close a file in the file system
  * Inputs:  fd -- The file descriptor of the file to close
  * Outputs: None
- * Side Effects: change file_array
+ * Side Effects: change curr_task()->fd_array
  * return value: 0 for success, -1 for failure
  */
 int32_t file_sys_close(int32_t fd)
@@ -294,19 +337,19 @@ int32_t file_sys_close(int32_t fd)
         return -1;
     }
     // file not opening
-    if (!file_array.entries[fd].flags)
+    if (!curr_task()->fd_array.entries[fd].flags)
     {
         PRINT("fail to close file. unopen file\n");
         return -1;
     }
     // fail to close, should never happen correctly
-    if (file_array.entries[fd].op_tbl_ptr->close(fd))
+    if (curr_task()->fd_array.entries[fd].op_tbl_ptr->close(fd))
     {
         PRINT("fail to close file. unknown reason\n");
         return -1;
     }
-    file_array.entries[fd].flags = NOT_IN_USE; // set flag not included in close
-    file_array.num_opening--;                  // dec
+    curr_task()->fd_array.entries[fd].flags = NOT_IN_USE; // set flag not included in close
+    curr_task()->fd_array.num_opening--;                  // dec
     return 0;
 }
 
@@ -325,17 +368,17 @@ int32_t file_sys_close(int32_t fd)
 int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes)
 {
     // not opening
-    if (!file_array.entries[fd].flags)
+    if (!curr_task()->fd_array.entries[fd].flags)
     {
         PRINT("fail to read. file is not open\n");
         return -1;
     }
     // update position field included in specfic read functions
-    return file_array.entries[fd].op_tbl_ptr->read(fd, buf, nbytes);
+    return curr_task()->fd_array.entries[fd].op_tbl_ptr->read(fd, buf, nbytes);
 }
 
 /*
- * nt32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes)
+ * int32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes)
  * try to write data from file to buf
  * Inputs:  fd -- The file descriptor of the file to write
  *          buf -- The buffer storing data
@@ -348,13 +391,60 @@ int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes)
 int32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes)
 {
     // not opening
-    if (!file_array.entries[fd].flags)
+    if (!curr_task()->fd_array.entries[fd].flags)
     {
         PRINT("fail to write. file is not open\n");
         return -1;
     }
 
-    return file_array.entries[fd].op_tbl_ptr->write(fd, buf, nbytes);
+    return curr_task()->fd_array.entries[fd].op_tbl_ptr->write(fd, buf, nbytes);
+}
+
+/*
+ * int32_t file_load(dentry_t *file_dentry, void *vir_addr)
+ * copy a program image in the file system into contiguous physical memory
+ * Inputs:  file_dentry -- The dentry of the program file in system
+ *          vir_addr -- The target address in virtual memory
+ * Outputs: None
+ * Side Effects: none
+ * return value: The number of bytes loaded
+ */
+int32_t file_load(dentry_t *file_dentry, uint8_t *vir_addr)
+{
+    return read_data(file_dentry->inode_num, 0, vir_addr, get_file_size(file_dentry->inode_num));
+}
+
+/*
+ * int32_t is_exe_file(dentry_t *file_dentry)
+ * check if the file is executable
+ * Inputs:  file_dentry -- The dentry of the file
+ * Outputs: None
+ * Side Effects: none
+ * return value: 1 if exe, else 0
+ */
+int32_t is_exe_file(dentry_t *file_dentry)
+{
+    uint8_t buf[SIZE_4B + 1];                           // buffer, for safty
+    read_data(file_dentry->inode_num, 0, buf, SIZE_4B); // read first 4B
+    return (buf[0] == 0x7F) & (buf[1] == 0x45) & (buf[2] == 0x4C) & (buf[3] == 0x46);
+}
+
+/*
+ * uint32_t get_eip(dentry_t *exe_dentry)
+ * get the eip for the exe file
+ * Inputs:  exe_dentry -- The dentry of the exe file
+ * Outputs: None
+ * Side Effects: none
+ * return value: eip
+ */
+uint32_t get_eip(dentry_t *exe_dentry)
+{
+    uint32_t eip = 0;
+    if (SIZE_4B != read_data(exe_dentry->inode_num, EIP_POS, (uint8_t *)&eip, SIZE_4B))
+    {
+        return -1;
+    }
+    return eip;
 }
 
 // 3 reading routines
@@ -500,8 +590,8 @@ int32_t file_open(const uint8_t *filename)
     // available fd, actually need not check
     if (fd != -1)
     {
-        set_entry(fd, 2); // type is 2 for regular file
-        file_array.entries[fd].inode = file_dentry.inode_num;
+        set_entry(&curr_task()->fd_array, fd, 2); // type is 2 for regular file
+        curr_task()->fd_array.entries[fd].inode = file_dentry.inode_num;
     }
     return fd;
 }
@@ -534,15 +624,15 @@ int32_t file_close(int32_t fd)
 int32_t file_read(int32_t fd, void *buf, int32_t nbytes)
 {
 
-    int32_t copy_size;                                      // the size of copied data
-    uint32_t offset = file_array.entries[fd].file_position; // current position in file
+    int32_t copy_size;                                                 // the size of copied data
+    uint32_t offset = curr_task()->fd_array.entries[fd].file_position; // current position in file
 
     // Place the data into buffer
-    copy_size = read_data(file_array.entries[fd].inode, offset, buf, nbytes);
+    copy_size = read_data(curr_task()->fd_array.entries[fd].inode, offset, buf, nbytes);
 
     if (copy_size > 0)
     {
-        file_array.entries[fd].file_position += copy_size;
+        curr_task()->fd_array.entries[fd].file_position += copy_size;
     }
 
     return copy_size;
@@ -580,7 +670,7 @@ int32_t dir_open(const uint8_t *filename)
     // available fd, actually need not check
     if (fd != -1)
     {
-        set_entry(fd, 1); // type is 1 for directory
+        set_entry(&curr_task()->fd_array, fd, 1); // type is 1 for directory
     }
 
     return fd;
@@ -614,8 +704,8 @@ int32_t dir_close(int32_t fd)
  */
 int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
 {
-    uint32_t pst = file_array.entries[fd].file_position; // position in directory
-    int32_t copy_size = MIN(nbytes, MAX_LEN_FILE_NAME);  // size to copy
+    uint32_t pst = curr_task()->fd_array.entries[fd].file_position; // position in directory
+    int32_t copy_size = MIN(nbytes, MAX_LEN_FILE_NAME);             // size to copy
     if (pst >= boot_block->dir_count)
     {
         PRINT("\nread nothing in directory. reach to the end\n");
@@ -623,7 +713,7 @@ int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
     }
     // copy
     strncpy(buf, (const int8_t *)(boot_block->dentries[pst].file_name), copy_size);
-    file_array.entries[fd].file_position++;
+    curr_task()->fd_array.entries[fd].file_position++;
     return copy_size;
 }
 
@@ -699,6 +789,7 @@ int32_t stdin_write(int32_t fd, const void *buf, int32_t nbytes)
     return -1;
 }
 
+
 /*
  * get_file_array
  * description: return the file_array's pointer
@@ -709,3 +800,4 @@ int32_t stdin_write(int32_t fd, const void *buf, int32_t nbytes)
 file_array_t* get_file_array(){
     return &file_array;
 }
+
