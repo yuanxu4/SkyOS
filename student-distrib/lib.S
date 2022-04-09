@@ -8,3 +8,9 @@ open:
     movl 8(%ebp), %ecx  # move buffer
     movl 12(%ebp), %edx # move nbyte
     INT 0x80    # generate systemcall interupt
+
+.globl halt
+halt:
+    movl $0x00, %eax    # move syscall index to eax
+    movl $1, %ebx
+    INT 0x80    # generate systemcall interupt
