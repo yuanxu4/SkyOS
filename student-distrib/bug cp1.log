@@ -1,0 +1,50 @@
+<--------------------------------------------------------->
+                          BUG 0                          
+<--------------------------------------------------------->
+Time:
+    2022.3.20.
+Creator:
+    Sam
+Description:
+    the IDT entry for the interrupt has error. The asm code should not addl $4 when reach the end
+    of the interrupt since the interrupt will not push the interrupt num automaticly
+Solution:
+    delete the line of "addl $4, %esp"
+
+<--------------------------------------------------------->
+                          BUG 1                          
+<--------------------------------------------------------->
+Time:
+    2022.3.20.
+Creator:
+    Sam
+Description:
+    the keyboard will not rasie a interrupt when the key is pressed. The breakpoint in IDT won't stop.
+Solution:
+    uncomment the code in kernel.c "sti();"
+
+<--------------------------------------------------------->
+                          BUG 2                          
+<--------------------------------------------------------->
+Time:
+    2022.3.20.
+Creator:
+    Haina Lou
+Description:
+    interrupts of RTC cannot be raised correctly.
+Solution:
+    enable_irq unmask the wrong pin of Master PIC, should unmask pin 2 but unmask pin 1.
+
+<--------------------------------------------------------->
+                          BUG 3                          
+<--------------------------------------------------------->
+Time:
+    2022.3.20.
+Creator:
+    Keyi
+Description:
+    with enabling paging, some other initializations fail.
+Reason:
+    Other initializations may need to access the memory are not present after enabling paging.
+Solution:
+    call enable_paging after all the init is done.

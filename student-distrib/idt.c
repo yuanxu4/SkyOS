@@ -17,11 +17,13 @@
  * output: idt
  * return: none
  */
-void idt_init(){
+void idt_init()
+{
     int i;
 
     /** init exceptions **/
-    for(i = IDT_BY_INTEL_START; i <= IDT_BY_INTEL_END; i ++){
+    for (i = IDT_BY_INTEL_START; i <= IDT_BY_INTEL_END; i++)
+    {
         idt[i].present = 0;
         idt[i].dpl = 0;
         idt[i].reserved0 = 0;
@@ -30,11 +32,11 @@ void idt_init(){
         idt[i].reserved2 = 1;
         idt[i].reserved4 = 0;
         idt[i].seg_selector = KERNEL_CS;
-
     }
 
     /** init interupts **/
-    for(i = IDT_BY_PIC_START; i <= IDT_BY_PIC_END; i ++){
+    for (i = IDT_BY_PIC_START; i <= IDT_BY_PIC_END; i++)
+    {
         idt[i].present = 0;
         idt[i].dpl = 0;
         idt[i].reserved0 = 0;
@@ -43,11 +45,11 @@ void idt_init(){
         idt[i].reserved2 = 1;
         idt[i].reserved4 = 0;
         idt[i].seg_selector = KERNEL_CS;
-        
     }
 
     /** init APIC vectors **/
-    for(i = IDT_BY_PIC_END + 1; i < IDT_BY_SYSCALL_START; i ++){
+    for (i = IDT_BY_PIC_END + 1; i < IDT_BY_SYSCALL_START; i++)
+    {
         idt[i].present = 0;
         idt[i].dpl = 0;
         idt[i].reserved0 = 0;
@@ -56,12 +58,11 @@ void idt_init(){
         idt[i].reserved2 = 1;
         idt[i].reserved4 = 0;
         idt[i].seg_selector = KERNEL_CS;
-        
     }
 
     /** init syscall vectors **/
     idt[IDT_BY_SYSCALL_START].present = 0;
-    idt[IDT_BY_SYSCALL_START].dpl = 3;          //for syscal the dpl is 3
+    idt[IDT_BY_SYSCALL_START].dpl = 3; // for syscal the dpl is 3
     idt[IDT_BY_SYSCALL_START].reserved0 = 0;
     idt[IDT_BY_SYSCALL_START].size = 1;
     idt[IDT_BY_SYSCALL_START].reserved1 = 1;
@@ -70,7 +71,8 @@ void idt_init(){
     idt[IDT_BY_SYSCALL_START].seg_selector = KERNEL_CS;
 
     /** init more APIC vectors **/
-    for(i = IDT_BY_SYSCALL_START + 1; i < NUM_VEC; i ++){
+    for (i = IDT_BY_SYSCALL_START + 1; i < NUM_VEC; i++)
+    {
         idt[i].present = 0;
         idt[i].dpl = 0;
         idt[i].reserved0 = 0;
@@ -79,7 +81,6 @@ void idt_init(){
         idt[i].reserved2 = 1;
         idt[i].reserved4 = 0;
         idt[i].seg_selector = KERNEL_CS;
-        
     }
 
     /*** setup exception ***/
@@ -109,8 +110,9 @@ void idt_init(){
     SET_IDT_ENTRY(idt[29], IDT_EXCEPTION_29);
     SET_IDT_ENTRY(idt[30], IDT_EXCEPTION_30);
     SET_IDT_ENTRY(idt[31], IDT_EXCEPTION_31);
-        /** enable exception **/
-    for(i = IDT_BY_INTEL_START; i <= IDT_BY_INTEL_END; i ++){
+    /** enable exception **/
+    for (i = IDT_BY_INTEL_START; i <= IDT_BY_INTEL_END; i++)
+    {
         idt[i].present = 1;
     }
 
@@ -126,7 +128,6 @@ void idt_init(){
 
     /*** load IDT to IDTR ***/
     lidt(idt_desc_ptr);
-
 }
 
 /*
@@ -136,12 +137,14 @@ void idt_init(){
  * output: the detected exception and blue screen
  * return: none
  */
-void print_exception(uint32_t exception_num){
+void print_exception(uint32_t exception_num)
+{
     clear();
     printf(" Detect exception %x\n", exception_num);
     printf(" --------pretend it is a BLUE SCREEN---------\n");
-    while(1){}
-
+    while (1)
+    {
+    }
 }
 
 /*
@@ -151,10 +154,13 @@ void print_exception(uint32_t exception_num){
  * output: the syscall num
  * return: none
  */
-void print_syscall(uint32_t syscall_num){
+void print_syscall(uint32_t syscall_num)
+{
     clear();
     printf(" Your syscall is %x, but not implement now\n", syscall_num);
-    while(1){}
+    while (1)
+    {
+    }
 }
 
 /*
