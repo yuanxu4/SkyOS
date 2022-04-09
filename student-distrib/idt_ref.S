@@ -1154,14 +1154,14 @@ finish_syscall:
 
 syscall_table:
 .long system_halt
-.long system_execute
+.long syscall_err # system_execute
 .long system_read
 .long system_write
 .long system_open
 .long system_close
-.long system_getargs
-.long system_vidmap
-.long system_set_handler
-.long system_sigreturn
+.long syscall_err # system_getargs
+.long syscall_err # system_vidmap
+.long syscall_err # system_set_handler
+.long syscall_err # system_sigreturn
 
 
