@@ -5,6 +5,8 @@
 #ifndef _LIB_H
 #define _LIB_H
 
+#ifndef ASM_lib
+
 #include "types.h"
 
 int32_t printf(int8_t *format, ...);
@@ -31,6 +33,7 @@ int32_t safe_strncpy(int8_t* dest, const int8_t* src, int32_t n);
 
 /* defined in lib.S */
 extern int32_t open(const uint8_t* filename);
+extern int32_t halt(uint8_t status);
 
 /* Port read functions */
 /* Inb reads a byte and returns its value as a zero-extended 32-bit
@@ -158,3 +161,5 @@ do {                                    \
 } while (0)
 
 #endif /* _LIB_H */
+
+#endif
