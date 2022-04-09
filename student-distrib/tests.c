@@ -483,5 +483,6 @@ void launch_tests()
 	// TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
 	// TEST_OUTPUT("Keyboard_test", keyboard_test());
 	// TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
-	TEST_OUTPUT("file_sys_test", file_sys_test());
+	// TEST_OUTPUT("file_sys_test", file_sys_test());
+	halt();
 }
