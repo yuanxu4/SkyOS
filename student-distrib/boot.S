@@ -122,7 +122,7 @@ flush_TLB:
     movl    %eax, %cr3
     ret
 
-.globl curr_task:
+.globl curr_task
 /*
  * curr_task
  * get the addr of current task 

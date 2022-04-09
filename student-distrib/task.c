@@ -14,7 +14,7 @@
 
 static page_usage_array_t page_array; // manage pages
 
-extern void FLUSH_TLB();   // defined in boot.S
+extern void flush_TLB();   // defined in boot.S
 extern PCB_t *curr_task(); // defined in boot.S
 
 /*
@@ -77,7 +77,7 @@ int32_t set_task_page()
     // set pde
     base_addr = KERNEL_UPPER_ADDR + page_id * SIZE_4MB;
     page_directory.pde[TASK_VIR_IDX] = base_addr | TASK_PAGE_INFO;
-    FLUSH_TLB();            // flush tlb since remapping
+    flush_TLB();            // flush tlb since remapping
     page_array.num_using++; // incr # using
     return 0;
 }
@@ -218,7 +218,7 @@ int32_t system_execute(const uint8_t *command)
     // Losd file into memory
     file_load(&task_dentry, (uint8_t *)TASK_VIR_ADDR + TASK_VIR_OFFSET);
     // todo: Context Switch
-    eip = get_eip(&task_dentry) + TASK_VIR_ADDR + TASK_VIR_OFFSET;
+    eip = get_eip(&task_dentry);
     new_task->eip = eip;
     // save esp ebp
     asm volatile("          \n\
@@ -317,7 +317,7 @@ int32_t restore_task_page(int32_t page_id)
     // set pde
     base_addr = KERNEL_UPPER_ADDR + page_id * SIZE_4MB;
     page_directory.pde[TASK_VIR_IDX] = base_addr | TASK_PAGE_INFO;
-    FLUSH_TLB(); // flush tlb since remapping
+    flush_TLB(); // flush tlb since remapping
     return 0;
 }
 

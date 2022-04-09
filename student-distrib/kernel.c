@@ -22,6 +22,8 @@
 #include "keyboard.h"
 #include "file_system.h"
 
+#include "task.h"
+
 #define RUN_TESTS
 
 extern void enable_paging(); // defined in boot.S
@@ -174,6 +176,8 @@ void entry(unsigned long magic, unsigned long addr)
     enable_irq(RTC_IRQ);
     rtc_reset_R3();
 
+    
+
     if (mbi->mods_count > 0)
     {
         file_sys_init((module_t *)mbi->mods_addr);
@@ -191,6 +195,8 @@ void entry(unsigned long magic, unsigned long addr)
      * without showing you any output */
     printf("Enabling Interrupts\n");
     sti();
+
+    system_execute("shell");
 
 #ifdef RUN_TESTS
     /* Run tests */
