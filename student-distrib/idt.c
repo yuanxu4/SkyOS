@@ -230,9 +230,9 @@ fastcall int32_t system_read(int32_t fd, void *buf, int32_t nbytes){
     return file_sys_read(fd, buf, nbytes);
 }
 
-fastcall int32_t system_halt (uint8_t status){
-    clear();
-    printf(" halt %x\n", status);
-    printf(" --------pretend it is a BLUE SCREEN---------\n");
-    while(1){}
-}
+// fastcall int32_t system_halt (uint8_t status){
+//     clear();
+//     printf(" halt %x\n", status);
+//     printf(" --------pretend it is a BLUE SCREEN---------\n");
+//     while(1){}
+// }

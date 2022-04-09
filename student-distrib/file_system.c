@@ -797,7 +797,7 @@ int32_t stdin_write(int32_t fd, const void *buf, int32_t nbytes)
  * output: none
  * return pointer to file_array
  */
-file_array_t* get_file_array(){
-    return &file_array;
-}
+// file_array_t* get_file_array(){
+//     return &file_array;
+// }
 
