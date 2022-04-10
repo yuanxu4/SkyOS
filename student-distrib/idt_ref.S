@@ -1152,6 +1152,7 @@ finish_syscall:
     iret
 
 syscall_table:
+.long 0
 .long system_halt
 .long syscall_err # system_execute
 .long system_read
