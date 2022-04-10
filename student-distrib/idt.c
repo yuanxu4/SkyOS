@@ -184,7 +184,7 @@ void syscall_err(uint32_t invalid_call){
  * output: none
  * return 0 for fail other for success
  */
-fastcall int32_t system_open(uint32_t syscall, uint32_t* filename ){
+asmlinkage int32_t system_open(uint8_t* filename ){
     /*** check file valid or not ***/
     int file_check;
     dentry_t current_dentry;
@@ -218,15 +218,15 @@ fastcall int32_t system_open(uint32_t syscall, uint32_t* filename ){
     return -1;
 }
 
-fastcall int32_t system_close(int32_t fd){
+asmlinkage int32_t system_close(int32_t fd){
     return file_sys_close(fd);
 }
 
-fastcall int32_t system_write(int32_t fd, const void *buf, int32_t nbytes){
+asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes){
     return file_sys_write(fd, buf, nbytes);
 }
 
-fastcall int32_t system_read(int32_t fd, void *buf, int32_t nbytes){
+asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes){
     return file_sys_read(fd, buf, nbytes);
 }
 
