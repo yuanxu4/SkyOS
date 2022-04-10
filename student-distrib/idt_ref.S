@@ -1112,15 +1112,15 @@ IDT_SYSCALL:
     # save_pre_reg
     pushf
     pushl %eax
-    pushl %ebx
-    pushl %ecx
-    pushl %edx
     pushl %ebp
     pushl %esi
     pushl %edi
     push %fs
     push %es
     push %ds
+    pushl %edx
+    pushl %ecx
+    pushl %ebx
     # check if the call is valid
     cmpl $10, %eax
     jae invalid_syscall
@@ -1137,15 +1137,16 @@ invalid_syscall:
 finish_syscall:
 
     # restore_pre_reg
+    popl %ebx
+    popl %ecx
+    popl %edx
     pop %ds
     pop %es
     pop %fs
     popl %edi
     popl %esi
     popl %ebp
-    popl %edx
-    popl %ecx
-    popl %ebx
+
     # do not pop eax
     addl $4, %esp
 #    popl %eax
@@ -1153,6 +1154,7 @@ finish_syscall:
     iret
 
 syscall_table:
+.long invalid_call
 .long system_halt
 .long syscall_err # system_execute
 .long system_read

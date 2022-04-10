@@ -12,6 +12,7 @@
 #include "file_system.h"
 #include "keyboard.h"
 #include "rtc.h"
+#include "idt.h"
 
 #define PASS 1
 #define FAIL 0
@@ -296,7 +297,7 @@ int file_sys_test()
 
 	// open root
 	TEST_PRINT("try to open the root directory\n\n");
-	fd = file_sys_open((const uint8_t *)flie_list[0]);
+	fd = open((const uint8_t *)flie_list[0]);
 	if (fd != 2)
 	{
 		TEST_PRINT("fail in test open root, fd is %d\n", fd);
@@ -308,11 +309,11 @@ int file_sys_test()
 	// get_file_name();
 	for (i = 0; i < get_file_num(); i++)
 	{
-		tmp = file_sys_read(fd, file_buf, MAX_LEN_FILE_NAME);
+		tmp = read(fd, file_buf, MAX_LEN_FILE_NAME);
 		if (tmp > 0)
 		{
 			// write -1 fail
-			if (-1 == file_sys_write(STDOUT_FD, file_buf, tmp))
+			if (-1 == write(STDOUT_FD, file_buf, tmp))
 			{
 				TEST_PRINT("fail to write in stdout\n");
 				close_opening();
@@ -344,7 +345,7 @@ int file_sys_test()
 	continue_test();
 	TEST_PRINT("continue to read, should print \"reach to the end\"", i);
 	// should return 0 and print reach to the end\n
-	tmp = file_sys_read(fd, file_buf, MAX_LEN_FILE_NAME);
+	tmp = read(fd, file_buf, MAX_LEN_FILE_NAME);
 	if (tmp)
 	{
 		TEST_PRINT("fail in test reading at end., read returns %d\n", tmp);
@@ -354,19 +355,19 @@ int file_sys_test()
 	continue_test();
 	// try to test stdin and stdout
 	TEST_PRINT("try to write in stdin, read in stdout, close stdout, all should fail\n");
-	if (!file_sys_write(STDIN_FD, file_buf, tmp))
+	if (!write(STDIN_FD, file_buf, tmp))
 	{
 		TEST_PRINT("wrongly write in stdin\n");
 		close_opening();
 		return FAIL;
 	}
-	if (!file_sys_read(STDOUT_FD, file_buf, MAX_LEN_FILE_NAME))
+	if (!read(STDOUT_FD, file_buf, MAX_LEN_FILE_NAME))
 	{
 		TEST_PRINT("wrongly read in stdout\n");
 		close_opening();
 		return FAIL;
 	}
-	if (!file_sys_close(STDOUT_FD))
+	if (!close(STDOUT_FD))
 	{
 		TEST_PRINT("wrongly close stdout\n");
 		close_opening();
@@ -383,7 +384,7 @@ int file_sys_test()
 		continue_test();
 		clear();
 		TEST_PRINT("try to open file %s\n", flie_list[i]);
-		fd = file_sys_open((const uint8_t *)flie_list[i]);
+		fd = open((const uint8_t *)flie_list[i]);
 		if (fd < 2)
 		{
 			TEST_PRINT("fail to open %s\n", flie_list[i]);
@@ -408,7 +409,7 @@ int file_sys_test()
 		// read file 32B one time
 		do
 		{
-			tmp = file_sys_read(fd, file_buf, MAX_LEN_FILE_NAME);
+			tmp = read(fd, file_buf, MAX_LEN_FILE_NAME);
 			switch (tmp)
 			{
 			case 0:
@@ -418,7 +419,7 @@ int file_sys_test()
 				close_opening();
 				return FAIL;
 			default:
-				if (-1 == file_sys_write(STDOUT_FD, file_buf, tmp))
+				if (-1 == write(STDOUT_FD, file_buf, tmp))
 				{
 					TEST_PRINT("fail to display file, %d\n", tmp);
 					close_opening();
@@ -441,7 +442,7 @@ int file_sys_test()
 	}
 
 	TEST_PRINT("try to open root again, should fail\n");
-	fd = file_sys_open((const uint8_t *)flie_list[0]);
+	fd = open((const uint8_t *)flie_list[0]);
 	if (fd != -1)
 	{
 		TEST_PRINT("wrongly open %s\n", flie_list[0]);
@@ -450,10 +451,10 @@ int file_sys_test()
 	}
 	continue_test();
 	TEST_PRINT("to test opening invaild file, close one file first\n");
-	file_sys_close(get_num_opening() - 1);
+	close(get_num_opening() - 1);
 	printf("Check: the number of opening files is %d\n", get_num_opening());
 	TEST_PRINT("try to open invaild file, should fail\n");
-	fd = file_sys_open((const uint8_t *)flie_list[7]);
+	fd = open((const uint8_t *)flie_list[7]);
 	if (fd != -1)
 	{
 		TEST_PRINT("wrongly open an invaild file %s\n", flie_list[0]);
@@ -549,7 +550,7 @@ int terminal_test(){
 void continue_test()
 {
 	printf("\n-------press ENTER to awake it (and test stdin craftily)---------\n");
-	file_sys_read(STDIN_FD, file_buf, MAX_LEN_FILE_NAME);
+	read(STDIN_FD, file_buf, MAX_LEN_FILE_NAME);
 }
 
 /* Checkpoint 3 tests */
@@ -567,6 +568,6 @@ void launch_tests()
 	// TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
 	// TEST_OUTPUT("Keyboard_test", keyboard_test());
 	// TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
-	// TEST_OUTPUT("file_sys_test", file_sys_test());
-	halt(1);
+	TEST_OUTPUT("file_sys_test", file_sys_test());
+	//halt(1);
 }

@@ -656,3 +656,55 @@ void test_interrupts(void)
         video_mem[i << 1]++;
     }
 }
+
+/* int32_t open(const uint8_t *filename)
+ * Inputs: void
+ * Return Value: void
+ * Function: increments video memory. To be used to test rtc */
+int32_t open(const uint8_t *filename) {
+    long result;
+
+    asm volatile ("INT $0x80"
+    : "=a"  (result)
+    : "a" (0x05), "b" (filename)
+    : "memory", "cc");
+
+    return result;
+}
+
+/* int32_t test_interrupts(void)
+ * Inputs: void
+ * Return Value: void
+ * Function: increments video memory. To be used to test rtc */
+int32_t write(int32_t fd, const void *buffer, int32_t nbytes) {
+    long result;
+
+    asm volatile ("INT $0x80"
+    : "=a" (result)
+    : "a" (0x04), "b" (fd), "c" (buffer), "d" (nbytes)
+    : "memory", "cc");
+
+    return result;
+}
+
+int32_t read(int32_t fd, void *buffer, int32_t nbytes) {
+    long result;
+
+    asm volatile ("INT $0x80"
+    : "=a" (result)
+    : "a" (0x03), "b" (fd), "c" (buffer), "d" (nbytes)
+    : "memory", "cc");
+
+    return result;
+}
+
+int32_t close(int32_t fd) {
+    long result;
+
+    asm volatile ("INT $0x80"
+    : "=a" (result)
+    : "a" (0x06), "b" (fd)
+    : "memory", "cc");
+
+    return result;
+}
