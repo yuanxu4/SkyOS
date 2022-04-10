@@ -288,6 +288,7 @@ int32_t terminal_read(int32_t fd, void* buf, int32_t nbytes){
     int32_t copied;     // number has copied
     uint8_t* to;        // copy to 
     uint8_t* from;      // copy from 
+    sti();
     while(copy_flag == 0){} // read function waiting 
     to = buf;
     from = kb_buf;

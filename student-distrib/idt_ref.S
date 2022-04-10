@@ -1154,7 +1154,7 @@ finish_syscall:
 syscall_table:
 .long 0
 .long system_halt
-.long syscall_err # system_execute
+.long system_execute
 .long system_read
 .long system_write
 .long system_open
