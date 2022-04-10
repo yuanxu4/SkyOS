@@ -266,7 +266,12 @@ int32_t deactivate_file_array(file_array_t *fd_array)
     // close all files
     for (fd = 2; fd < MAX_NUM_OPEN; fd++)
     {
+        if (curr_task()->fd_array.entries[fd].flags)
+        {
         file_sys_close(fd); // may print info for unopened file
+        }
+        
+
     }
     return 0;
 }
@@ -367,19 +372,23 @@ int32_t file_sys_close(int32_t fd)
  */
 int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes)
 {
+
     // not opening
-    if (!curr_task()->fd_array.entries[fd].flags)
+    if ((!curr_task()->fd_array.entries[fd].flags))
     {
+                   PRINT("%x, %d, %d",curr_task(),fd, nbytes);
         PRINT("fail to read. file is not open\n");
+
         return -1;
     }
+
     // update position field included in specfic read functions
     return curr_task()->fd_array.entries[fd].op_tbl_ptr->read(fd, buf, nbytes);
 }
 
 /*
  * int32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes)
- * try to write data from file to buf
+ * try to write data from file to bufcurr_task()-
  * Inputs:  fd -- The file descriptor of the file to write
  *          buf -- The buffer storing data
  *          nbytes -- The number of bytes to write
@@ -708,7 +717,7 @@ int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
     int32_t copy_size = MIN(nbytes, MAX_LEN_FILE_NAME);             // size to copy
     if (pst >= boot_block->dir_count)
     {
-        PRINT("\nread nothing in directory. reach to the end\n");
+        // PRINT("\nread nothing in directory. reach to the end\n");
         return 0;
     }
     // copy

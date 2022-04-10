@@ -71,4 +71,5 @@ int32_t restore_task_page(int32_t page_id);
 // tmp declaration
 int32_t system_execute(const uint8_t *command);
 int32_t system_halt(uint8_t status);
+int32_t print_pcb(PCB_t* task);
 #endif // _TASK_H

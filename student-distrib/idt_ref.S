@@ -1111,13 +1111,13 @@ IDT_INTERUPT_40:
 IDT_SYSCALL:
     # save_pre_reg
     pushf
-    pushl %eax    
+#    pushl %eax    
     pushl %ebp
     pushl %esi
     pushl %edi
-    push %fs
-    push %es
-    push %ds
+#    push %fs
+#   push %es
+#    push %ds
     pushl %edx
     pushl %ecx
     pushl %ebx
@@ -1140,13 +1140,13 @@ finish_syscall:
     popl %ebx
     popl %ecx
     popl %edx
-    pop %ds
-    pop %es
-    pop %fs
+#    pop %ds
+#    pop %es
+#    pop %fs
     popl %edi
     popl %esi
     popl %ebp
-    popl %eax
+#    popl %eax
 #    popl %eax
     popf
     iret

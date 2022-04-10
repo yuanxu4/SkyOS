@@ -194,6 +194,7 @@ void scancode_output(uint8_t scancode)
         }
         char_num = 0;
         //cur_num = 0;
+        putc('\n');
         copy_flag = 1;
     }
 

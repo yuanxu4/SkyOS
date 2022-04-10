@@ -157,7 +157,7 @@ void entry(unsigned long magic, unsigned long addr)
 
         tss.ldt_segment_selector = KERNEL_LDT;
         tss.ss0 = KERNEL_DS;
-        tss.esp0 = 0x800000;
+        tss.esp0 = 0x7FD000;
         ltr(KERNEL_TSS);
     }
 
@@ -176,12 +176,11 @@ void entry(unsigned long magic, unsigned long addr)
     enable_irq(RTC_IRQ);
     rtc_reset_R3();
 
-    
-
     if (mbi->mods_count > 0)
     {
         file_sys_init((module_t *)mbi->mods_addr);
     }
+    init_task_page_array();
 
     /* Enable paging */
     enable_paging();

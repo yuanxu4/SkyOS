@@ -139,7 +139,7 @@ void idt_init()
  */
 void print_exception(uint32_t exception_num)
 {
-    clear();
+    // clear();
     printf(" Detect exception %x\n", exception_num);
     printf(" --------pretend it is a BLUE SCREEN---------\n");
     while (1)
@@ -185,37 +185,8 @@ void syscall_err(uint32_t invalid_call){
  * return 0 for fail other for success
  */
 asmlinkage int32_t system_open(uint8_t* filename ){
-    /*** check file valid or not ***/
-    int file_check;
-    dentry_t current_dentry;
-    file_check = read_dentry_by_name(filename, &current_dentry);
-    if(file_check == -1){   //if check fail then show it is not a visible file
-        printf("invalid file!!!\n");
-        return -1;
-    }
-
-    /*** call the hanler function by file type ***/
-    uint32_t file_type = current_dentry.file_type;
-    switch (file_type)
-    {
-    case 0:
-        return rtc_open(filename);
-        break;
-
-    case 1:
-        printf("open dir not implenent now\n");
-        break;
-
-    case 2:
-        return file_sys_open(filename);
-        break;
-    
-    default:
-        printf("invalid file type, check again!!!\n");
-        break;
-    }
-
-    return -1;
+    int32_t ret= file_sys_open(filename);
+    return ret;
 }
 
 asmlinkage int32_t system_close(int32_t fd){

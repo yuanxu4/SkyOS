@@ -17,6 +17,17 @@ static page_usage_array_t page_array; // manage pages
 extern void flush_TLB();   // defined in boot.S
 extern PCB_t *curr_task(); // defined in boot.S
 
+int32_t print_pcb(PCB_t * task)
+{
+    printf("task_name:%s\n", task->task_name);
+    printf("pid:%d\n", task->pid);
+    printf("parent:%x\n", task->parent);
+    printf("saved_esp:%x\n", task->saved_esp);
+    printf("saved_ebp:%x\n", task->saved_ebp);
+    printf("kernel_ebp:%x\n", task->kernel_ebp);
+    printf("eip:%x\n", task->eip);
+}
+
 /*
  * int32_t init_task_page_array()
  * init page_array
@@ -63,7 +74,7 @@ int32_t find_unused_page()
  * Inputs: none
  * Outputs: None
  * Side Effects: init page_array
- * return value: -1 for fail, 0 for succ
+ * return value: -1 for fail, page_id for succ
  */
 int32_t set_task_page()
 {
@@ -74,12 +85,13 @@ int32_t set_task_page()
     {
         return -1;
     }
+    page_array.pages[page_id]=IN_USE;
     // set pde
     base_addr = KERNEL_UPPER_ADDR + page_id * SIZE_4MB;
     page_directory.pde[TASK_VIR_IDX] = base_addr | TASK_PAGE_INFO;
     flush_TLB();            // flush tlb since remapping
     page_array.num_using++; // incr # using
-    return 0;
+    return page_id;
 }
 
 /*
@@ -118,7 +130,7 @@ PCB_t *get_task_ptr(int32_t id)
 {
     if ((id >= 0) & (id < MAX_NUM_TASK))
     {
-        return (PCB_t *)KERNEL_UPPER_ADDR - (id + 1) * SIZE_8KB;
+        return (PCB_t *)(KERNEL_UPPER_ADDR - (id + 1) * SIZE_8KB);
     }
     return NULL;
 }
@@ -175,16 +187,17 @@ todo
 
 */
 int32_t system_execute(const uint8_t *command)
-{
+{                  
     dentry_t task_dentry; // copied task dentry
     uint8_t *args;        // arguments
-    int32_t page_id;      // new page id
+    // int32_t page_id;      // new page id
     PCB_t *new_task;      // new task
     uint32_t eip;
-    uint32_t len; // tem len
+    // uint32_t len; // tem len
     // Parse args
     args = parse_args((uint8_t *)command);
     // get the dentry in fs
+
     if (read_dentry_by_name(command, &task_dentry) == -1)
     {
         return -1;
@@ -201,20 +214,6 @@ int32_t system_execute(const uint8_t *command)
         return -1;
     }
 
-    /*
-    // push task name on stack?
-    len = strlen((int8_t *)new_task->task_name);
-    new_task->kernel_esp -= len;
-    new_task->task_name = (uint8_t *)strcpy((int8_t *)new_task->kernel_esp, (int8_t *)new_task->task_name);
-    // push args on stack if have
-    if (new_task->args != NULL)
-    {
-        len = strlen((int8_t *)new_task->args);
-        new_task->kernel_esp -= len;
-        new_task->args = (uint8_t *)strcpy((int8_t *)new_task->kernel_esp, (int8_t *)new_task->args);
-    }
-    */
-
     // Losd file into memory
     file_load(&task_dentry, (uint8_t *)TASK_VIR_ADDR + TASK_VIR_OFFSET);
     // todo: Context Switch
@@ -229,6 +228,7 @@ int32_t system_execute(const uint8_t *command)
     // set tss
     tss.ss0 = KERNEL_DS;
     tss.esp0 = new_task->kernel_ebp;
+    // print_pcb(new_task);
     // ...
     asm volatile("            \n\
         movw    %%ax, %%ds  /* set ds to user ds */     \n\
@@ -283,7 +283,7 @@ int32_t deactivate_task_page(int32_t page_id)
 PCB_t *deactivate_task(PCB_t *task)
 {
     // never shutdown shell
-    if (task == NULL | task->parent == NULL)
+    if (task == NULL)
     {
         return NULL;
     }
@@ -342,14 +342,16 @@ int32_t system_halt(uint8_t status)
     parent = deactivate_task(curr_task());
     if (parent == NULL)
     {
-        return -1;
+        system_execute("shell");
     }
     // Restore parent paging
     restore_task_page(parent->pid);
 
     // todo
     // Write Parent process’ info back to TSS
-    tss.esp0 = parent->saved_esp;
+    tss.esp0 = curr_task()->saved_esp;
+    // print_pcb(curr_task());
+    // print_pcb(parent);
     // restore stack
     asm volatile("         \n\
             movl %%ebx, %%esp   \n\
@@ -358,7 +360,7 @@ int32_t system_halt(uint8_t status)
             jmp EXE_RET  /* jump to exe ret*/             \n\
             "
                  : /* no output*/
-                 : "b"(parent->saved_esp), "c"(parent->saved_ebp), "d"(status)
+                 : "b"(curr_task()->saved_esp), "c"(curr_task()->saved_ebp), "d"(status)
                  : "eax");
     // should never return
     printf("ERROR, reach end of halt()");
