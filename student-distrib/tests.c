@@ -529,17 +529,17 @@ int terminal_test(){
 	uint8_t* buf2 = (uint8_t*)"391OS> ";
 
    while (1){
-	    if (-1 == (cnt = terminal_write (1, buf2, 7))) {	// write the and terminal read
+	    if (-1 == (cnt = write (1, buf2, 7))) {	// write the and terminal read
 			printf("ERROR writing the terminal! \n");
 		}
-	    if (-1 == (cnt = terminal_read (0, buf, 128))) {
+	    if (-1 == (cnt = read (0, buf, 128))) {
 			printf("ERROR reading the terminal! \n");
 		}else{
 			printf("\n");
 			printf("keyboard buffer is %s \n", buf); 
 		}
 		printf("Writing terminal read value: ");
-		if (-1 == (cnt = terminal_write (1, buf, 128))) {	
+		if (-1 == (cnt = write (1, buf, 128))) {	
 			printf("ERROR writing the terminal! \n");
 		}else{			
 			printf("\n");
@@ -569,5 +569,6 @@ void launch_tests()
 	// TEST_OUTPUT("Keyboard_test", keyboard_test());
 	// TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
 	// TEST_OUTPUT("file_sys_test", file_sys_test());
+	TEST_OUTPUT("terminal test", terminal_test());
 	//halt(1);
 }
