@@ -745,19 +745,26 @@ int32_t dir_write(int32_t fd, const void *buf, int32_t nbytes)
 // can refer to rtc ops implemented by Yuan
 int32_t rtc_user_open(const uint8_t *filename)
 {
-    return 0;
+    int32_t fd = find_unused_fd();
+    // available fd, actually need not check
+    if (fd != -1)
+    {
+        set_entry(&curr_task()->fd_array, fd, 0); // type is 1 for directory
+    }
+    // rtc_open(filename);
+    return fd;
 }
 int32_t rtc_user_close(int32_t fd)
 {
-    return 0;
+    return rtc_close(fd);
 }
 int32_t rtc_user_read(int32_t fd, void *buf, int32_t nbytes)
 {
-    return 0;
+    return rtc_read(fd, buf, nbytes);
 }
 int32_t rtc_user_write(int32_t fd, const void *buf, int32_t nbytes)
 {
-    return 0;
+    return rtc_write(fd, buf, nbytes);
 }
 
 /*
