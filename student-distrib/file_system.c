@@ -268,10 +268,8 @@ int32_t deactivate_file_array(file_array_t *fd_array)
     {
         if (curr_task()->fd_array.entries[fd].flags)
         {
-        file_sys_close(fd); // may print info for unopened file
+            file_sys_close(fd); // may print info for unopened file
         }
-        
-
     }
     return 0;
 }
@@ -376,7 +374,7 @@ int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes)
     // not opening
     if ((!curr_task()->fd_array.entries[fd].flags))
     {
-                   PRINT("%x, %d, %d",curr_task(),fd, nbytes);
+        PRINT("%x, %d, %d", curr_task(), fd, nbytes);
         PRINT("fail to read. file is not open\n");
 
         return -1;
@@ -798,7 +796,6 @@ int32_t stdin_write(int32_t fd, const void *buf, int32_t nbytes)
     return -1;
 }
 
-
 /*
  * get_file_array
  * description: return the file_array's pointer
@@ -809,4 +806,3 @@ int32_t stdin_write(int32_t fd, const void *buf, int32_t nbytes)
 // file_array_t* get_file_array(){
 //     return &file_array;
 // }
-

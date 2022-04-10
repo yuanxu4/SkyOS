@@ -170,10 +170,13 @@ void print_syscall(uint32_t syscall_num)
  * output: num is not a syscall
  * return: none
  */
-void syscall_err(uint32_t invalid_call){
+void syscall_err(uint32_t invalid_call)
+{
     clear();
     printf("System call %x is not valid check twice!!!\n", invalid_call);
-    while(1){}
+    while (1)
+    {
+    }
 }
 
 /*
@@ -184,20 +187,24 @@ void syscall_err(uint32_t invalid_call){
  * output: none
  * return 0 for fail other for success
  */
-asmlinkage int32_t system_open(uint8_t* filename ){
-    int32_t ret= file_sys_open(filename);
+asmlinkage int32_t system_open(uint8_t *filename)
+{
+    int32_t ret = file_sys_open(filename);
     return ret;
 }
 
-asmlinkage int32_t system_close(int32_t fd){
+asmlinkage int32_t system_close(int32_t fd)
+{
     return file_sys_close(fd);
 }
 
-asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes){
+asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes)
+{
     return file_sys_write(fd, buf, nbytes);
 }
 
-asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes){
+asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes)
+{
     return file_sys_read(fd, buf, nbytes);
 }
 

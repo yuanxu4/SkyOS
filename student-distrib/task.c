@@ -17,7 +17,7 @@ static page_usage_array_t page_array; // manage pages
 extern void flush_TLB();   // defined in boot.S
 extern PCB_t *curr_task(); // defined in boot.S
 
-int32_t print_pcb(PCB_t * task)
+int32_t print_pcb(PCB_t *task)
 {
     printf("task_name:%s\n", task->task_name);
     printf("pid:%d\n", task->pid);
@@ -85,7 +85,7 @@ int32_t set_task_page()
     {
         return -1;
     }
-    page_array.pages[page_id]=IN_USE;
+    page_array.pages[page_id] = IN_USE;
     // set pde
     base_addr = KERNEL_UPPER_ADDR + page_id * SIZE_4MB;
     page_directory.pde[TASK_VIR_IDX] = base_addr | TASK_PAGE_INFO;
@@ -187,11 +187,11 @@ todo
 
 */
 int32_t system_execute(const uint8_t *command)
-{                  
+{
     dentry_t task_dentry; // copied task dentry
     uint8_t *args;        // arguments
     // int32_t page_id;      // new page id
-    PCB_t *new_task;      // new task
+    PCB_t *new_task; // new task
     uint32_t eip;
     // uint32_t len; // tem len
     // Parse args
