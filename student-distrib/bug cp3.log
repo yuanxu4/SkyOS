@@ -1,0 +1,72 @@
+<--------------------------------------------------------->
+                          BUG 0                          
+<--------------------------------------------------------->
+Time:
+    	2022.4.10
+Creator:
+   	 Keyi
+Description:
+When running ls program, it tries to read the unopen file (. directory)
+Reason:
+ 	In our system call asm code, it saves all registers including %eax, then call the corresponding c code and restore %eax finally. In this case, the return value from c code is invalid and or we can say the user program gets the wrong return value (here fd = 5). Then when we try to read this wrong fd, it is unopen.
+Solution:
+    	Don’t save and restore %eax.
+
+<--------------------------------------------------------->
+                          BUG 1                          
+<--------------------------------------------------------->
+Time:
+	2022.4.10
+Creator:
+	Keyi
+Description:
+    	After running ls, it returns wrongly. No 391OS.
+Reason:
+	We use saved esp and ebp of the parent program to return to parent program in halt, which is wrong.
+Solution:
+	Use saved esp and ebp of the current program which stores previous esp and ebp to return to parent program.
+
+<--------------------------------------------------------->
+                          BUG 2                          
+<--------------------------------------------------------->
+Time:
+	2022.4.10
+Creator:
+    	Keyi
+Description:
+    	Get the wrong address of PCB.
+Reason:
+	(PCB_t *) KERNEL_UPPER_ADDR - (id + 1) * SIZE_8KB
+	Here we transform the macro to a pointer to PCB, then the offset becomes offset * size of PCB.
+Solution:
+	(PCB_t *) (KERNEL_UPPER_ADDR - (id + 1) * SIZE_8KB)
+	Add parentheses to calculate address first, then transform it to a pointer to PCB.
+
+<--------------------------------------------------------->
+                          BUG 3                          
+<--------------------------------------------------------->
+Time:
+	2022.4.10
+Creator:
+    	
+Description:
+    	
+Reason:
+    	
+Solution:
+	
+
+<--------------------------------------------------------->
+                          BUG 4                          
+<--------------------------------------------------------->
+Time:
+	2022.4.10
+Creator:
+    	
+Description:
+    	
+Reason:
+    	
+Solution:
+	
+

@@ -166,8 +166,8 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
     new_task->state = IN_USE;
     new_task->kernel_ebp = ((uint32_t)new_task) + SIZE_8KB - 4; // -4 for safty
     // new_task->kernel_esp = new_task->kernel_ebp;
-    new_task->args=args;
-    new_task->task_name=name;
+    new_task->args = args;
+    new_task->task_name = name;
 
     init_file_array(&new_task->fd_array);
     // if the only one task(shell)
@@ -198,19 +198,19 @@ int32_t system_execute(const uint8_t *command)
     // int32_t page_id;      // new page id
     PCB_t *new_task; // new task
     uint32_t eip;
-    uint8_t args_array[MAX_ARGS+1];
-    uint8_t name_array[MAX_LEN_FILE_NAME+1];
+    uint8_t args_array[MAX_ARGS + 1];
+    uint8_t name_array[MAX_LEN_FILE_NAME + 1];
     // uint32_t len; // tem len
     // Parse args
     args = parse_args((uint8_t *)command);
-// printf("%s\n", command);
-    strcpy((int8_t*)name_array,(const int8_t*)command);
-    if (args !=NULL)
+    // printf("%s\n", command);
+    strcpy((int8_t *)name_array, (const int8_t *)command);
+    if (args != NULL)
     {
         // printf("%s\n", args);
-    strcpy((int8_t*)args_array, (const int8_t*)args);
+        strcpy((int8_t *)args_array, (const int8_t *)args);
     }
-    
+
     // get the dentry in fs
     if (read_dentry_by_name(command, &task_dentry) == -1)
     {
@@ -227,7 +227,7 @@ int32_t system_execute(const uint8_t *command)
     new_task = create_task(name_array, args_array);
     if (new_task == NULL)
     {
-        printf("[INFO] Cannot execute more than %d programs!\n",MAX_NUM_TASK);
+        printf("[INFO] Cannot execute more than %d programs!\n", MAX_NUM_TASK);
         return -1;
     }
 

@@ -252,13 +252,13 @@ asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes)
     return file_sys_read(fd, buf, nbytes);
 }
 
-asmlinkage int32_t system_vidmap(uint8_t** screen_start)
+asmlinkage int32_t system_vidmap(uint8_t **screen_start)
 {
     printf("vidmap has not been implemented now.\n");
     return 0;
 }
 
-asmlinkage int32_t system_set_handler(int32_t signum, void*handler_address)
+asmlinkage int32_t system_set_handler(int32_t signum, void *handler_address)
 {
     printf("set_handler has not been implemented now.\n");
     return 0;
