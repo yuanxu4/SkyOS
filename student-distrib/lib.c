@@ -659,7 +659,7 @@ void test_interrupts(void)
 
 int32_t halt(uint8_t status)
 {
-    long result;
+    int32_t result;
     asm volatile("INT $0x80"
                  : "=a"(result)
                  : "a"(0x01), "b"(status)
@@ -669,7 +669,7 @@ int32_t halt(uint8_t status)
 
 int32_t execute(const uint8_t *command)
 {
-    long result;
+    int32_t result;
     asm volatile("INT $0x80"
                  : "=a"(result)
                  : "a"(0x02), "b"(command)
@@ -683,7 +683,7 @@ int32_t execute(const uint8_t *command)
  * Function: increments video memory. To be used to test rtc */
 int32_t open(const uint8_t *filename)
 {
-    long result;
+    int32_t result;
     asm volatile("INT $0x80"
                  : "=a"(result)
                  : "a"(0x05), "b"(filename)
@@ -698,7 +698,7 @@ int32_t open(const uint8_t *filename)
  * Function: increments video memory. To be used to test rtc */
 int32_t write(int32_t fd, const void *buffer, int32_t nbytes)
 {
-    long result;
+    int32_t result;
     asm volatile("INT $0x80"
                  : "=a"(result)
                  : "a"(0x04), "b"(fd), "c"(buffer), "d"(nbytes)
@@ -709,7 +709,7 @@ int32_t write(int32_t fd, const void *buffer, int32_t nbytes)
 
 int32_t read(int32_t fd, void *buffer, int32_t nbytes)
 {
-    long result;
+    int32_t result;
     asm volatile("INT $0x80"
                  : "=a"(result)
                  : "a"(0x03), "b"(fd), "c"(buffer), "d"(nbytes)
@@ -720,7 +720,7 @@ int32_t read(int32_t fd, void *buffer, int32_t nbytes)
 
 int32_t close(int32_t fd)
 {
-    long result;
+    int32_t result;
     asm volatile("INT $0x80"
                  : "=a"(result)
                  : "a"(0x06), "b"(fd)
@@ -731,7 +731,7 @@ int32_t close(int32_t fd)
 
 int32_t getargs(uint8_t *buf, int32_t nbytes)
 {
-    long result;
+    int32_t result;
     asm volatile("INT $0x80"
                  : "=a"(result)
                  : "a"(0x07), "b"(buf), "c"(nbytes)

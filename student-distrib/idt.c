@@ -149,7 +149,7 @@ void print_exception(uint32_t exception_num)
     }
     else
     {
-        printf("Detect exception %x in kernal state\n", exception_num);
+        printf("Detect exception %x in user program\n", exception_num);
         // return 256 to execute
         PCB_t *parent;
         if (page_array.num_using == 0)

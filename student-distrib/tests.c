@@ -342,7 +342,7 @@ int file_sys_test()
 		}
 	}
 	continue_test();
-	TEST_PRINT("continue to read, should print \"reach to the end\"", i);
+	TEST_PRINT("continue to read, should not print other file names\n");
 	// should return 0 and print reach to the end\n
 	tmp = read(fd, file_buf, MAX_LEN_FILE_NAME);
 	if (tmp)
@@ -567,20 +567,28 @@ void continue_test()
 
 int exe_halt_err_test()
 {
+	continue_test();
+	clear();
 	TEST_HEADER;
 	long result = PASS;
 	int32_t ret;
-	printf("Try to execute non-exist file");
-	if (-1 != (ret = execute((uint8_t *)"efvwbwrever")))
+	char *flie_list[2] = {"verylargetextwithverylongname.tx", "wqevfwrtvwev"};
+	printf("Try to execute non-exist file: %s\n", flie_list[1]);
+	if (-1 != (ret = execute((uint8_t *)flie_list[1])))
 	{
-		printf("fail: execute non-exist file\n");
+		printf("wrongly execute non-exist file\n");
 		result = FAIL;
 	}
-
-	printf("Try to execute non-executable file");
-	if (-1 != (ret = execute((uint8_t *)"frame1.txt")))
+	printf("\nTry to execute unexecutable file: %s\n", flie_list[0]);
+	if (-1 != (ret = execute((uint8_t *)flie_list[0])))
 	{
-		printf("fail: execute non-executable file\n");
+		printf("wrongly execute unexecutable file\n");
+		result = FAIL;
+	}
+	printf("\nTry to halt nothing\n");
+	if (-1 !=halt(ret))
+	{
+		printf("wrongly halt\n");
 		result = FAIL;
 	}
 	return result;
@@ -601,6 +609,7 @@ void launch_tests()
 	// TEST_OUTPUT("Keyboard_test", keyboard_test());
 	// TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
 	TEST_OUTPUT("file_sys_test", file_sys_test());
-	TEST_OUTPUT("exe garbage test", exe_halt_err_test());
+	TEST_OUTPUT("exe garbage input test", exe_halt_err_test());
+	continue_test();
 	clear();
 }

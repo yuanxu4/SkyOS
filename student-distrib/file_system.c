@@ -383,12 +383,6 @@ int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes)
     {
         return -1;
     }
-    // fd is invalid
-    if (fd == 0 || fd == 1)
-    {
-        PRINT("fail to close. cannot close stdin/stdout\n");
-        return -1;
-    }
     if (fd < 0 || fd >= MAX_NUM_OPEN)
     {
         PRINT("fail to close file. invaild file descriptor %d\n", fd);
@@ -425,12 +419,6 @@ int32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes)
     }
     if (nbytes < 0)
     {
-        return -1;
-    }
-    // fd is invalid
-    if (fd == 0 || fd == 1)
-    {
-        PRINT("fail to close. cannot close stdin/stdout\n");
         return -1;
     }
     if (fd < 0 || fd >= MAX_NUM_OPEN)

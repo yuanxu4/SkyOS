@@ -203,17 +203,20 @@ int32_t system_execute(const uint8_t *command)
 
     if (read_dentry_by_name(command, &task_dentry) == -1)
     {
+        printf("[INFO] Cannot execute non-exist file\n");
         return -1;
     }
     // Check for executable
     if (!is_exe_file(&task_dentry))
     {
+        printf("[INFO] Cannot execute unexecutable file\n");
         return -1;
     }
     // Create PCB, Set up paging
     new_task = create_task((uint8_t *)command, args);
     if (new_task == NULL)
     {
+        printf("[INFO] Cannot execute more than %d programs!\n",MAX_NUM_TASK);
         return -1;
     }
 
@@ -336,8 +339,9 @@ int32_t system_halt(uint8_t status)
     PCB_t *parent;
     if (page_array.num_using == 0)
     {
-        printf("halt nothing");
-        system_execute((uint8_t *)"shell");
+        printf("[INFO] nothing to halt\n");
+        // system_execute((uint8_t *)"shell");
+        return -1;
     }
     // try to deactivate task, get parent task
     parent = deactivate_task(curr_task());
