@@ -290,7 +290,6 @@ int32_t file_sys_open(const uint8_t *filename)
         printf("fail to open: get NULL filename\n");
         return -1;
     }
-
     dentry_t copied_dentry;
     // PRINT("addr copy dentry: %#x\n", &copied_dentry);
     int32_t fd = -1; // the returned file descriptor if succuss

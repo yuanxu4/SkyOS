@@ -1160,8 +1160,8 @@ syscall_table:
 .long system_open
 .long system_close
 .long system_getargs
-.long syscall_err # system_vidmap
-.long syscall_err # system_set_handler
-.long syscall_err # system_sigreturn
+.long system_vidmap # system_vidmap
+.long system_set_handler # system_set_handler
+.long system_sigreturn # system_sigreturn
 
 

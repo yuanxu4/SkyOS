@@ -116,12 +116,6 @@ uint8_t *parse_args(uint8_t *command)
         }
         command++;
     }
-    // if (args!=NULL)
-    // {
-    // printf("%s\n", args);
-    // printf("%x\n", args);
-    // }
-
     return args;
 }
 
@@ -154,7 +148,6 @@ PCB_t *get_task_ptr(int32_t id)
 PCB_t *create_task(uint8_t *name, uint8_t *args)
 {
     int32_t page_id; // new page id
-    int32_t tmp;
     PCB_t *new_task; // new task
     // set am unused page
     page_id = set_task_page();
@@ -205,11 +198,20 @@ int32_t system_execute(const uint8_t *command)
     // int32_t page_id;      // new page id
     PCB_t *new_task; // new task
     uint32_t eip;
+    uint8_t args_array[MAX_ARGS+1];
+    uint8_t name_array[MAX_LEN_FILE_NAME+1];
     // uint32_t len; // tem len
     // Parse args
     args = parse_args((uint8_t *)command);
+// printf("%s\n", command);
+    strcpy((int8_t*)name_array,(const int8_t*)command);
+    if (args !=NULL)
+    {
+        // printf("%s\n", args);
+    strcpy((int8_t*)args_array, (const int8_t*)args);
+    }
+    
     // get the dentry in fs
-
     if (read_dentry_by_name(command, &task_dentry) == -1)
     {
         printf("[INFO] Cannot execute non-exist file\n");
@@ -222,7 +224,7 @@ int32_t system_execute(const uint8_t *command)
         return -1;
     }
     // Create PCB, Set up paging
-    new_task = create_task((uint8_t *)command, args);
+    new_task = create_task(name_array, args_array);
     if (new_task == NULL)
     {
         printf("[INFO] Cannot execute more than %d programs!\n",MAX_NUM_TASK);
@@ -398,8 +400,8 @@ int32_t system_getargs(uint8_t *buf, int32_t nbytes)
     {
         return -1;
     }
-    printf("%s\n", args);
-    printf("%x\n", args);
+    // printf("%s\n", args);
+    // printf("%x\n", args);
     strncpy((int8_t *)buf, (int8_t *)args, nbytes);
     return 0;
 }
