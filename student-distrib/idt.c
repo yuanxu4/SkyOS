@@ -177,10 +177,9 @@ void syscall_err(uint32_t invalid_call){
 }
 
 /*
- * system_opne
+ * system_open
  * description: it classify the file type and call the corresponing handler
  * input: filename
- *        syscall
  * output: none
  * return 0 for fail other for success
  */
@@ -218,21 +217,49 @@ asmlinkage int32_t system_open(uint8_t* filename){
     return -1;
 }
 
+/*
+ * system_close
+ * description: close the file that provided
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
 asmlinkage int32_t system_close(int32_t fd){
     return file_sys_close(fd);
 }
 
+/*
+ * system_write
+ * description: write the provide file
+ * input: fd, buf, nbytes
+ * output: none
+ * return 0 for fail other for success
+ */
 asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes){
     return file_sys_write(fd, buf, nbytes);
 }
 
+/*
+ * system_read
+ * description: read the provide file
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
 asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes){
     return file_sys_read(fd, buf, nbytes);
 }
 
-asmlinkage int32_t system_halt (uint8_t status){
-    clear();
-    printf(" halt %x\n", status);
-    printf(" --------pretend it is a BLUE SCREEN---------\n");
-    while(1){}
-}
+/*
+ * system_open
+ * description: it classify the file type and call the corresponing handler
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
+// asmlinkage int32_t system_halt (uint8_t status){
+//     clear();
+//     printf(" halt %x\n", status);
+//     printf(" --------pretend it is a BLUE SCREEN---------\n");
+//     while(1){}
+// }

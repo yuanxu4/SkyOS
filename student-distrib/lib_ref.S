@@ -7,10 +7,6 @@
 #    movl 4(%ebp), %ebx # move fd to ebx
 #    INT $0x80    # generate systemcall interupt
 
-.globl halt
-halt:
-    movl $0x00, %eax    # move syscall index to eax
-    movl $1, %ebx
-    INT $0x80    # generate systemcall interupt
+
 
 

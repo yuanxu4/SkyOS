@@ -658,52 +658,60 @@ void test_interrupts(void)
 }
 
 /* int32_t open(const uint8_t *filename)
- * Inputs: void
- * Return Value: void
- * Function: increments video memory. To be used to test rtc */
+ * Inputs: filename
+ * Return Value: fd
+ * Function: it link to the system_call */
 int32_t open(const uint8_t *filename) {
     long result;
 
     asm volatile ("INT $0x80"
     : "=a"  (result)
-    : "a" (0x05), "b" (filename)
+    : "a" (0x05), "b" (filename)    //oxo5 is the syscall number for open
     : "memory", "cc");
 
     return result;
 }
 
-/* int32_t test_interrupts(void)
- * Inputs: void
- * Return Value: void
- * Function: increments video memory. To be used to test rtc */
+/* int32_t write
+ * Inputs: int32_t fd, const void *buffer, int32_t nbytes
+ * Return Value: -1 for fail other for success
+ * Function: link to system call */
 int32_t write(int32_t fd, const void *buffer, int32_t nbytes) {
     long result;
 
     asm volatile ("INT $0x80"
     : "=a" (result)
-    : "a" (0x04), "b" (fd), "c" (buffer), "d" (nbytes)
+    : "a" (0x04), "b" (fd), "c" (buffer), "d" (nbytes)  //oxo4 is the syscall number for write
     : "memory", "cc");
 
     return result;
 }
 
+/* int32_t read
+ * Inputs: int32_t fd, const void *buffer, int32_t nbytes
+ * Return Value: -1 for fail other for success
+ * Function: link to system call */
 int32_t read(int32_t fd, void *buffer, int32_t nbytes) {
     long result;
 
     asm volatile ("INT $0x80"
     : "=a" (result)
-    : "a" (0x03), "b" (fd), "c" (buffer), "d" (nbytes)
+    : "a" (0x03), "b" (fd), "c" (buffer), "d" (nbytes)  //oxo3 is the syscall number for read
     : "memory", "cc");
 
     return result;
 }
 
+/* int32_t close
+ * Inputs: int32_t fd
+ * Return Value: -1 for fail other for success
+ * Function: link to system call */
 int32_t close(int32_t fd) {
     long result;
 
     asm volatile ("INT $0x80"
     : "=a" (result)
-    : "a" (0x06), "b" (fd)
+    : "a" (0x06), "b" (fd)  //oxo6 is the syscall number for close
     : "memory", "cc");
 
     return result;

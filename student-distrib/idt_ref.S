@@ -1122,7 +1122,7 @@ IDT_SYSCALL:
     pushl %ecx
     pushl %ebx
     # check if the call is valid
-    cmpl $10, %eax
+    cmpl $10, %eax  # 10 is the max of syscall number
     jae invalid_syscall
     # call handler according to eax
     call *syscall_table(, %eax, 4)
@@ -1149,14 +1149,13 @@ finish_syscall:
 
     # do not pop eax
     addl $4, %esp
-#    popl %eax
     popf
     iret
 
 syscall_table:
 .long syscall_err
 .long system_halt
-.long syscall_err # system_execute
+.long system_execute
 .long system_read
 .long system_write
 .long system_open
