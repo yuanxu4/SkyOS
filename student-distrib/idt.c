@@ -6,7 +6,9 @@
 #include "i8259.h"
 #include "asmlink.h"
 #include "file_system.h"
+#include "task.h"
 
+extern PCB_t *curr_task(); // defined in boot.S
 /*** functions ***/
 
 /*
@@ -139,12 +141,55 @@ void idt_init()
  */
 void print_exception(uint32_t exception_num)
 {
-    // clear();
-    printf(" Detect exception %x\n", exception_num);
-    printf(" --------pretend it is a BLUE SCREEN---------\n");
-    while (1)
+    if (page_array.num_using == 0)
     {
+        clear();
+        printf("Detect exception %x in kernal state\n", exception_num);
+        printf(" --------pretend it is a BLUE SCREEN---------\n");
     }
+    else
+    {
+        printf("Detect exception %x in kernal state\n", exception_num);
+        // return 256 to execute
+        PCB_t *parent;
+        if (page_array.num_using == 0)
+        {
+            printf("halt nothing");
+            system_execute((uint8_t *)"shell");
+        }
+        // try to deactivate task, get parent task
+        parent = deactivate_task(curr_task());
+        if (parent == NULL)
+        {
+            system_execute((uint8_t *)"shell");
+        }
+        // Restore parent paging
+        restore_task_page(parent->pid);
+
+        // todo
+        // Write Parent process’ info back to TSS
+        tss.esp0 = curr_task()->saved_esp;
+        // print_pcb(curr_task());
+        // print_pcb(parent);
+        // restore stack
+        asm volatile("         \n\
+            movl %%edx, %%esp   \n\
+            movl %%ecx, %%ebp   \n\
+            movl %%ebx, %%eax   \n\
+            leave \n\
+            ret \n\
+            "
+                     : /* no output*/
+                     : "d"(curr_task()->saved_esp), "c"(curr_task()->saved_ebp), "b"(256)
+                     : "eax");
+        // should never return
+        printf("ERROR, reach end of halt()");
+    }
+
+    volatile int inf_loop = 1; // set it to 0 in gdb to return to exception content
+    while (inf_loop)
+    {
+    } // put kernel into infinite loop
 }
 
 /*
@@ -156,11 +201,11 @@ void print_exception(uint32_t exception_num)
  */
 void print_syscall(uint32_t syscall_num)
 {
-    clear();
+    // clear();
     printf(" Your syscall is %x, but not implement now\n", syscall_num);
-    while (1)
-    {
-    }
+    // while (1)
+    // {
+    // }
 }
 
 /*
@@ -172,11 +217,11 @@ void print_syscall(uint32_t syscall_num)
  */
 void syscall_err(uint32_t invalid_call)
 {
-    clear();
-    printf("System call %x is not valid check twice!!!\n", invalid_call);
-    while (1)
-    {
-    }
+    // clear();
+    printf("System call %x is not valid, check twice!!!\n", invalid_call);
+    // while (1)
+    // {
+    // }
 }
 
 /*
@@ -189,8 +234,7 @@ void syscall_err(uint32_t invalid_call)
  */
 asmlinkage int32_t system_open(uint8_t *filename)
 {
-    int32_t ret = file_sys_open(filename);
-    return ret;
+    return file_sys_open(filename);
 }
 
 asmlinkage int32_t system_close(int32_t fd)
@@ -207,10 +251,3 @@ asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes)
 {
     return file_sys_read(fd, buf, nbytes);
 }
-
-// fastcall int32_t system_halt (uint8_t status){
-//     clear();
-//     printf(" halt %x\n", status);
-//     printf(" --------pretend it is a BLUE SCREEN---------\n");
-//     while(1){}
-// }

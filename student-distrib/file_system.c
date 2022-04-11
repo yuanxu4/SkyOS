@@ -285,6 +285,11 @@ int32_t deactivate_file_array(file_array_t *fd_array)
  */
 int32_t file_sys_open(const uint8_t *filename)
 {
+    if (filename == NULL)
+    {
+        return -1;
+    }
+
     dentry_t copied_dentry;
     // PRINT("addr copy dentry: %#x\n", &copied_dentry);
     int32_t fd = -1; // the returned file descriptor if succuss
@@ -370,16 +375,33 @@ int32_t file_sys_close(int32_t fd)
  */
 int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes)
 {
-
+    if (buf == NULL)
+    {
+        return -1;
+    }
+    if (nbytes < 0)
+    {
+        return -1;
+    }
+    // fd is invalid
+    if (fd == 0 || fd == 1)
+    {
+        PRINT("fail to close. cannot close stdin/stdout\n");
+        return -1;
+    }
+    if (fd < 0 || fd >= MAX_NUM_OPEN)
+    {
+        PRINT("fail to close file. invaild file descriptor %d\n", fd);
+        return -1;
+    }
     // not opening
     if ((!curr_task()->fd_array.entries[fd].flags))
     {
-        PRINT("%x, %d, %d", curr_task(), fd, nbytes);
+        // PRINT("%x, %d, %d", curr_task(), fd, nbytes);
         PRINT("fail to read. file is not open\n");
 
         return -1;
     }
-
     // update position field included in specfic read functions
     return curr_task()->fd_array.entries[fd].op_tbl_ptr->read(fd, buf, nbytes);
 }
@@ -397,13 +419,31 @@ int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes)
  */
 int32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes)
 {
+    if (buf == NULL)
+    {
+        return -1;
+    }
+    if (nbytes < 0)
+    {
+        return -1;
+    }
+    // fd is invalid
+    if (fd == 0 || fd == 1)
+    {
+        PRINT("fail to close. cannot close stdin/stdout\n");
+        return -1;
+    }
+    if (fd < 0 || fd >= MAX_NUM_OPEN)
+    {
+        PRINT("fail to close file. invaild file descriptor %d\n", fd);
+        return -1;
+    }
     // not opening
     if (!curr_task()->fd_array.entries[fd].flags)
     {
         PRINT("fail to write. file is not open\n");
         return -1;
     }
-
     return curr_task()->fd_array.entries[fd].op_tbl_ptr->write(fd, buf, nbytes);
 }
 

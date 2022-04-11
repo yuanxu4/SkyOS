@@ -12,21 +12,21 @@
 #include "task.h"
 #include "lib.h"
 
-static page_usage_array_t page_array; // manage pages
+page_usage_array_t page_array; // manage pages
 
 extern void flush_TLB();   // defined in boot.S
 extern PCB_t *curr_task(); // defined in boot.S
 
-int32_t print_pcb(PCB_t *task)
-{
-    printf("task_name:%s\n", task->task_name);
-    printf("pid:%d\n", task->pid);
-    printf("parent:%x\n", task->parent);
-    printf("saved_esp:%x\n", task->saved_esp);
-    printf("saved_ebp:%x\n", task->saved_ebp);
-    printf("kernel_ebp:%x\n", task->kernel_ebp);
-    printf("eip:%x\n", task->eip);
-}
+// int32_t print_pcb(PCB_t *task)
+// {
+//     printf("task_name:%s\n", task->task_name);
+//     printf("pid:%d\n", task->pid);
+//     printf("parent:%x\n", task->parent);
+//     printf("saved_esp:%x\n", task->saved_esp);
+//     printf("saved_ebp:%x\n", task->saved_ebp);
+//     printf("kernel_ebp:%x\n", task->kernel_ebp);
+//     printf("eip:%x\n", task->eip);
+// }
 
 /*
  * int32_t init_task_page_array()
@@ -104,7 +104,7 @@ int32_t set_task_page()
  */
 uint8_t *parse_args(uint8_t *command)
 {
-    uint8_t *args;
+    uint8_t *args = NULL;
     while (*command != '\0')
     {
         if (*command == ' ')
@@ -181,11 +181,14 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
 }
 
 /*
-
-todo
-    Context Switch
-
-*/
+ * int32_t system_execute(const uint8_t *command)
+ * try execute a file
+ * Inputs:  command -- including the name of the task and arguments
+ * Outputs: None
+ * Side Effects:
+ * return value: -1 if the command cannot be executed, 256 if the program dies by an exception,
+ * or a value in the range 0 to 255 if the program executes a halt system call
+ */
 int32_t system_execute(const uint8_t *command)
 {
     dentry_t task_dentry; // copied task dentry
@@ -228,8 +231,7 @@ int32_t system_execute(const uint8_t *command)
     // set tss
     tss.ss0 = KERNEL_DS;
     tss.esp0 = new_task->kernel_ebp;
-    // print_pcb(new_task);
-    // ...
+    // prepare for iret
     asm volatile("            \n\
         movw    %%ax, %%ds  /* set ds to user ds */     \n\
         pushl   %%eax   /* 1 iret USER_DS */          \n\
@@ -322,47 +324,67 @@ int32_t restore_task_page(int32_t page_id)
 }
 
 /*
-
-todo
-    Restore parent data
-    Restore parent paging
-    Close any relevant FDs
-    Jump to execute return
-
-*/
+ * int32_t system_halt(uint8_t status)
+ * halt current task
+ * Inputs:  status -- status returned to execute
+ * Outputs: None
+ * Side Effects:
+ * return value: returning the specified value to its parent process
+ */
 int32_t system_halt(uint8_t status)
 {
     PCB_t *parent;
     if (page_array.num_using == 0)
     {
         printf("halt nothing");
-        return -1;
+        system_execute((uint8_t *)"shell");
     }
     // try to deactivate task, get parent task
     parent = deactivate_task(curr_task());
     if (parent == NULL)
     {
-        system_execute("shell");
+        system_execute((uint8_t *)"shell");
     }
     // Restore parent paging
     restore_task_page(parent->pid);
-
-    // todo
     // Write Parent process’ info back to TSS
     tss.esp0 = curr_task()->saved_esp;
-    // print_pcb(curr_task());
-    // print_pcb(parent);
-    // restore stack
+    // restore stack and return value
     asm volatile("         \n\
-            movl %%ebx, %%esp   \n\
+            movl %%edx, %%esp   \n\
             movl %%ecx, %%ebp   \n\
-            movl %%edx, %%eax   \n\
+            andl $0, %%eax    \n\
+            movb %%bl, %%al   \n\
             jmp EXE_RET  /* jump to exe ret*/             \n\
             "
                  : /* no output*/
-                 : "b"(curr_task()->saved_esp), "c"(curr_task()->saved_ebp), "d"(status)
+                 : "d"(curr_task()->saved_esp), "c"(curr_task()->saved_ebp), "b"(status)
                  : "eax");
     // should never return
     printf("ERROR, reach end of halt()");
+    return 0;
+}
+
+/*
+ * int32_t system_getargs(uint8_t *buf, int32_t nbytes)
+ * reads the program’s command line arguments into a user-level buffer.
+ * Inputs:  buf -- user-level buffer
+ *          nbytes -- length to copy
+ * Outputs: None
+ * Side Effects:
+ * return value: 0 for succ, -1 for failure
+ */
+int32_t system_getargs(uint8_t *buf, int32_t nbytes)
+{
+    uint8_t *args = curr_task()->args;
+    if (args == NULL)
+    {
+        return -1;
+    }
+    if (strlen((int8_t *)args) >= nbytes)
+    {
+        return -1;
+    }
+    strncpy((int8_t *)buf, (int8_t *)args, nbytes);
     return 0;
 }

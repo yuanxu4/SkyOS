@@ -52,24 +52,20 @@ typedef struct page_usage_array
     // the index is called file descriptor
 } page_usage_array_t;
 
+extern page_usage_array_t page_array; // manage pages
+
 int32_t init_task_page_array();
-
 int32_t set_task_page();
-
 uint8_t *parse_args(uint8_t *command);
-
 PCB_t *create_task(uint8_t *name, uint8_t *args);
-
 PCB_t *get_task_ptr(int32_t id);
-
 PCB_t *deactivate_task(PCB_t *task);
-
 int32_t deactivate_task_page(int32_t page_id);
-
 int32_t restore_task_page(int32_t page_id);
+// int32_t print_pcb(PCB_t *task);
 
-// tmp declaration
 int32_t system_execute(const uint8_t *command);
 int32_t system_halt(uint8_t status);
-int32_t print_pcb(PCB_t* task);
+int32_t system_getargs(uint8_t *buf, int32_t nbytes);
+
 #endif // _TASK_H
