@@ -48,3 +48,34 @@ Reason:
     Other initializations may need to access the memory are not present after enabling paging.
 Solution:
     call enable_paging after all the init is done.
+
+<--------------------------------------------------------->
+                          BUG 4                          
+<--------------------------------------------------------->
+Time:
+    2022.3.27.
+Creator:
+    Haina Lou
+Description:
+    When the keyboard buffer is filled with 127 bytes, we forget to add '\n' to the end of buffer instead we add ' '
+    and the shared flag which is used to check if we press enter has be changed to ' ' strangely
+Reason:
+    maybe there is memory leak or stack overlap
+Solution:
+    add '\n' to the end of keyboard buffer after reaching 127 bytes.
+
+<--------------------------------------------------------->
+                          BUG 5                          
+<--------------------------------------------------------->
+Time:
+    2022.3.27.
+Creator:
+    Haina Lou
+Description:
+    When we press tab at the last four characters of screen, the screen will not get scrolled down and new
+    character will start at the beginning of line. 
+Reason:
+    The checking scrollling logic is not met with the tab condition
+Solution:
+    if Screen_x is at the range of last four space and screen_y is last line, it will scroll down.
+    
