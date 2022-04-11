@@ -13,7 +13,7 @@ static uint8_t kb_buf[kb_bufsize];
 static volatile uint8_t copy_flag;
 static uint8_t char_num;
 /* keycode flag*/
-static uint8_t cap_on_flag, shift_on_flag, l_ctrl_on_flag, r_ctrl_on_flag;
+static uint8_t cap_on_flag, shift_on_flag, ctrl_on_flag;
 /* no shift no capson character and numbers */
 const char scancode_simple_lowcase[keynum] = {
     0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
@@ -57,8 +57,7 @@ void keyboard_init(void)
 {
     cap_on_flag = 0;
     shift_on_flag = 0;
-    l_ctrl_on_flag = 0;
-    r_ctrl_on_flag = 0;
+    ctrl_on_flag = 0;
     enable_irq(KEYBARD_IRQ);
 }
 
@@ -96,35 +95,40 @@ void keyboard_handler(void)
  * and if release the keypress, clear it
  * interrupt occurs
  */
-void set_flag(uint8_t scancode){
-    switch (scancode){
-        case l_shift:
-            shift_on_flag = 1;    // turn on th shift on flag
-            break;
-        case l_shift_release:
-            shift_on_flag = 0;    // turn off the shift on flag if release
-            break;
-        case r_shift:
-            shift_on_flag = 1;
-            break;
-        case r_shift_release:
-            shift_on_flag = 0;
-            break;
-        case caps:
-            if (cap_on_flag == 1){  // if the caps has on
-                cap_on_flag = 0;    // caps change back to 0
-            }else{  
-                cap_on_flag = 1;
-            }
-            break;
-        case l_control:
-            l_ctrl_on_flag = 1;
-            break;
-        case l_control_release:
-            l_ctrl_on_flag = 0;
-            break;
-        default:
-            break;
+void set_flag(uint8_t scancode)
+{
+    switch (scancode)
+    {
+    case l_shift:
+        shift_on_flag = 1; // turn on th shift on flag
+        break;
+    case l_shift_release:
+        shift_on_flag = 0; // turn off the shift on flag if release
+        break;
+    case r_shift:
+        shift_on_flag = 1;
+        break;
+    case r_shift_release:
+        shift_on_flag = 0;
+        break;
+    case caps:
+        if (cap_on_flag == 1)
+        {                    // if the caps has on
+            cap_on_flag = 0; // caps change back to 0
+        }
+        else
+        {
+            cap_on_flag = 1;
+        }
+        break;
+    case control:
+        ctrl_on_flag = 1;
+        break;
+    case control_release:
+        ctrl_on_flag = 0;
+        break;
+    default:
+        break;
     }
 }
 
@@ -207,12 +211,14 @@ void scancode_output(uint8_t scancode)
             printf("%s", kb_buf);     // print buffer value after clear screen
         }
         /* shift and capslock all on */
-        else if ((shift_on_flag) && (cap_on_flag)){
+        else if (shift_on_flag && cap_on_flag)
+        {
             output_char = scancode_bothon[scancode];
             put_changebuf(output_char); // show char and change keyboard buffer
         }
         /* only shift on */
-        else if (shift_on_flag){
+        else if (shift_on_flag)
+        {
             output_char = scancode_shifton[scancode];
             put_changebuf(output_char); // change the keyboard buffer
             /* only capslock on */
