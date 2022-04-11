@@ -104,6 +104,7 @@ int32_t set_task_page()
  */
 uint8_t *parse_args(uint8_t *command)
 {
+    // printf("%s\n", command);
     uint8_t *args = NULL;
     while (*command != '\0')
     {
@@ -111,11 +112,17 @@ uint8_t *parse_args(uint8_t *command)
         {
             *command = '\0';    // terminate cmd, only store the exe file name
             args = command + 1; // output args string
-            return args;
+            break;
         }
         command++;
     }
-    return NULL;
+    // if (args!=NULL)
+    // {
+    // printf("%s\n", args);
+    // printf("%x\n", args);
+    // }
+
+    return args;
 }
 
 /*
@@ -147,6 +154,7 @@ PCB_t *get_task_ptr(int32_t id)
 PCB_t *create_task(uint8_t *name, uint8_t *args)
 {
     int32_t page_id; // new page id
+    int32_t tmp;
     PCB_t *new_task; // new task
     // set am unused page
     page_id = set_task_page();
@@ -165,9 +173,10 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
     new_task->state = IN_USE;
     new_task->kernel_ebp = ((uint32_t)new_task) + SIZE_8KB - 4; // -4 for safty
     // new_task->kernel_esp = new_task->kernel_ebp;
-    new_task->args = args;
+    new_task->args=args;
+    new_task->task_name=name;
+
     init_file_array(&new_task->fd_array);
-    new_task->task_name = name;
     // if the only one task(shell)
     if (page_array.num_using == 1)
     {
@@ -389,6 +398,8 @@ int32_t system_getargs(uint8_t *buf, int32_t nbytes)
     {
         return -1;
     }
+    printf("%s\n", args);
+    printf("%x\n", args);
     strncpy((int8_t *)buf, (int8_t *)args, nbytes);
     return 0;
 }

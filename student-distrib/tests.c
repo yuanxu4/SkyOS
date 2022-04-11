@@ -557,7 +557,7 @@ int terminal_test()
 
 void continue_test()
 {
-	printf("\n-------press ENTER to awake it (and test stdin craftily)---------\n");
+	printf("\n-----------------press ENTER to awake it -------------------\n");
 	read(STDIN_FD, file_buf, MAX_LEN_FILE_NAME);
 }
 
@@ -573,7 +573,7 @@ int exe_halt_err_test()
 	int result = PASS;
 	int32_t ret;
 	char *flie_list[2] = {"verylargetextwithverylongname.tx", "wqevfwrtvwev"};
-	printf("Try to execute non-exist file: %s\n", flie_list[1]);
+	printf("\nTry to execute non-exist file: %s\n", flie_list[1]);
 	if (-1 != (ret = execute((uint8_t *)flie_list[1])))
 	{
 		printf("wrongly execute non-exist file\n");
@@ -597,13 +597,14 @@ int exe_halt_err_test()
 int sys_call_err_test()
 {
 	continue_test();
+	clear();
 	TEST_HEADER;
 
 	int result = PASS;
 	int32_t ret;
 	uint8_t buf[32];
 
-	printf("Try to pass garbage input for open/close/read/write.\n");
+	printf("\nTry to pass garbage input for open/close/read/write.\n");
 	printf("like negative length, NULL pointer, invaild fd...\n\n");
 	if (-1 != read(-1, buf, 31))
 	{
@@ -652,9 +653,11 @@ void launch_tests()
 	// TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
 	// TEST_OUTPUT("Keyboard_test", keyboard_test());
 	// TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
-	TEST_OUTPUT("file_sys_test", file_sys_test());
-	TEST_OUTPUT("exe garbage input test", exe_halt_err_test());
-	TEST_OUTPUT("syscall garbage input test", sys_call_err_test());
-	continue_test();
+
+	// TEST_OUTPUT("file_sys_test", file_sys_test());
+	// TEST_OUTPUT("exe garbage input test", exe_halt_err_test());
+	// TEST_OUTPUT("syscall garbage input test", sys_call_err_test());
+	// continue_test();
+	
 	clear();
 }

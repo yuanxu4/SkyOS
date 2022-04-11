@@ -287,7 +287,7 @@ int32_t file_sys_open(const uint8_t *filename)
 {
     if (filename == NULL)
     {
-        printf("get NULL filename\n");
+        printf("fail to open: get NULL filename\n");
         return -1;
     }
 
@@ -297,27 +297,27 @@ int32_t file_sys_open(const uint8_t *filename)
     // reach max opening
     if (curr_task()->fd_array.num_opening >= MAX_NUM_OPEN)
     {
-        PRINT("fail to open %s . number of opening files is max.\n", filename);
+        PRINT("fail to open %s: number of opening files is max.\n", filename);
         return -1;
     }
     // PRINT("start read dentry\n");
     // return != 0, fail to find the file
     if (read_dentry_by_name(filename, &copied_dentry))
     {
-        PRINT("fail to open %s . non-existent file.\n", filename);
+        PRINT("fail to open %s: non-existent file.\n", filename);
         return -1;
     }
     // unknown file type, should never happen correctly
     if (copied_dentry.file_type > 2)
     {
-        PRINT("fail to open %s . unknown file type\n", filename);
+        PRINT("fail to open %s: unknown file type\n", filename);
         return -1;
     }
     fd = op_table_total[copied_dentry.file_type].open(filename); // set flag included
     // fail to open, should never happen correctly
     if (fd < 0)
     {
-        PRINT("fail to open file. unknown reason\n");
+        PRINT("fail to open file: unknown reason\n");
         return -1;
     }
     curr_task()->fd_array.num_opening++; // inc
@@ -337,24 +337,24 @@ int32_t file_sys_close(int32_t fd)
     // fd is invalid
     if (fd == 0 || fd == 1)
     {
-        PRINT("fail to close. cannot close stdin/stdout\n");
+        PRINT("fail to close: cannot close stdin/stdout\n");
         return -1;
     }
     if (fd < 0 || fd >= MAX_NUM_OPEN)
     {
-        PRINT("fail to close file. invaild file descriptor %d\n", fd);
+        PRINT("fail to close file: invaild file descriptor %d\n", fd);
         return -1;
     }
     // file not opening
     if (!curr_task()->fd_array.entries[fd].flags)
     {
-        PRINT("fail to close file. unopen file\n");
+        PRINT("fail to close file: unopen file\n");
         return -1;
     }
     // fail to close, should never happen correctly
     if (curr_task()->fd_array.entries[fd].op_tbl_ptr->close(fd))
     {
-        PRINT("fail to close file. unknown reason\n");
+        PRINT("fail to close file: unknown reason\n");
         return -1;
     }
     curr_task()->fd_array.entries[fd].flags = NOT_IN_USE; // set flag not included in close
@@ -378,24 +378,24 @@ int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes)
 {
     if (buf == NULL)
     {
-        printf("get NULL buf\n");
+        printf("fail to read: get NULL buf\n");
         return -1;
     }
     if (nbytes < 0)
     {
-        printf("invaild nbytes, %d", nbytes);
+        printf("fail to read: invaild nbytes, %d\n", nbytes);
         return -1;
     }
     if (fd < 0 || fd >= MAX_NUM_OPEN)
     {
-        PRINT("fail to read. invaild file descriptor %d\n", fd);
+        PRINT("fail to read: invaild file descriptor %d\n", fd);
         return -1;
     }
     // not opening
     if ((!curr_task()->fd_array.entries[fd].flags))
     {
         // PRINT("%x, %d, %d", curr_task(), fd, nbytes);
-        PRINT("fail to read. file is not open\n");
+        PRINT("fail to read: file is not open\n");
         return -1;
     }
     // update position field included in specfic read functions
@@ -417,23 +417,23 @@ int32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes)
 {
     if (buf == NULL)
     {
-        printf("get NULL buf\n");
+        printf("fail to write: get NULL buf\n");
         return -1;
     }
     if (nbytes < 0)
     {
-        printf("invaild nbytes, %d", nbytes);
+        printf("fail to write: invaild nbytes, %d\n", nbytes);
         return -1;
     }
     if (fd < 0 || fd >= MAX_NUM_OPEN)
     {
-        PRINT("fail to write. invaild file descriptor %d\n", fd);
+        PRINT("fail to write: invaild file descriptor %d\n", fd);
         return -1;
     }
     // not opening
     if (!curr_task()->fd_array.entries[fd].flags)
     {
-        PRINT("fail to write. file is not open\n");
+        PRINT("fail to write: file is not open\n");
         return -1;
     }
     return curr_task()->fd_array.entries[fd].op_tbl_ptr->write(fd, buf, nbytes);
