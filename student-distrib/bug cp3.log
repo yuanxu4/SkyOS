@@ -48,13 +48,13 @@ Solution:
 Time:
 	2022.4.10
 Creator:
-    	
+    Sam
 Description:
-    	
+    the system call could not return the correct value
 Reason:
-    	
+    system call handler store the result in eax, so we should not pop the origin eax.
 Solution:
-	
+	at the line of popl eax, use addl $4, esp instead
 
 <--------------------------------------------------------->
                           BUG 4                          
@@ -62,11 +62,12 @@ Solution:
 Time:
 	2022.4.10
 Creator:
-    	
+    Sam
 Description:
-    	
+    the system call handler could not get the right args	
 Reason:
-    	
+    we use the fastcall for the system call handler but the arg actually is not follow the fast call rule
 Solution:
+	use asmlink instead and push follow the order of edx, ecx, ebx.
 	
 
