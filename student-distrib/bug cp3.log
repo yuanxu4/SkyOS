@@ -48,12 +48,15 @@ Solution:
 Time:
 	2022.4.10
 Creator:
-    	
+    	Yuan Xu
 Description:
-    	
+    	After system call terminal write and print 391OS, os cannot receive interrupt.
 Reason:
-    	
+    	we use interrupt gate for system call and has default cleared IF after system call terminal read,
+		The IF flag is 0 when waiting for keyboard interrupt
 Solution:
+		we add sti to the terminal read function before the while loop which is waiting for the interrupt 
+		occurs.
 	
 
 <--------------------------------------------------------->
@@ -62,11 +65,15 @@ Solution:
 Time:
 	2022.4.10
 Creator:
-    	
+    	Haina Lou
 Description:
-    	
+    	After system call "shell", page fault exception occurs
 Reason:
-    	
+    	The index of our system call starts from 0 to 9 and in user program, it starts from 1
+		when it wants to call 4 syscall_write, it calls syscall_open in our kernel and the parameter
+		passed in is wrongly regarded as a pointer, we cannot dereference a pointer in invalid address,
+		page fault occurs.
 Solution:
+		add one free space in beginning of the jump table for our system call indirection
 	
 
