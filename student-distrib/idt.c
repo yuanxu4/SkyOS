@@ -225,47 +225,134 @@ void syscall_err(uint32_t invalid_call)
 }
 
 /*
- * system_opne
- * description: it classify the file type and call the corresponing handler
+ * system_vidmap
+ * description: classify file and open
  * input: filename
- *        syscall
  * output: none
  * return 0 for fail other for success
  */
-asmlinkage int32_t system_open(uint8_t *filename)
-{
-    return file_sys_open(filename);
-}
-
-asmlinkage int32_t system_close(int32_t fd)
-{
-    return file_sys_close(fd);
-}
-
-asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes)
-{
-    return file_sys_write(fd, buf, nbytes);
-}
-
-asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes)
-{
-    return file_sys_read(fd, buf, nbytes);
-}
-
 asmlinkage int32_t system_vidmap(uint8_t **screen_start)
 {
     printf("vidmap has not been implemented now.\n");
     return 0;
 }
 
+/*
+ * system_set_handler
+ * description: classify file and open
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
 asmlinkage int32_t system_set_handler(int32_t signum, void *handler_address)
 {
     printf("set_handler has not been implemented now.\n");
     return 0;
 }
 
+/*
+ * system_sigreturn
+ * description: classify file and open
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
 asmlinkage int32_t system_sigreturn(void)
 {
     printf("sigreturn has not been implemented now.\n");
     return 0;
 }
+
+/*
+ * system_open
+ * description: classify file and open
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
+asmlinkage int32_t system_open(uint8_t* filename){
+    return file_sys_open(filename);
+    // /*** check file valid or not ***/
+    // if(filename == NULL){
+    //     printf("invalid file!!!\n");
+    //     return -1;
+    // }
+
+    // int file_check;
+    // dentry_t current_dentry;
+    // file_check = read_dentry_by_name(filename, &current_dentry);
+    // if(file_check == -1){   //if check fail then show it is not a visible file
+    //     printf("invalid file!!!\n");
+    //     return -1;
+    // }
+
+    // /*** call the hanler function by file type ***/
+    // uint32_t file_type = current_dentry.file_type;
+    // switch (file_type)
+    // {
+    // case 0:
+    //     return rtc_open(filename);
+    //     break;
+
+    // case 1:
+    //     return file_sys_open(filename);
+    //     break;
+
+    // case 2:
+    //     return file_sys_open(filename);
+    //     break;
+    
+    // default:
+    //     printf("invalid file type, check again!!!\n");
+    //     break;
+    // }
+
+    // return -1;
+}
+
+/*
+ * system_close
+ * description: close the file that provided
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
+asmlinkage int32_t system_close(int32_t fd){
+    return file_sys_close(fd);
+}
+
+/*
+ * system_write
+ * description: write the provide file
+ * input: fd, buf, nbytes
+ * output: none
+ * return 0 for fail other for success
+ */
+asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes){
+    return file_sys_write(fd, buf, nbytes);
+}
+
+/*
+ * system_read
+ * description: read the provide file
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
+asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes){
+    return file_sys_read(fd, buf, nbytes);
+}
+
+/*
+ * system_open
+ * description: it classify the file type and call the corresponing handler
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
+// asmlinkage int32_t system_halt (uint8_t status){
+//     clear();
+//     printf(" halt %x\n", status);
+//     printf(" --------pretend it is a BLUE SCREEN---------\n");
+//     while(1){}
+// }

@@ -662,6 +662,10 @@ void test_interrupts(void)
     }
 }
 
+/* int32_t halt(uint8_t status)
+ * Inputs: uint8_t status
+ * Return Value: void
+ * Function:halt system */
 int32_t halt(uint8_t status)
 {
     int32_t result;
@@ -672,6 +676,10 @@ int32_t halt(uint8_t status)
     return result;
 }
 
+/* int32_t execute(const uint8_t *command)
+ * Inputs: uint8_t *command
+ * Return Value: void
+ * Function:execute file */
 int32_t execute(const uint8_t *command)
 {
     int32_t result;
@@ -685,7 +693,7 @@ int32_t execute(const uint8_t *command)
 /* int32_t open(const uint8_t *filename)
  * Inputs: void
  * Return Value: void
- * Function: increments video memory. To be used to test rtc */
+ * Function: open file */
 int32_t open(const uint8_t *filename)
 {
     int32_t result;
@@ -697,49 +705,47 @@ int32_t open(const uint8_t *filename)
     return result;
 }
 
-/* int32_t test_interrupts(void)
- * Inputs: void
- * Return Value: void
- * Function: increments video memory. To be used to test rtc */
-int32_t write(int32_t fd, const void *buffer, int32_t nbytes)
-{
-    int32_t result;
-    asm volatile("INT $0x80"
-                 : "=a"(result)
-                 : "a"(0x04), "b"(fd), "c"(buffer), "d"(nbytes)
-                 : "memory", "cc");
+/* int32_t write
+ * Inputs: int32_t fd, const void *buffer, int32_t nbytes
+ * Return Value: -1 for fail other for success
+ * Function: link to system call */
+int32_t write(int32_t fd, const void *buffer, int32_t nbytes) {
+    long result;
+
+    asm volatile ("INT $0x80"
+    : "=a" (result)
+    : "a" (0x04), "b" (fd), "c" (buffer), "d" (nbytes)  //oxo4 is the syscall number for write
+    : "memory", "cc");
 
     return result;
 }
 
-int32_t read(int32_t fd, void *buffer, int32_t nbytes)
-{
-    int32_t result;
-    asm volatile("INT $0x80"
-                 : "=a"(result)
-                 : "a"(0x03), "b"(fd), "c"(buffer), "d"(nbytes)
-                 : "memory", "cc");
+/* int32_t read
+ * Inputs: int32_t fd, const void *buffer, int32_t nbytes
+ * Return Value: -1 for fail other for success
+ * Function: link to system call */
+int32_t read(int32_t fd, void *buffer, int32_t nbytes) {
+    long result;
+
+    asm volatile ("INT $0x80"
+    : "=a" (result)
+    : "a" (0x03), "b" (fd), "c" (buffer), "d" (nbytes)  //oxo3 is the syscall number for read
+    : "memory", "cc");
 
     return result;
 }
 
-int32_t close(int32_t fd)
-{
-    int32_t result;
-    asm volatile("INT $0x80"
-                 : "=a"(result)
-                 : "a"(0x06), "b"(fd)
-                 : "memory", "cc");
+/* int32_t close
+ * Inputs: int32_t fd
+ * Return Value: -1 for fail other for success
+ * Function: link to system call */
+int32_t close(int32_t fd) {
+    long result;
 
-    return result;
-}
+    asm volatile ("INT $0x80"
+    : "=a" (result)
+    : "a" (0x06), "b" (fd)  //oxo6 is the syscall number for close
+    : "memory", "cc");
 
-int32_t getargs(uint8_t *buf, int32_t nbytes)
-{
-    int32_t result;
-    asm volatile("INT $0x80"
-                 : "=a"(result)
-                 : "a"(0x07), "b"(buf), "c"(nbytes)
-                 : "memory", "cc");
     return result;
 }
