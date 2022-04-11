@@ -12,9 +12,8 @@ static uint8_t kb_buf[kb_bufsize];
 /* flag used to decide when can copy */
 static volatile uint8_t copy_flag;
 static uint8_t char_num;
-// static uint32_t cur_num;
 /* keycode flag*/
-static uint8_t cap_on_flag, l_shift_on_flag, r_shift_on_flag, l_ctrl_on_flag, r_ctrl_on_flag;
+static uint8_t cap_on_flag, shift_on_flag, ctrl_on_flag;
 /* no shift no capson character and numbers */
 const char scancode_simple_lowcase[keynum] = {
     0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
@@ -57,10 +56,8 @@ void set_flag(uint8_t scancode);
 void keyboard_init(void)
 {
     cap_on_flag = 0;
-    l_shift_on_flag = 0;
-    r_shift_on_flag = 0;
-    l_ctrl_on_flag = 0;
-    r_ctrl_on_flag = 0;
+    shift_on_flag = 0;
+    ctrl_on_flag = 0;
     enable_irq(KEYBARD_IRQ);
 }
 
@@ -103,16 +100,16 @@ void set_flag(uint8_t scancode)
     switch (scancode)
     {
     case l_shift:
-        l_shift_on_flag = 1; // turn on th shift on flag
+        shift_on_flag = 1; // turn on th shift on flag
         break;
     case l_shift_release:
-        l_shift_on_flag = 0; // turn off the shift on flag if release
+        shift_on_flag = 0; // turn off the shift on flag if release
         break;
     case r_shift:
-        r_shift_on_flag = 1;
+        shift_on_flag = 1;
         break;
     case r_shift_release:
-        r_shift_on_flag = 0;
+        shift_on_flag = 0;
         break;
     case caps:
         if (cap_on_flag == 1)
@@ -124,38 +121,17 @@ void set_flag(uint8_t scancode)
             cap_on_flag = 1;
         }
         break;
-    case l_control:
-        l_ctrl_on_flag = 1;
+    case control:
+        ctrl_on_flag = 1;
         break;
-    case l_control_release:
-        l_ctrl_on_flag = 0;
+    case control_release:
+        ctrl_on_flag = 0;
         break;
     default:
         break;
     }
 }
 
-/* check_space()
- *
- * Inputs: scancode -- the keyboard scancode
- * Outputs: void
- * return: 1 if you need to delet 4 space, 0 if not
- */
-void check_space(uint8_t output_char)
-{
-    if (output_char == '\b')
-    {
-        if (char_num > 0)
-        {
-            if (kb_buf[char_num - 1] == '\t')
-            { // delete all space if \t
-                putc('\b');
-                putc('\b');
-                putc('\b');
-            }
-        }
-    }
-}
 /* put_changebuf()
  *
  * Inputs: output_char -- the output char
@@ -168,24 +144,30 @@ void put_changebuf(uint8_t output_char)
     { // if backspace
         if (char_num != 0)
         {
-            putc(output_char);
+            if (kb_buf[char_num - 1] == '\t')
+            { // delete all space if \t
+                putc('\b');
+                putc('\b');
+                putc('\b');
+                putc('\b');
+            }else{
+                putc('\b');               
+            } 
             kb_buf[char_num - 1] = 0; // reset to 0
-            char_num--;               // number of characters in buffer decrement
-            // cur_num --;
+            char_num--;               // number of characters in buffer decrement         
         }
     }
     else
     {
-        // cur_num++;
-        if (char_num < kb_bufsize - 1)
+        if (char_num < kb_bufsize - 1) //maximum char = 127
         {
             putc(output_char);
-            kb_buf[char_num] = output_char;
             char_num++;
+            kb_buf[char_num - 1] = output_char;
         }
         else
         {
-            kb_buf[kb_bufsize - 1] = '\n';
+            kb_buf[kb_bufsize - 1] = '\n';  
         }
     }
 }
@@ -205,7 +187,7 @@ void scancode_output(uint8_t scancode)
     if (scancode == ENTER && (copy_flag == 0))
     {
         /* clean all the numbers we count */
-        if (char_num != kb_bufsize)
+        if (char_num <= kb_bufsize-1)   //maximum char number are 127
         {
             kb_buf[char_num] = '\n';
         }
@@ -214,7 +196,6 @@ void scancode_output(uint8_t scancode)
             kb_buf[kb_bufsize - 1] = '\n';
         }
         char_num = 0;
-        // cur_num = 0;
         putc('\n');
         copy_flag = 1;
     }
@@ -224,36 +205,32 @@ void scancode_output(uint8_t scancode)
     {
         /* find corresponding keycode */
         /* press ctrl+ l */
-        if (l_ctrl_on_flag && (scancode == L))
+        if (ctrl_on_flag && (scancode == L))
         {
             clear();
-            printf("%s\n", kb_buf);
+            printf("%s", kb_buf);     // print buffer value after clear screen
         }
         /* shift and capslock all on */
-        else if ((l_shift_on_flag || r_shift_on_flag) && (cap_on_flag))
+        else if (shift_on_flag && cap_on_flag)
         {
             output_char = scancode_bothon[scancode];
-            check_space(output_char);   // check if there is tab
-            put_changebuf(output_char); // change the keyboard buffer
+            put_changebuf(output_char); // show char and change keyboard buffer
         }
         /* only shift on */
-        else if (l_shift_on_flag || r_shift_on_flag)
+        else if (shift_on_flag)
         {
             output_char = scancode_shifton[scancode];
-            check_space(output_char);
             put_changebuf(output_char); // change the keyboard buffer
             /* only capslock on */
         }
         else if (cap_on_flag)
         {
             output_char = scancode_capson[scancode];
-            check_space(output_char);
             put_changebuf(output_char); // change the keyboard buffer
         }
         else
         {
             output_char = scancode_simple_lowcase[scancode];
-            check_space(output_char);
             put_changebuf(output_char); // change the keyboard buffer
         }
     }
@@ -322,16 +299,17 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
     int32_t copied; // number has copied
     uint8_t *to;    // copy to
     uint8_t *from;  // copy from
-    sti();
+    sti();          // interrupt gate has set IF to 0, we need set 1 back
     while (copy_flag == 0)
     {
     } // read function waiting
     to = buf;
     from = kb_buf;
-    if ((NULL == buf) || (NULL == kb_buf))
+    if ((NULL == buf) || (NULL == kb_buf)||(nbytes < 0))
         return -1;
     if (fd != 0)
         return -1; // if fd is not right
+
     /* the read bytes cannot be more than maximum buffer size */
     if (nbytes > kb_bufsize)
     { // if the nbytes write larger than bufsize
@@ -383,7 +361,7 @@ int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes)
 {
     int i;
     uint8_t output_char;
-    if (NULL == buf)
+    if ((NULL == buf)||(nbytes < 0))
         return -1; // if buf is null
     if (fd != 1)
         return -1; // if fd is not right number
