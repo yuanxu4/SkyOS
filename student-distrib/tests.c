@@ -570,7 +570,7 @@ int exe_halt_err_test()
 	continue_test();
 	clear();
 	TEST_HEADER;
-	long result = PASS;
+	int result = PASS;
 	int32_t ret;
 	char *flie_list[2] = {"verylargetextwithverylongname.tx", "wqevfwrtvwev"};
 	printf("Try to execute non-exist file: %s\n", flie_list[1]);
@@ -586,9 +586,53 @@ int exe_halt_err_test()
 		result = FAIL;
 	}
 	printf("\nTry to halt nothing\n");
-	if (-1 !=halt(ret))
+	if (-1 != halt(ret))
 	{
 		printf("wrongly halt\n");
+		result = FAIL;
+	}
+	return result;
+}
+
+int sys_call_err_test()
+{
+	continue_test();
+	TEST_HEADER;
+
+	int result = PASS;
+	int32_t ret;
+	uint8_t buf[32];
+
+	printf("Try to pass garbage input for open/close/read/write.\n");
+	printf("like negative length, NULL pointer, invaild fd...\n\n");
+	if (-1 != read(-1, buf, 31))
+	{
+		printf("beat by garbage\n");
+		result = FAIL;
+	}
+	if (-1 != write(99999999, buf, 31))
+	{
+		printf("beat by garbage\n");
+		result = FAIL;
+	}
+	if (-1 != read(STDIN_FD, NULL, 31))
+	{
+		printf("beat by garbage\n");
+		result = FAIL;
+	}
+	if (-1 != write(STDOUT_FD, buf, -1))
+	{
+		printf("beat by garbage\n");
+		result = FAIL;
+	}
+	if (-1 != close(-1))
+	{
+		printf("beat by garbage\n");
+		result = FAIL;
+	}
+	if (-1 != open(NULL))
+	{
+		printf("beat by garbage\n");
 		result = FAIL;
 	}
 	return result;
@@ -610,6 +654,7 @@ void launch_tests()
 	// TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
 	TEST_OUTPUT("file_sys_test", file_sys_test());
 	TEST_OUTPUT("exe garbage input test", exe_halt_err_test());
+	TEST_OUTPUT("syscall garbage input test", sys_call_err_test());
 	continue_test();
 	clear();
 }

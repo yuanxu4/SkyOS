@@ -287,6 +287,7 @@ int32_t file_sys_open(const uint8_t *filename)
 {
     if (filename == NULL)
     {
+        printf("get NULL filename\n");
         return -1;
     }
 
@@ -377,15 +378,17 @@ int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes)
 {
     if (buf == NULL)
     {
+        printf("get NULL buf\n");
         return -1;
     }
     if (nbytes < 0)
     {
+        printf("invaild nbytes, %d", nbytes);
         return -1;
     }
     if (fd < 0 || fd >= MAX_NUM_OPEN)
     {
-        PRINT("fail to close file. invaild file descriptor %d\n", fd);
+        PRINT("fail to read. invaild file descriptor %d\n", fd);
         return -1;
     }
     // not opening
@@ -393,7 +396,6 @@ int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes)
     {
         // PRINT("%x, %d, %d", curr_task(), fd, nbytes);
         PRINT("fail to read. file is not open\n");
-
         return -1;
     }
     // update position field included in specfic read functions
@@ -415,15 +417,17 @@ int32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes)
 {
     if (buf == NULL)
     {
+        printf("get NULL buf\n");
         return -1;
     }
     if (nbytes < 0)
     {
+        printf("invaild nbytes, %d", nbytes);
         return -1;
     }
     if (fd < 0 || fd >= MAX_NUM_OPEN)
     {
-        PRINT("fail to close file. invaild file descriptor %d\n", fd);
+        PRINT("fail to write. invaild file descriptor %d\n", fd);
         return -1;
     }
     // not opening
