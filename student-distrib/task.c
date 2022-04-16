@@ -168,6 +168,7 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
     // new_task->kernel_esp = new_task->kernel_ebp;
     new_task->args = args;
     new_task->task_name = name;
+    new_task->vidmap = 0;
 
     init_file_array(&new_task->fd_array);
     // if the only one task(shell)
