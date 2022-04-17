@@ -6,7 +6,7 @@ Time:
 Creator:
    	Yuan
 Description:
-    When runing the set set_PDE_4kB, it always said I have a invalid address for pagetable.
+    When runing the set set_PDE_4KB, it always said I have a invalid address for pagetable.
 Reason:
  	Our page table structure are not align for 4kb in define.
 Solution:

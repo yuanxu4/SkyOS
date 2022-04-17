@@ -42,8 +42,8 @@ int32_t sys_vidmap(uint8_t **screen_start)
 
     // set the page directory and page table
     PDE_4KB_t *user_vid_pde = (PDE_4KB_t *)(&page_directory.pde[VID_PAGE_INDEX]);
-    set_PTE_4kB((PTE_4KB_t *)(&user_vid_pt.pte[VIDEO_MEM_INDEX]), VIDEO_MEM_INDEX * SIZE_4KB, 1, 1, 1);
-    set_PDE_4kB(user_vid_pde, (uint32_t)(&user_vid_pt), 1, 1, 1);
+    set_PTE_4KB((PTE_4KB_t *)(&user_vid_pt.pte[VIDEO_MEM_INDEX]), VIDEO_MEM_INDEX * SIZE_4KB, 1, 1, 1);
+    set_PDE_4KB(user_vid_pde, (uint32_t)(&user_vid_pt), 1, 1, 1);
     flush_TLB();
     *screen_start = (uint8_t *)VID_USER_START_ADDR;
     return 0;
