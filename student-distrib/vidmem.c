@@ -42,6 +42,7 @@ int32_t sys_vidmap(uint8_t **screen_start) {
     set_PTE_4kB((PTE_4KB_t *) (&user_vid_pt.pte[VIDEO_MEM_INDEX]), VIDEO_MEM_INDEX * SIZE_4KB, 1, 1, 1 );
     set_PDE_4kB(user_vid_pde, (uint32_t) (&user_vid_pt), 1, 1, 1); 
     flush_TLB();
+    //set the pointer for the user vidmem
     *screen_start = (uint8_t*) VID_USER_START_ADDR;
     return 0;
 }
