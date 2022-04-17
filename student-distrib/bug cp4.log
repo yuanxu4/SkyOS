@@ -1,0 +1,13 @@
+<--------------------------------------------------------->
+                          BUG 0                          
+<--------------------------------------------------------->
+Time:
+    	2022.4.17
+Creator:
+   	Yuan
+Description:
+    When runing the set set_PDE_4kB, it always said I have a invalid address for pagetable.
+Reason:
+ 	Our page table structure are not align for 4kb in define.
+Solution:
+    We just need to add __attribute__((aligned (SIZE_4KB)) in the define.
