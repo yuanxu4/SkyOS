@@ -11,6 +11,8 @@
 
 #include "task.h"
 #include "lib.h"
+#include "paging.h"
+#include "vidmem.h"
 
 page_usage_array_t page_array; // manage pages
 
@@ -354,6 +356,10 @@ int32_t system_halt(uint8_t status)
         printf("[INFO] nothing to halt\n");
         // system_execute((uint8_t *)"shell");
         return -1;
+    }
+    if(curr_task()->vidmap == 1) {
+        PDE_4KB_t *user_vid_pde = (PDE_4KB_t *)(&page_directory.pde[VID_PAGE_INDEX]);
+        clear_PDE_4KB(user_vid_pde);
     }
     // try to deactivate task, get parent task
     parent = deactivate_task(curr_task());
