@@ -26,15 +26,15 @@ void clear(void)
     }
     screen_x = 0;
     screen_y = 0;
-    update_cursor(0,0);
+    update_cursor(0, 0);
 }
 
-void align_space(int32_t size){
-    while (screen_x<size)
+void align_space(int32_t size)
+{
+    while (screen_x < size)
     {
         putc(' ');
     }
-    
 }
 
 /* Standard printf().
@@ -189,161 +189,166 @@ int32_t puts(int8_t *s)
 }
 
 /*   enable_cursor(uint8_t cursor_start, uint8_t cursor_end);
- *   Inputs: cursor_start -- start scanline 
- *          cursor_end -- end scan line 
+ *   Inputs: cursor_start -- start scanline
+ *          cursor_end -- end scan line
  *   Side_effects: start use of cursor
- *  
+ *
  */
 
 void enable_cursor(uint8_t cursor_start, uint8_t cursor_end)
 {
-	outb(0x0A, 0x3D4);
-	outb((inb(0x3D5) & 0xC0) | cursor_start, 0x3D5);
- 
-	outb(0x0B, 0x3D4);
-	outb((inb(0x3D5) & 0xE0) | cursor_end, 0x3D5);
+    outb(0x0A, 0x3D4);
+    outb((inb(0x3D5) & 0xC0) | cursor_start, 0x3D5);
+
+    outb(0x0B, 0x3D4);
+    outb((inb(0x3D5) & 0xE0) | cursor_end, 0x3D5);
 }
 
 /*   update_cursor(int x, int y);
- *   Inputs: x -- current x location 
+ *   Inputs: x -- current x location
  *          y -- current y location
  *   Side_effects: start use of cursor
- *  
+ *
  */
 void update_cursor(int x, int y)
 {
-	uint16_t pos = y * NUM_COLS + x;
- 
-	outb(0x0F, 0x3D4);
-	outb((uint8_t) (pos & 0xFF), 0x3D5);
-	outb( 0x0E, 0x3D4);
-	outb((uint8_t) ((pos >> 8) & 0xFF),0x3D5);
+    uint16_t pos = y * NUM_COLS + x;
+
+    outb(0x0F, 0x3D4);
+    outb((uint8_t)(pos & 0xFF), 0x3D5);
+    outb(0x0E, 0x3D4);
+    outb((uint8_t)((pos >> 8) & 0xFF), 0x3D5);
+}
+
+/* void scroll_down();
+ * Inputs: void
+ * Return Value: void
+ *  Function: scroll down one line
+ *  copy next line to upper line and
+ * Clear the last line */
+void scroll_down_oneline()
+{
+    int j, k;
+    for (j = 0; j < NUM_ROWS - 1; j++)
+    {
+        for (k = 0; k < NUM_COLS; k++)
+        {
+            /* copy the next line to current line */
+            *(uint8_t *)(video_mem + ((NUM_COLS * j + k) << 1)) =
+                *(uint8_t *)(video_mem + ((NUM_COLS * (j + 1) + k) << 1));
+        }
+    }
+    /* clear last line of screen */
+    for (k = 0; k < NUM_COLS; k++)
+    {
+        *(uint8_t *)(video_mem + ((NUM_COLS * (NUM_ROWS - 1) + k) << 1)) = ' ';
+        *(uint8_t *)(video_mem + ((NUM_COLS * (NUM_ROWS - 1) + k) << 1) + 1) = ATTRIB;
+    }
+}
+
+/* void char_to_mem;
+ * Inputs: c -- show char on the screen
+ *          screen_x --
+ * Return Value: void
+ *  Function: put correct character to the memory
+ *
+ */
+void char_to_mem(c)
+{
+    *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
+    *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
+    screen_x++;
+    screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+    screen_x %= NUM_COLS;
 }
 
 /* void putc(uint8_t c);
  * Inputs: uint_8* c = character to print
  * Return Value: void
  *  Function: Output a character to the console */
-void putc(uint8_t c) {
-    int i,j,k;
+void putc(uint8_t c)
+{
+    int i;
     /* change line  */
-    if(c == '\n' || c == '\r') {
-        if (screen_y == NUM_ROWS-1)
+    if (c == '\n' || c == '\r')
+    {
+        if (screen_y == NUM_ROWS - 1)
         {
-            for (j = 0; j<NUM_ROWS-1; j++){
-                for (k = 0; k<NUM_COLS; k++){
-                    *(uint8_t *)(video_mem + ((NUM_COLS * j + k) << 1)) =   // copy next line to current line
-                    *(uint8_t *)(video_mem + ((NUM_COLS * (j+1) + k) << 1));
-                }
-            }
-            /* last line of screen */
-            for (k=0; k<NUM_COLS; k++){
-                *(uint8_t *)(video_mem + ((NUM_COLS * (NUM_ROWS-1) + k) << 1)) = ' ';   // clear last line
-                *(uint8_t *)(video_mem + ((NUM_COLS * (NUM_ROWS-1) + k) << 1) + 1) = ATTRIB;            
-            }           
-            screen_x = 0;   // begin at start of screen
+            scroll_down_oneline();
+            screen_x = 0; // begin at start of screen
             screen_y = NUM_ROWS - 1;
-        }else{
-            screen_y++;     // else 
+        }
+        else
+        {
+            screen_y++; // else
             screen_x = 0;
         }
-        
     }
-    else if (c == 0){
+    else if (c == 0)
+    {
         /* do nothing */
     }
     /* if press backspace */
     else if (c == '\b')
     {
         /* if the screen_x is at the beginning of line */
-        if ((screen_y!=0) && (screen_x==0)){
+        if ((screen_y != 0) && (screen_x == 0))
+        {
             *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x - 1) << 1)) = ' ';
             screen_y--;
-            screen_x = NUM_COLS-1;
-        /* if at the start of screen*/
-        }else if ((screen_y==0) && (screen_x==0)){
+            screen_x = NUM_COLS - 1;
+            /* if at the start of screen*/
+        }
+        else if ((screen_y == 0) && (screen_x == 0))
+        {
             screen_x = 0;
             screen_y = 0;
-        }else{
-            *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x-1) << 1)) = ' ';
-            screen_x--;           
-            screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+        }
+        else
+        {
+            *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x - 1) << 1)) = ' ';
+            screen_x--;
         }
     }
     /* if press tab */
     else if (c == '\t')
     {
-        /* need modify */
-        if ((screen_x >= NUM_COLS-4) && (screen_y == NUM_ROWS-1))
+        if ((screen_x >= NUM_COLS - 4) && (screen_y == NUM_ROWS - 1))
         {
-            for (j = 0; j<NUM_ROWS-1; j++){
-                for (k = 0; k<NUM_COLS; k++){
-                    /* copy the next line to current line */
-                    *(uint8_t *)(video_mem + ((NUM_COLS * j + k) << 1)) =
-                    *(uint8_t *)(video_mem + ((NUM_COLS * (j+1) + k) << 1));
-                }
-            }
-            /* last line of screen */
-            for (k=0; k<NUM_COLS; k++){
-                *(uint8_t *)(video_mem + ((NUM_COLS * (NUM_ROWS-1) + k) << 1)) = ' ';            
-            }
+            scroll_down_oneline();
             /* new char printed */
-            for (i=0;i<4;i++){
-                *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x + i) << 1)) = ' ';
-                *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x + i) << 1)+1) = ATTRIB;
+            for (i = 0; i < 4; i++)
+            {
+                char_to_mem(' ');
             }
-            /* add 4 more space */
-            screen_x = screen_x + 4;
-            screen_x %= NUM_COLS;
             screen_y = NUM_ROWS - 1;
         }
         else
         {
-            for (i=0;i<4;i++){
-                *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x + i) << 1)) = ' ';
-                *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x + i) << 1)+1) = ATTRIB;
+            for (i = 0; i < 4; i++)
+            {
+                char_to_mem(' ');
             }
-            screen_x = screen_x + 4;
-            screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
-            screen_x %= NUM_COLS;
         }
-        
-    }     
+    }
     else
-    {   
+    {
         /* scroll down */
-        if ((screen_x == NUM_COLS-1) && (screen_y == NUM_ROWS-1))
+        if ((screen_x == NUM_COLS - 1) && (screen_y == NUM_ROWS - 1))
         {
-            for (j = 0; j<NUM_ROWS-1; j++){
-                for (k = 0; k<NUM_COLS; k++){
-                    /* copy the next line to current line */
-                    *(uint8_t *)(video_mem + ((NUM_COLS * j + k) << 1)) =
-                    *(uint8_t *)(video_mem + ((NUM_COLS * (j+1) + k) << 1));
-                }
-            }
-            /* clear last line of screen */
-            for (k=0; k<NUM_COLS; k++){
-                *(uint8_t *)(video_mem + ((NUM_COLS * (NUM_ROWS-1) + k) << 1)) = ' ';
-                *(uint8_t *)(video_mem + ((NUM_COLS * (NUM_ROWS-1) + k) << 1) + 1) = ATTRIB;            
-            }
+            scroll_down_oneline();
             /* the first character of last line */
-            *(uint8_t *)(video_mem + ((NUM_COLS * (screen_y-1) + screen_x) << 1)) = c;
-            *(uint8_t *)(video_mem + ((NUM_COLS * (screen_y-1) + screen_x) << 1) + 1) = ATTRIB;
-            screen_x++;
-            screen_x %= NUM_COLS;
+            screen_y--;
+            char_to_mem(c);
             screen_y = NUM_ROWS - 1;
         }
         else
         {
-            *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
-            *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
-            screen_x++;            
-            screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
-            screen_x %= NUM_COLS;
+            char_to_mem(c);
         }
     }
     /* update the cursor if update the location */
-    update_cursor(screen_x,screen_y);
+    update_cursor(screen_x, screen_y);
 }
 
 /* int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix);
@@ -655,4 +660,92 @@ void test_interrupts(void)
     {
         video_mem[i << 1]++;
     }
+}
+
+/* int32_t halt(uint8_t status)
+ * Inputs: uint8_t status
+ * Return Value: void
+ * Function:halt system */
+int32_t halt(uint8_t status)
+{
+    int32_t result;
+    asm volatile("INT $0x80"
+                 : "=a"(result)
+                 : "a"(0x01), "b"(status)
+                 : "memory", "cc");
+    return result;
+}
+
+/* int32_t execute(const uint8_t *command)
+ * Inputs: uint8_t *command
+ * Return Value: void
+ * Function:execute file */
+int32_t execute(const uint8_t *command)
+{
+    int32_t result;
+    asm volatile("INT $0x80"
+                 : "=a"(result)
+                 : "a"(0x02), "b"(command)
+                 : "memory", "cc");
+    return result;
+}
+
+/* int32_t open(const uint8_t *filename)
+ * Inputs: void
+ * Return Value: void
+ * Function: open file */
+int32_t open(const uint8_t *filename)
+{
+    int32_t result;
+    asm volatile("INT $0x80"
+                 : "=a"(result)
+                 : "a"(0x05), "b"(filename)
+                 : "memory", "cc");
+
+    return result;
+}
+
+/* int32_t write
+ * Inputs: int32_t fd, const void *buffer, int32_t nbytes
+ * Return Value: -1 for fail other for success
+ * Function: link to system call */
+int32_t write(int32_t fd, const void *buffer, int32_t nbytes) {
+    long result;
+
+    asm volatile ("INT $0x80"
+    : "=a" (result)
+    : "a" (0x04), "b" (fd), "c" (buffer), "d" (nbytes)  //oxo4 is the syscall number for write
+    : "memory", "cc");
+
+    return result;
+}
+
+/* int32_t read
+ * Inputs: int32_t fd, const void *buffer, int32_t nbytes
+ * Return Value: -1 for fail other for success
+ * Function: link to system call */
+int32_t read(int32_t fd, void *buffer, int32_t nbytes) {
+    long result;
+
+    asm volatile ("INT $0x80"
+    : "=a" (result)
+    : "a" (0x03), "b" (fd), "c" (buffer), "d" (nbytes)  //oxo3 is the syscall number for read
+    : "memory", "cc");
+
+    return result;
+}
+
+/* int32_t close
+ * Inputs: int32_t fd
+ * Return Value: -1 for fail other for success
+ * Function: link to system call */
+int32_t close(int32_t fd) {
+    long result;
+
+    asm volatile ("INT $0x80"
+    : "=a" (result)
+    : "a" (0x06), "b" (fd)  //oxo6 is the syscall number for close
+    : "memory", "cc");
+
+    return result;
 }

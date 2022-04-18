@@ -4,7 +4,11 @@
 #include "x86_desc.h"
 #include "lib.h"
 #include "i8259.h"
+#include "asmlink.h"
+#include "file_system.h"
+#include "task.h"
 
+extern PCB_t *curr_task(); // defined in boot.S
 /*** functions ***/
 
 /*
@@ -137,12 +141,55 @@ void idt_init()
  */
 void print_exception(uint32_t exception_num)
 {
-    clear();
-    printf(" Detect exception %x\n", exception_num);
-    printf(" --------pretend it is a BLUE SCREEN---------\n");
-    while (1)
+    if (page_array.num_using == 0)
     {
+        clear();
+        printf("Detect exception %x in kernal state\n", exception_num);
+        printf(" --------pretend it is a BLUE SCREEN---------\n");
     }
+    else
+    {
+        printf("Detect exception %x in user program\n", exception_num);
+        // return 256 to execute
+        PCB_t *parent;
+        if (page_array.num_using == 0)
+        {
+            printf("halt nothing");
+            system_execute((uint8_t *)"shell");
+        }
+        // try to deactivate task, get parent task
+        parent = deactivate_task(curr_task());
+        if (parent == NULL)
+        {
+            system_execute((uint8_t *)"shell");
+        }
+        // Restore parent paging
+        restore_task_page(parent->pid);
+
+        // todo
+        // Write Parent process’ info back to TSS
+        tss.esp0 = curr_task()->saved_esp;
+        // print_pcb(curr_task());
+        // print_pcb(parent);
+        // restore stack
+        asm volatile("         \n\
+            movl %%edx, %%esp   \n\
+            movl %%ecx, %%ebp   \n\
+            movl %%ebx, %%eax   \n\
+            leave \n\
+            ret \n\
+            "
+                     : /* no output*/
+                     : "d"(curr_task()->saved_esp), "c"(curr_task()->saved_ebp), "b"(256)
+                     : "eax");
+        // should never return
+        printf("ERROR, reach end of halt()");
+    }
+
+    volatile int inf_loop = 1; // set it to 0 in gdb to return to exception content
+    while (inf_loop)
+    {
+    } // put kernel into infinite loop
 }
 
 /*
@@ -154,9 +201,158 @@ void print_exception(uint32_t exception_num)
  */
 void print_syscall(uint32_t syscall_num)
 {
-    clear();
+    // clear();
     printf(" Your syscall is %x, but not implement now\n", syscall_num);
-    while (1)
-    {
-    }
+    // while (1)
+    // {
+    // }
 }
+
+/*
+ * syscall_err
+ * description: it will disp a err info on screen when user call a invalid system call
+ * input: invalid_call
+ * output: num is not a syscall
+ * return: none
+ */
+void syscall_err(uint32_t invalid_call)
+{
+    // clear();
+    printf("System call %x is not valid, check twice!!!\n", invalid_call);
+    // while (1)
+    // {
+    // }
+}
+
+/*
+ * system_vidmap
+ * description: classify file and open
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
+asmlinkage int32_t system_vidmap(uint8_t **screen_start)
+{
+    printf("vidmap has not been implemented now.\n");
+    return 0;
+}
+
+/*
+ * system_set_handler
+ * description: classify file and open
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
+asmlinkage int32_t system_set_handler(int32_t signum, void *handler_address)
+{
+    printf("set_handler has not been implemented now.\n");
+    return 0;
+}
+
+/*
+ * system_sigreturn
+ * description: classify file and open
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
+asmlinkage int32_t system_sigreturn(void)
+{
+    printf("sigreturn has not been implemented now.\n");
+    return 0;
+}
+
+/*
+ * system_open
+ * description: classify file and open
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
+asmlinkage int32_t system_open(uint8_t* filename){
+    return file_sys_open(filename);
+    // /*** check file valid or not ***/
+    // if(filename == NULL){
+    //     printf("invalid file!!!\n");
+    //     return -1;
+    // }
+
+    // int file_check;
+    // dentry_t current_dentry;
+    // file_check = read_dentry_by_name(filename, &current_dentry);
+    // if(file_check == -1){   //if check fail then show it is not a visible file
+    //     printf("invalid file!!!\n");
+    //     return -1;
+    // }
+
+    // /*** call the hanler function by file type ***/
+    // uint32_t file_type = current_dentry.file_type;
+    // switch (file_type)
+    // {
+    // case 0:
+    //     return rtc_open(filename);
+    //     break;
+
+    // case 1:
+    //     return file_sys_open(filename);
+    //     break;
+
+    // case 2:
+    //     return file_sys_open(filename);
+    //     break;
+    
+    // default:
+    //     printf("invalid file type, check again!!!\n");
+    //     break;
+    // }
+
+    // return -1;
+}
+
+/*
+ * system_close
+ * description: close the file that provided
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
+asmlinkage int32_t system_close(int32_t fd){
+    return file_sys_close(fd);
+}
+
+/*
+ * system_write
+ * description: write the provide file
+ * input: fd, buf, nbytes
+ * output: none
+ * return 0 for fail other for success
+ */
+asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes){
+    return file_sys_write(fd, buf, nbytes);
+}
+
+/*
+ * system_read
+ * description: read the provide file
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
+asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes){
+    return file_sys_read(fd, buf, nbytes);
+}
+
+/*
+ * system_open
+ * description: it classify the file type and call the corresponing handler
+ * input: filename
+ * output: none
+ * return 0 for fail other for success
+ */
+// asmlinkage int32_t system_halt (uint8_t status){
+//     clear();
+//     printf(" halt %x\n", status);
+//     printf(" --------pretend it is a BLUE SCREEN---------\n");
+//     while(1){}
+// }

@@ -141,6 +141,7 @@ int32_t rtc_open(const uint8_t* filename) {
  */
 int32_t rtc_read( int32_t fd, void* buf, int32_t nbytes ) {
     rtc_happen_flag = 1;
+    sti();
     while(rtc_happen_flag){
 
     }

@@ -22,8 +22,8 @@
 #define r_shift_release 0xB6
 #define caps 0x3A
 #define caps_release 0xBA
-#define l_control 0x1D
-#define l_control_release 0x9D
+#define control 0x1D
+#define control_release 0x9D
 #define L               0x26
 #define DELETE_NUM      14
 

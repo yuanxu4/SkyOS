@@ -12,6 +12,7 @@
 #include "file_system.h"
 #include "keyboard.h"
 #include "rtc.h"
+#include "idt.h"
 
 #define PASS 1
 #define FAIL 0
@@ -296,7 +297,7 @@ int file_sys_test()
 
 	// open root
 	TEST_PRINT("try to open the root directory\n\n");
-	fd = file_sys_open((const uint8_t *)flie_list[0]);
+	fd = open((const uint8_t *)flie_list[0]);
 	if (fd != 2)
 	{
 		TEST_PRINT("fail in test open root, fd is %d\n", fd);
@@ -308,11 +309,11 @@ int file_sys_test()
 	// get_file_name();
 	for (i = 0; i < get_file_num(); i++)
 	{
-		tmp = file_sys_read(fd, file_buf, MAX_LEN_FILE_NAME);
+		tmp = read(fd, file_buf, MAX_LEN_FILE_NAME);
 		if (tmp > 0)
 		{
 			// write -1 fail
-			if (-1 == file_sys_write(STDOUT_FD, file_buf, tmp))
+			if (-1 == write(STDOUT_FD, file_buf, tmp))
 			{
 				TEST_PRINT("fail to write in stdout\n");
 				close_opening();
@@ -342,9 +343,9 @@ int file_sys_test()
 		}
 	}
 	continue_test();
-	TEST_PRINT("continue to read, should print \"reach to the end\"", i);
+	TEST_PRINT("continue to read, should not print other file names\n");
 	// should return 0 and print reach to the end\n
-	tmp = file_sys_read(fd, file_buf, MAX_LEN_FILE_NAME);
+	tmp = read(fd, file_buf, MAX_LEN_FILE_NAME);
 	if (tmp)
 	{
 		TEST_PRINT("fail in test reading at end., read returns %d\n", tmp);
@@ -354,19 +355,19 @@ int file_sys_test()
 	continue_test();
 	// try to test stdin and stdout
 	TEST_PRINT("try to write in stdin, read in stdout, close stdout, all should fail\n");
-	if (!file_sys_write(STDIN_FD, file_buf, tmp))
+	if (!write(STDIN_FD, file_buf, tmp))
 	{
 		TEST_PRINT("wrongly write in stdin\n");
 		close_opening();
 		return FAIL;
 	}
-	if (!file_sys_read(STDOUT_FD, file_buf, MAX_LEN_FILE_NAME))
+	if (!read(STDOUT_FD, file_buf, MAX_LEN_FILE_NAME))
 	{
 		TEST_PRINT("wrongly read in stdout\n");
 		close_opening();
 		return FAIL;
 	}
-	if (!file_sys_close(STDOUT_FD))
+	if (!close(STDOUT_FD))
 	{
 		TEST_PRINT("wrongly close stdout\n");
 		close_opening();
@@ -383,7 +384,7 @@ int file_sys_test()
 		continue_test();
 		clear();
 		TEST_PRINT("try to open file %s\n", flie_list[i]);
-		fd = file_sys_open((const uint8_t *)flie_list[i]);
+		fd = open((const uint8_t *)flie_list[i]);
 		if (fd < 2)
 		{
 			TEST_PRINT("fail to open %s\n", flie_list[i]);
@@ -408,7 +409,7 @@ int file_sys_test()
 		// read file 32B one time
 		do
 		{
-			tmp = file_sys_read(fd, file_buf, MAX_LEN_FILE_NAME);
+			tmp = read(fd, file_buf, MAX_LEN_FILE_NAME);
 			switch (tmp)
 			{
 			case 0:
@@ -418,7 +419,7 @@ int file_sys_test()
 				close_opening();
 				return FAIL;
 			default:
-				if (-1 == file_sys_write(STDOUT_FD, file_buf, tmp))
+				if (-1 == write(STDOUT_FD, file_buf, tmp))
 				{
 					TEST_PRINT("fail to display file, %d\n", tmp);
 					close_opening();
@@ -441,7 +442,7 @@ int file_sys_test()
 	}
 
 	TEST_PRINT("try to open root again, should fail\n");
-	fd = file_sys_open((const uint8_t *)flie_list[0]);
+	fd = open((const uint8_t *)flie_list[0]);
 	if (fd != -1)
 	{
 		TEST_PRINT("wrongly open %s\n", flie_list[0]);
@@ -450,10 +451,10 @@ int file_sys_test()
 	}
 	continue_test();
 	TEST_PRINT("to test opening invaild file, close one file first\n");
-	file_sys_close(get_num_opening() - 1);
+	close(get_num_opening() - 1);
 	printf("Check: the number of opening files is %d\n", get_num_opening());
 	TEST_PRINT("try to open invaild file, should fail\n");
-	fd = file_sys_open((const uint8_t *)flie_list[7]);
+	fd = open((const uint8_t *)flie_list[7]);
 	if (fd != -1)
 	{
 		TEST_PRINT("wrongly open an invaild file %s\n", flie_list[0]);
@@ -521,38 +522,123 @@ int rtc_test()
 	return result;
 }
 
-int terminal_test(){
-	clear();	// clear the screen
+int terminal_test()
+{
+	clear(); // clear the screen
 	int32_t cnt;
-    int8_t buf[128];		
-	uint8_t* buf2 = (uint8_t*)"391OS> ";
+	int8_t buf[128];
+	uint8_t *buf2 = (uint8_t *)"391OS> ";
 
-   while (1){
-	    if (-1 == (cnt = terminal_write (1, buf2, 7))) {	// write the and terminal read
+	while (1)
+	{
+		if (-1 == (cnt = terminal_write(1, buf2, 7)))
+		{ // write the and terminal read
 			printf("ERROR writing the terminal! \n");
 		}
-	    if (-1 == (cnt = terminal_read (0, buf, 128))) {
+		if (-1 == (cnt = terminal_read(0, buf, 128)))
+		{
 			printf("ERROR reading the terminal! \n");
-		}else{
+		}
+		else
+		{
 			printf("\n");
-			printf("keyboard buffer is %s \n", buf); 
+			printf("keyboard buffer is %s \n", buf);
 		}
 		printf("Writing terminal read value: ");
-		if (-1 == (cnt = terminal_write (1, buf, 128))) {	
+		if (-1 == (cnt = terminal_write(1, buf, 128)))
+		{
 			printf("ERROR writing the terminal! \n");
-		}else{			
+		}
+		else
+		{
 			printf("\n");
 		}
-   }
+	}
 }
 
 void continue_test()
 {
-	printf("\n-------press ENTER to awake it (and test stdin craftily)---------\n");
-	file_sys_read(STDIN_FD, file_buf, MAX_LEN_FILE_NAME);
+	printf("\n-----------------press ENTER to awake it -------------------\n");
+	read(STDIN_FD, file_buf, MAX_LEN_FILE_NAME);
 }
 
 /* Checkpoint 3 tests */
+
+// have modified the file_sys_test() in cp2 for cp3
+
+int exe_halt_err_test()
+{
+	continue_test();
+	clear();
+	TEST_HEADER;
+	int result = PASS;
+	int32_t ret;
+	char *flie_list[2] = {"verylargetextwithverylongname.tx", "wqevfwrtvwev"};
+	printf("\nTry to execute non-exist file: %s\n", flie_list[1]);
+	if (-1 != (ret = execute((uint8_t *)flie_list[1])))
+	{
+		printf("wrongly execute non-exist file\n");
+		result = FAIL;
+	}
+	printf("\nTry to execute unexecutable file: %s\n", flie_list[0]);
+	if (-1 != (ret = execute((uint8_t *)flie_list[0])))
+	{
+		printf("wrongly execute unexecutable file\n");
+		result = FAIL;
+	}
+	printf("\nTry to halt nothing\n");
+	if (-1 != halt(ret))
+	{
+		printf("wrongly halt\n");
+		result = FAIL;
+	}
+	return result;
+}
+
+int sys_call_err_test()
+{
+	continue_test();
+	clear();
+	TEST_HEADER;
+
+	int result = PASS;
+	uint8_t buf[32];
+
+	printf("\nTry to pass garbage input for open/close/read/write.\n");
+	printf("like negative length, NULL pointer, invaild fd...\n\n");
+	if (-1 != read(-1, buf, 31))
+	{
+		printf("beat by garbage\n");
+		result = FAIL;
+	}
+	if (-1 != write(99999999, buf, 31))
+	{
+		printf("beat by garbage\n");
+		result = FAIL;
+	}
+	if (-1 != read(STDIN_FD, NULL, 31))
+	{
+		printf("beat by garbage\n");
+		result = FAIL;
+	}
+	if (-1 != write(STDOUT_FD, buf, -1))
+	{
+		printf("beat by garbage\n");
+		result = FAIL;
+	}
+	if (-1 != close(-1))
+	{
+		printf("beat by garbage\n");
+		result = FAIL;
+	}
+	if (-1 != open(NULL))
+	{
+		printf("beat by garbage\n");
+		result = FAIL;
+	}
+	return result;
+}
+
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
 
@@ -567,7 +653,11 @@ void launch_tests()
 	// TEST_OUTPUT("idt_dereference_test", idt_dereference_test());
 	// TEST_OUTPUT("Keyboard_test", keyboard_test());
 	// TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
-	//TEST_OUTPUT("rtc_test", rtc_test());
-	//TEST_OUTPUT("file_sys_test", file_sys_test());
-	TEST_OUTPUT("terminal test", terminal_test());
+
+	TEST_OUTPUT("file_sys_test", file_sys_test());
+	TEST_OUTPUT("exe garbage input test", exe_halt_err_test());
+	TEST_OUTPUT("syscall garbage input test", sys_call_err_test());
+	continue_test();
+
+	clear();
 }

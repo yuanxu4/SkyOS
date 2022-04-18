@@ -5,6 +5,7 @@
 
 /*** include lib ***/
 #include "types.h"
+#include "asmlink.h"
 
 /*** default number ***/
 #define IDT_BY_INTEL_START 0x00 // interupt defined by intel 0x00 - 0x1F
@@ -59,6 +60,20 @@ void print_exception(uint32_t exception_num);
 
 /** cp1 indentify syscall **/
 void print_syscall(uint32_t syscall_num);
+
+/** cp2 syscall_err **/
+void syscall_err(uint32_t invalid_call);
+
+asmlinkage int32_t system_open(uint8_t* filename);
+
+asmlinkage int32_t system_close(int32_t fd);
+
+asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes);
+
+asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes);
+
+asmlinkage int32_t system_halt (uint8_t status);
+
 
 #endif
 

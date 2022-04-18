@@ -5,7 +5,10 @@
 #ifndef _LIB_H
 #define _LIB_H
 
+#ifndef ASM_lib
+
 #include "types.h"
+#include "asmlink.h"
 
 int32_t printf(int8_t *format, ...);
 void putc(uint8_t c);
@@ -33,6 +36,15 @@ int32_t bad_userspace_addr(const void *addr, int32_t len);
 int32_t safe_strncpy(int8_t *dest, const int8_t *src, int32_t n);
 
 void align_space(int32_t size);
+
+/* defined in lib.S */
+int32_t open(const uint8_t *filename);
+int32_t write(int32_t fd, const void *buffer, int32_t nbytes);
+int32_t close(int32_t fd);
+int32_t read(int32_t fd, void *buffer, int32_t nbytes);
+int32_t halt(uint8_t status);
+int32_t execute(const uint8_t *command);
+int32_t getargs(uint8_t *buf, int32_t nbytes);
 
 /* Port read functions */
 /* Inb reads a byte and returns its value as a zero-extended 32-bit
@@ -160,3 +172,5 @@ static inline uint32_t inl(port)
     } while (0)
 
 #endif /* _LIB_H */
+
+#endif

@@ -1,0 +1,107 @@
+<--------------------------------------------------------->
+                          BUG 0                          
+<--------------------------------------------------------->
+Time:
+    	2022.4.10
+Creator:
+   	 Keyi
+Description:
+When running ls program, it tries to read the unopen file (. directory)
+Reason:
+ 	In our system call asm code, it saves all registers including %eax, then call the corresponding c code and restore %eax finally. In this case, the return value from c code is invalid and or we can say the user program gets the wrong return value (here fd = 5). Then when we try to read this wrong fd, it is unopen.
+Solution:
+    	Don’t save and restore %eax.
+
+<--------------------------------------------------------->
+                          BUG 1                          
+<--------------------------------------------------------->
+Time:
+	2022.4.10
+Creator:
+	Keyi
+Description:
+    	After running ls, it returns wrongly. No 391OS.
+Reason:
+	We use saved esp and ebp of the parent program to return to parent program in halt, which is wrong.
+Solution:
+	Use saved esp and ebp of the current program which stores previous esp and ebp to return to parent program.
+
+<--------------------------------------------------------->
+                          BUG 2                          
+<--------------------------------------------------------->
+Time:
+	2022.4.10
+Creator:
+    	Keyi
+Description:
+    	Get the wrong address of PCB.
+Reason:
+	(PCB_t *) KERNEL_UPPER_ADDR - (id + 1) * SIZE_8KB
+	Here we transform the macro to a pointer to PCB, then the offset becomes offset * size of PCB.
+Solution:
+	(PCB_t *) (KERNEL_UPPER_ADDR - (id + 1) * SIZE_8KB)
+	Add parentheses to calculate address first, then transform it to a pointer to PCB.
+
+<--------------------------------------------------------->
+                          BUG 3                          
+<--------------------------------------------------------->
+Time:
+	2022.4.10
+Creator:
+    	Yuan Xu
+Description:
+    	After system call terminal write and print 391OS, os cannot receive interrupt.
+Reason:
+    	we use interrupt gate for system call and has default cleared IF after system call terminal read,
+		The IF flag is 0 when waiting for keyboard interrupt
+Solution:
+		we add sti to the terminal read function before the while loop which is waiting for the interrupt 
+		occurs.
+	
+
+<--------------------------------------------------------->
+                          BUG 4                          
+<--------------------------------------------------------->
+Time:
+	2022.4.10
+Creator:
+    	Haina Lou
+Description:
+    	After system call "shell", page fault exception occurs
+Reason:
+    	The index of our system call starts from 0 to 9 and in user program, it starts from 1
+		when it wants to call 4 syscall_write, it calls syscall_open in our kernel and the parameter
+		passed in is wrongly regarded as a pointer, we cannot dereference a pointer in invalid address,
+		page fault occurs.
+Solution:
+		add one free space in beginning of the jump table for our system call indirection
+
+<--------------------------------------------------------->
+						  BUG 5                          
+<--------------------------------------------------------->
+Time:
+	2022.4.11.
+Creator:
+    Sam
+Description:
+    the system call could not return the correct value
+Reason:
+    system call handler store the result in eax, so we should not pop the origin eax.
+Solution:
+	at the line of popl eax, use addl $4, esp instead
+
+	
+<--------------------------------------------------------->
+						  BUG 6                          
+<--------------------------------------------------------->
+Time:
+	2022.4.11.
+Creator:
+	Sam
+Description:
+    the system call handler could not get the right args	
+Reason:
+    we use the fastcall for the system call handler but the arg actually is not follow the fast call rule
+Solution:
+	use asmlink instead and push follow the order of edx, ecx, ebx.
+
