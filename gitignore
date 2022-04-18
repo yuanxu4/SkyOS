@@ -113,6 +113,6 @@ dkms.conf
 source/
 
 # added
-student-distrib/mp3.img
+*.img
 student-distrib/bootimg
 student-distrib/Makefile.dep
