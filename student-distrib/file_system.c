@@ -574,7 +574,7 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length
     // offset reach the end of the file
     if (offset >= file_len)
     {
-        PRINT("\n\nread nothing. reach to the end\n");
+        //PRINT("\n\nread nothing. reach to the end\n");
         return 0;
     }
     uint32_t copy_size = MIN((file_len - offset), length);                       // size to copy

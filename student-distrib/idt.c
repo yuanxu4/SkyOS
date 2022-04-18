@@ -7,6 +7,7 @@
 #include "asmlink.h"
 #include "file_system.h"
 #include "task.h"
+#include "vidmem.h"
 
 extern PCB_t *curr_task(); // defined in boot.S
 /*** functions ***/
@@ -233,8 +234,7 @@ void syscall_err(uint32_t invalid_call)
  */
 asmlinkage int32_t system_vidmap(uint8_t **screen_start)
 {
-    printf("vidmap has not been implemented now.\n");
-    return 0;
+    return sys_vidmap(screen_start);
 }
 
 /*

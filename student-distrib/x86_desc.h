@@ -190,13 +190,13 @@ typedef struct __attribute__((packed)) PTE_4KB
 // notes: here we use uint32_t since PDE, PTE are actually uint32_t
 // we can cast type when necessary
 // Page-Table (for 4KB)
-typedef struct PT
+typedef struct __attribute__((aligned(SIZE_4KB))) PT
 {
     uint32_t pte[PT_SIZE];
 } PT_t;
 
 // Page-Directory
-typedef struct PD
+typedef struct __attribute__((aligned(SIZE_4KB))) PD
 {
     uint32_t pde[PD_SIZE];
 } PD_t;
@@ -215,8 +215,8 @@ extern seg_desc_t tss_desc_ptr;
 extern tss_t tss;
 
 // for paging use
-extern PD_t page_directory __attribute__((aligned(SIZE_4KB)));
-extern PT_t page_table __attribute__((aligned(SIZE_4KB)));
+extern PD_t page_directory;
+extern PT_t page_table;
 
 /* Sets runtime-settable parameters in the GDT entry for the LDT */
 #define SET_LDT_PARAMS(str, addr, lim)                        \
