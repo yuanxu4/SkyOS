@@ -7,41 +7,49 @@
 #include "keyboard.h"
 #include "lib.h"
 #include "i8259.h"
+#include "task.h"
+#include "paging.h"
+#include "types.h"
+#include "x86_desc.h"
 /* keyboard buffer */
 static uint8_t kb_buf[kb_bufsize];
 /* flag used to decide when can copy */
 static volatile uint8_t copy_flag;
 static uint8_t char_num;
 /* keycode flag*/
-static uint8_t cap_on_flag, shift_on_flag, ctrl_on_flag;
+static uint8_t cap_on_flag, shift_on_flag, ctrl_on_flag, alt_on_flag;
+static PT_t kernel_pt ;
+/* three terminals */
+terminal_t _terminal_dp[MAX_TERMINAL_NUM];
+static uint32_t cur_terminal_id;
 /* no shift no capson character and numbers */
 const char scancode_simple_lowcase[keynum] = {
     0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
     '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n',
     0, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`', // left control
     0, '\\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 0,   // left shift, right shift
-    0, 0, ' ', 0                                                    // caps_lock ~0x3A
+    0, 0, ' ', 0, '\f', '\f', '\f'                                  // caps_lock ~0x3D
 };
 const char scancode_shifton[keynum] = {
     0, 0, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',
     '\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',
     0, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~', // left control
     0, '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0,   // left shift, right shift
-    0, 0, ' ', 0                                                   // caps_lock ~0x3A
+    0, 0, ' ', 0, '\f', '\f', '\f'                                // caps_lock ~0x3A
 };
 const char scancode_capson[keynum] = {
     0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
     '\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\n',
     0, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', '\'', '`', // left control
     0, '\\', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/', 0,   // left shift, right shift
-    0, 0, ' ', 0                                                    // caps_lock ~0x3A
+    0, 0, ' ', 0,'\f', '\f', '\f'                                   // caps_lock ~0x3A
 };
 const char scancode_bothon[keynum] = {
     0, 0, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',
     '\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '{', '}', '\n',
     0, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ':', '"', '~', // left control
     0, '|', 'z', 'x', 'c', 'v', 'b', 'n', 'm', '<', '>', '?', 0,   // left shift, right shift
-    0, 0, ' ', 0                                                   // caps_lock ~0x3A
+    0, 0, ' ', 0, '\f', '\f', '\f'                                 // caps_lock ~0x3A
 };
 
 void scancode_output(uint8_t scancode);
@@ -58,6 +66,7 @@ void keyboard_init(void)
     cap_on_flag = 0;
     shift_on_flag = 0;
     ctrl_on_flag = 0;
+    alt_on_flag = 0;
     enable_irq(KEYBARD_IRQ);
 }
 
@@ -126,6 +135,12 @@ void set_flag(uint8_t scancode)
         break;
     case control_release:
         ctrl_on_flag = 0;
+        break;
+    case ALT:
+        alt_on_flag = 1;
+        break;
+    case ALT_RELEASE:
+        alt_on_flag = 0;
         break;
     default:
         break;
@@ -210,6 +225,26 @@ void scancode_output(uint8_t scancode)
             clear();
             printf("%s", kb_buf);     // print buffer value after clear screen
         }
+        else if (alt_on_flag)
+        {
+            switch (scancode)
+            {
+                case F1:
+                    terminal_switch(&(_terminal_dp[0]));
+                    break;
+                case F2:
+                    terminal_switch(&(_terminal_dp[1]));
+                    break;
+                case F3:
+                    terminal_switch(&(_terminal_dp[2]));
+                    break;
+                default:break;
+            }
+        }
+        else if (scancode_simple_lowcase[scancode] == '\f')
+        {
+            /* do nothing */
+        }
         /* shift and capslock all on */
         else if (shift_on_flag && cap_on_flag)
         {
@@ -246,15 +281,45 @@ void scancode_output(uint8_t scancode)
  */
 int32_t terminal_init()
 {
-    int i;
+    int j;
     copy_flag = 0;
     /* 25 is the number of rows in the terminal */
     enable_cursor(0, 25);
     /* clear all the keyboard buffer*/
-    for (i = 0; i < kb_bufsize; i++)
+    // for (i = 0; i < kb_bufsize; i++)
+    // {
+    //     kb_buf[i] = 0;
+    // }
+    
+    for (j = 0; j < MAX_TERMINAL_NUM; j++)
     {
-        kb_buf[i] = 0;
+        _terminal_dp[j].character_num = 0;
+        _terminal_dp[j].cursor_x = 0;
+        _terminal_dp[j].cursor_y = 0;
+        _terminal_dp[j].terminal_id = j+1;
+        _terminal_dp[j].character_num = 0;
+        memset(_terminal_dp[j].keyboard_buf,0,kb_bufsize); 
     }
+    _terminal_dp[0].page_addr = TERM1_ADDR;
+    _terminal_dp[1].page_addr = TERM2_ADDR;
+    _terminal_dp[2].page_addr = TERM3_ADDR;
+
+    cur_terminal_id = 1;
+    memcpy(kb_buf,_terminal_dp[0].keyboard_buf,kb_bufsize);
+    _terminal_dp[0].character_num = 0;
+    screen_x = _terminal_dp[0].cursor_x;
+    screen_y = _terminal_dp[0].cursor_y;
+    char_num = _terminal_dp[0].character_num;
+
+    /* MAPPING */
+    PDE_4KB_t *physical_vid_pde = (PDE_4KB_t *)(&page_directory.pde[0]);
+    set_PDE_4KB(physical_vid_pde, (uint32_t)(&kernel_pt), 1, 0, 1);
+    set_PTE_4KB((PTE_4KB_t *)(&kernel_pt.pte[VIDEO_MEM_INDEX]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
+    set_PTE_4KB((PTE_4KB_t *)(&kernel_pt.pte[VIDEO_MEM_INDEX+1]),TERM1_ADDR, 1, 0, 1);  
+    set_PTE_4KB((PTE_4KB_t *)(&kernel_pt.pte[VIDEO_MEM_INDEX+2]), TERM2_ADDR, 1, 0, 1);
+    set_PTE_4KB((PTE_4KB_t *)(&kernel_pt.pte[VIDEO_MEM_INDEX+3]), TERM3_ADDR, 1, 0, 1);
+    flush_TLB();
+    
     return 0;
 }
 
@@ -374,3 +439,70 @@ int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes)
     // printf("\nterminal_write, return %d\n",nbytes);
     return nbytes;
 }
+
+
+/*########################## FOR CP5 #################################*/
+
+/* terminal_switch()
+ * description: call when press ALT + Function key
+ * switch correct terminal content to video memory
+ * Inputs: 
+ * terminal_next -- next terminal shown on the screen
+ * Outputs: 0 success, -1 failure
+ * Side Effects: 
+ * copy current terminal content to video page buffer
+ * copying next video page buffer content to video memory 
+ *
+ */
+int32_t terminal_switch(terminal_t *terminal_next)
+{
+    if (terminal_next->terminal_id == cur_terminal_id)
+    {
+        printf("Still in terminal <%d>",cur_terminal_id);
+        return 0; 
+    }
+    
+    terminal_t *pre_terminal = &(_terminal_dp[cur_terminal_id-1]);
+    cur_terminal_id = terminal_next->terminal_id;
+
+    /* mapping */
+    video_mem_map(terminal_next);
+
+    /* copy current terminal content to video page buffer */
+    memcpy(pre_terminal->page_addr,VIDEO_MEM_ADDR,(uint32_t)VIDEO_MEM_SIZE);
+    pre_terminal->cursor_x = screen_x;
+    pre_terminal->cursor_y = screen_y;
+    pre_terminal->character_num = char_num;
+
+    
+    /* change buffer content */
+    memcpy((void*)terminal_next->keyboard_buf,kb_buf,kb_bufsize);
+   
+    /* copying next video page buffer content to video memory  */
+    memcpy(VIDEO_MEM_ADDR, terminal_next->page_addr,VIDEO_MEM_SIZE);
+    update_cursor(terminal_next->cursor_x,terminal_next->cursor_y);
+    screen_x = terminal_next->cursor_x;
+    screen_y = terminal_next->cursor_y;
+    char_num = terminal_next->character_num;
+    /* change buffer content */
+    memcpy(kb_buf,terminal_next->keyboard_buf,kb_bufsize);
+
+    
+    return 0;
+}
+
+/* video_mem_map()
+ * description: used for schedule, called in switch terminal
+ * map the virtual video Memory to correct video page
+ * Inputs: terminal_t * terminal_next -- next terminal information
+ * Outputs: 0 success, -1 failure
+ * Side Effects: 
+ * if now scheduled running terminal is in current terminal -- direct mapping
+ * if now scheduled running terminal is not in current terminal -- remapping
+ *
+ */
+int32_t video_mem_map(terminal_t *terminal_next)
+{    
+    return 0;
+}
+

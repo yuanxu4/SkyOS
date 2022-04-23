@@ -17,7 +17,7 @@
 #include "file_system.h"
 
 #define MAX_ARGS 128                            // pending
-#define MAX_NUM_TASK 2                          // max num of running tasks
+#define MAX_NUM_TASK 6                          // max num of running tasks
 #define TASK_VIR_ADDR 0x08000000                // base virtual addr for task
 #define TASK_VIR_ADDR_END 0x08400000                // base virtual addr for task
 #define TASK_VIR_IDX (TASK_VIR_ADDR / SIZE_4MB) // the index of the pde of TASK_VIR_ADDR in pd

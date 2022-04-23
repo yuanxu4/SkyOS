@@ -203,15 +203,20 @@ int32_t system_execute(const uint8_t *command)
     uint32_t eip;
     uint8_t args_array[MAX_ARGS + 1];
     uint8_t name_array[MAX_LEN_FILE_NAME + 1];
+    memset(args_array, "\0", MAX_ARGS + 1);
+    memset(name_array, "\0", MAX_LEN_FILE_NAME + 1);
     // uint32_t len; // tem len
     // Parse args
     args = parse_args((uint8_t *)command);
     // printf("%s\n", command);
     strcpy((int8_t *)name_array, (const int8_t *)command);
-    if (args != NULL)
+    if (args != NULL )
     {
-        // printf("%s\n", args);
-        strcpy((int8_t *)args_array, (const int8_t *)args);
+        printf("%s\n", args);
+        if (*args != "\0")
+        {
+            strcpy((int8_t *)args_array, (const int8_t *)args);
+        }
     }
 
     // get the dentry in fs
@@ -410,5 +415,21 @@ int32_t system_getargs(uint8_t *buf, int32_t nbytes)
     // printf("%s\n", args);
     // printf("%x\n", args);
     strncpy((int8_t *)buf, (int8_t *)args, nbytes);
+    return 0;
+}
+
+
+
+/*
+ * int32_t process_switch(uint8_t status)
+ * switch to next program, used for scheduling
+ * Inputs:  status -- status returned to execute
+ * Outputs: None
+ * Side Effects:
+ * return value: returning the specified value to its parent process
+ */
+
+int32_t process_switch()
+{
     return 0;
 }

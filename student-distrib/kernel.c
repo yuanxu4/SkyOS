@@ -170,7 +170,7 @@ void entry(unsigned long magic, unsigned long addr)
     /* keyboard init */
     keyboard_init();
 
-    terminal_init();
+    
     /* rtc ini*/
     rtc_init();
     enable_irq(RTC_IRQ);
@@ -187,6 +187,7 @@ void entry(unsigned long magic, unsigned long addr)
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
+    terminal_init();
 
     /* Enable interrupts */
     /* Do not enable the following until after you have set up your
