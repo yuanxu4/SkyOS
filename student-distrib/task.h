@@ -19,7 +19,7 @@
 #define MAX_ARGS 128                            // pending
 #define MAX_NUM_TASK 2                          // max num of running tasks
 #define TASK_VIR_ADDR 0x08000000                // base virtual addr for task
-#define TASK_VIR_ADDR_END 0x08400000                // base virtual addr for task
+#define TASK_VIR_ADDR_END 0x08400000            // base virtual addr for task
 #define TASK_VIR_IDX (TASK_VIR_ADDR / SIZE_4MB) // the index of the pde of TASK_VIR_ADDR in pd
 #define TASK_VIR_OFFSET 0x00048000              // offset within page of task
 #define TASK_PAGE_INFO 0x87                     // flag info of pde for task set PS, U/S, R/W, P flags
@@ -40,9 +40,9 @@ struct PCB
     uint32_t saved_ebp;
     uint32_t kernel_ebp; // ebp of this task in kernel
     uint32_t eip;
-    uint32_t vidmap;     // to check whether the vidmap is create
-    //uint32_t kernel_esp; // esp of this task in kernel
-    // uint32_t flags;
+    uint32_t vidmap; // to check whether the vidmap is create
+    // uint32_t kernel_esp; // esp of this task in kernel
+    //  uint32_t flags;
     uint8_t *task_name; // process executable name
     uint8_t *args;      // arguments of process
 };

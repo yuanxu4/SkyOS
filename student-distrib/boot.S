@@ -83,10 +83,20 @@ enable_paging:
     pushl   %ebp
     movl    %esp, %ebp
 # set the page table base addr for 1st PDE (0-4MB)
-    movl    page_directory, %eax # the 1st entry in PD, 0x00000003
+    movl    page_directory, %eax # the 1st entry in PD, 0x00000082
     movl    $page_table, %ecx # the addr of PT, (aligned 4KB) 0xXXXXX000
-    orl     %eax, %ecx
+    orl     %eax, %ecx # 0xXXXXX082
+    movb    0x03, %cl # 0xXXXXX003
     movl    %ecx, page_directory
+
+    movl    page_directory+4, %eax # the 2nd entry in PD, 0x00400082
+    movb    0x83, %al # 0x00400083
+    movl    %eax, page_directory+4
+
+    movl    page_table + VIDEO_MEM_OFFSET, %ecx # the entry of video memory in PT, 0x000B8002
+    movb    0x03, %cl # 0x000B8003
+    movl    %ecx, page_table + VIDEO_MEM_OFFSET
+
 # set regs
     # cr3: bit 31-12, Page-Directory Base; bit 4,3, PCD,PWT, both 0; other ignored,0
     movl    $page_directory, %eax # the addr of PD, (aligned 4KB) 0xXXXXX000

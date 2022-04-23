@@ -131,9 +131,20 @@ _idt:
 
 idt_bottom:
 
+
+.macro entry_fill start, cnt, step
+    .long \start
+    .if \cnt
+        sum "(\start+\step)", \cnt - 1, \step
+    .endif
+.endm
+
 .align 4096 # align 4KB
 # see mp3 doc
 page_directory:
+    # init pde with direct mapping(vir addr = phys addr), r/w, kernel, not present, 4MB
+    entry_fill 0x00000082, 1024, 0x00400000
+    /*
     # 0-4MB, for page table of 4KB pages
     .long   0x00000003  # init base addr(will be set when enable), set bit 0&1, present and R/W, bit7=0 for 4KB
     # 4-8MB, for 4MB kernel page, virtual = physical
@@ -142,8 +153,13 @@ page_directory:
     .rept PD_SIZE - 2
     .long 0 # just set 0 for not presented
     .endr
+    */
 
+# 0-4MB
 page_table:
+    # init pte with direct mapping(vir addr = phys addr), r/w, kernel, not present, 4MB
+    entry_fill 0x00000002, 1024, 0x000001000
+    /*
     # entry 0-0xB8, before video memory, not presented
     .rept VIDEO_MEM_INDEX
     .long 0
@@ -154,5 +170,5 @@ page_table:
     .rept PT_SIZE - VIDEO_MEM_INDEX - 1
     .long 0
     .endr
-
+    */
     # may use .macro to set addr for every entry

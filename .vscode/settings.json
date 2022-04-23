@@ -2,6 +2,11 @@
     "files.associations": {
         "__config": "c",
         "x86_desc.h": "c",
-        "lib.h": "c"
+        "lib.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "utility": "c",
+        "types.h": "c"
     }
 }
