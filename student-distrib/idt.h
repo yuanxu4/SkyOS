@@ -14,6 +14,7 @@
 #define IDT_BY_PIC_END 0x2F
 #define IDT_BY_SYSCALL_START 0x80 // interupt defined by system call 0x80
 
+#define IDT_BY_PIT 0x00
 #define IDT_BY_KEYBOARD 0x21 // interupt by keyboard
 #define IDT_BY_RTC 0x28      // interupt by RTC
 
@@ -49,6 +50,7 @@ extern void IDT_EXCEPTION_30();
 extern void IDT_EXCEPTION_31();
 
 /** interupt handlers **/
+extern void IDT_INTERUPT_0();   // PIT
 extern void IDT_INTERUPT_33(); // keyboard
 extern void IDT_INTERUPT_40(); // RTC
 
