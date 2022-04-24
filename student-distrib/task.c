@@ -13,11 +13,20 @@
 #include "lib.h"
 #include "paging.h"
 #include "vidmem.h"
+#include "pit.h"
+#include "keyboard.h"
 
 page_usage_array_t page_array; // manage pages
+static run_queue_t* run_queue_head;
 
 extern void flush_TLB();   // defined in boot.S
-extern PCB_t *curr_task(); // defined in boot.S
+extern PCB_t *curr_task(); // defined in boot.
+extern uint32_t cur_terminal_id;
+extern terminal_t *curr_terminal;
+
+static int32_t add_task_to_run_queue(PCB_t *new_task);
+static int32_t remove_task_from_run_queue(PCB_t *new_task);
+// extern  terminal_t *curr_terminal;
 
 // int32_t print_pcb(PCB_t *task)
 // {
@@ -174,7 +183,16 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
 
     init_file_array(&new_task->fd_array);
     // if the only one task(shell)
-    if (page_array.num_using == 1)
+    // if (page_array.num_using == 1)
+    // {
+    //     new_task->parent = NULL;
+    // }
+    // else
+    // {
+    //     new_task->parent = curr_task();
+    // }
+    curr_terminal->num_task++;
+    if (curr_terminal->num_task == 1)
     {
         new_task->parent = NULL;
     }
@@ -196,6 +214,9 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
  */
 int32_t system_execute(const uint8_t *command)
 {
+    uint32_t flag;
+    cli_and_save(flag);
+
     dentry_t task_dentry; // copied task dentry
     uint8_t *args;        // arguments
     // int32_t page_id;      // new page id
@@ -239,6 +260,13 @@ int32_t system_execute(const uint8_t *command)
         return -1;
     }
 
+    /* new_task->parent = current_task */
+    // curr_terminal->num_task++;
+    new_task->terminal = curr_terminal;
+    
+    /* add to schedule run_queue */
+    add_task_to_run_queue(new_task); 
+
     // Losd file into memory
     file_load(&task_dentry, (uint8_t *)TASK_VIR_ADDR + TASK_VIR_OFFSET);
     // todo: Context Switch
@@ -253,6 +281,8 @@ int32_t system_execute(const uint8_t *command)
     // set tss
     tss.ss0 = KERNEL_DS;
     tss.esp0 = new_task->kernel_ebp;
+
+    restore_flags(flag);
     // prepare for iret
     asm volatile("            \n\
         movw    %%ax, %%ds  /* set ds to user ds */     \n\
@@ -366,11 +396,20 @@ int32_t system_halt(uint8_t status)
         PDE_4KB_t *user_vid_pde = (PDE_4KB_t *)(&page_directory.pde[VID_PAGE_INDEX]);
         clear_PDE_4KB(user_vid_pde);
     }
+
+    /* remove current task from run_queue */
+    remove_task_from_run_queue(curr_task());
+
     // try to deactivate task, get parent task
     parent = deactivate_task(curr_task());
     if (parent == NULL)
     {
+        /* system_execute has contained add to queue */
         system_execute((uint8_t *)"shell");
+    }
+    else
+    {
+        add_task_to_run_queue(parent);
     }
     // Restore parent paging
     restore_task_page(parent->pid);
@@ -418,10 +457,84 @@ int32_t system_getargs(uint8_t *buf, int32_t nbytes)
     return 0;
 }
 
-
+/*############################### SCHEDULE for CP5 ##########################*/
+/*
+ * int32_t sche_init()
+ * reads the program’s command line arguments into a user-level buffer.
+ * Inputs:  buf -- user-level buffer
+ *          nbytes -- length to copy
+ * Outputs: None
+ * Side Effects:
+ * return value: 0 for succ, -1 for failure
+ */
+int32_t sche_init()
+{
+    /* init run_queue */
+    run_queue_head = NULL;
+    // pit_init();
+    return 0;
+        
+}
 
 /*
- * int32_t process_switch(uint8_t status)
+ * int32_t system_getargs(uint8_t *buf, int32_t nbytes)
+ * reads the program’s command line arguments into a user-level buffer.
+ * Inputs:  buf -- user-level buffer
+ *          nbytes -- length to copy
+ * Outputs: None
+ * Side Effects:
+ * return value: 0 for succ, -1 for failure
+ */
+
+int32_t add_task_to_run_queue(PCB_t *new_task)
+{
+    if (run_queue_head == NULL)
+    {
+        run_queue_head = &(new_task->run_list_node);
+        new_task->run_list_node.next = &(new_task->run_list_node);
+        new_task->run_list_node.pre = &(new_task->run_list_node);
+    }
+    else
+    {
+        new_task->run_list_node.next = curr_task()->run_list_node.next;
+        new_task->run_list_node.pre = curr_task()->run_list_node.pre;
+        (new_task->run_list_node.pre)->next = &(new_task->run_list_node);
+        (new_task->run_list_node.next)->pre = &(new_task->run_list_node);
+        /* if old_task is the first */
+        if (run_queue_head == &(curr_task()->run_list_node))
+        {
+            run_queue_head = &(new_task->run_list_node);
+        }
+    }
+
+    return 0;
+}
+
+int32_t remove_task_from_run_queue(PCB_t *new_task)
+{
+    if (run_queue_head == NULL)
+    {
+        printf("[INFO]ERROR: NO task can be removed \n");
+    }
+    else if (page_array.num_using == 1)     //only 1 in list
+    {
+        run_queue_head = NULL;
+    }
+    else
+    {    
+        (new_task->run_list_node.pre)->next = new_task->run_list_node.next;
+        (new_task->run_list_node.next)->pre = new_task->run_list_node.pre;
+        /* if old_task is the first */
+        if (run_queue_head == &(new_task->run_list_node))
+        {
+            run_queue_head = &(new_task->run_list_node.next);
+        }
+    }
+    return 0;
+
+}
+/*
+ * int32_t task_switch(uint8_t status)
  * switch to next program, used for scheduling
  * Inputs:  status -- status returned to execute
  * Outputs: None
@@ -429,7 +542,45 @@ int32_t system_getargs(uint8_t *buf, int32_t nbytes)
  * return value: returning the specified value to its parent process
  */
 
-int32_t process_switch()
+int32_t task_switch()
 {
+    uint32_t flag;
+    cli_and_save(flag);
+
+    PCB_t *next_task = (PCB_t*)((uint32_t)(curr_task()->run_list_node.next)&(0xFFFFE000));
+    video_mem_map_task(next_task);
+    /* copy current info */
+    uint32_t curr_esp,curr_ebp;
+    
+    asm volatile(
+            "               \n\
+            movl %%esp,%0  \n\
+            movl %%ebp,%1  \n\
+            "
+                : "=r" (curr_esp), "=r" (curr_ebp)
+                : 
+                : "esp", "ebp");
+    curr_task()->kernel_ebp = curr_esp;
+    curr_task()->kernel_esp = curr_ebp;
+    
+    /* set target location*/
+    
+    uint32_t next_esp = next_task->kernel_esp;
+    uint32_t next_ebp = next_task->kernel_ebp; 
+    restore_flags(flag);
+    asm volatile(
+            "               \n\
+            movl %0, %%esp  \n\
+            movl %1, %%ebp  \n\
+            "
+                : 
+                : "r" (next_esp), "r" (next_ebp)
+                : "esp", "ebp");
+                
+    tss.esp0 = next_esp;
+    tss.ss0 = KERNEL_DS;
+    
+    
+
     return 0;
 }

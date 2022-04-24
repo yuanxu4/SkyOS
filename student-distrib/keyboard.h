@@ -9,6 +9,7 @@
 #ifndef ASM
 
 #include "types.h"
+#include "task.h"
 #define KEYBOARD_PORT 0x60
 #define KEYBARD_IRQ 0x01
 #define keynum 0x3E
@@ -43,7 +44,8 @@
 #define TERM3_ADDR  (0xB8000 + 3*VIDEO_MEM_SIZE) 
          
 
-typedef struct terminal_t{
+typedef struct terminal_t terminal_t;
+struct terminal_t{
 
     uint32_t terminal_id;
     uint8_t keyboard_buf[kb_bufsize];
@@ -51,9 +53,10 @@ typedef struct terminal_t{
     uint32_t page_addr;
     uint32_t cursor_x;
     uint32_t cursor_y;
-    // PCB_t *head_process;
+    // PCB_t *current_process;
+    uint32_t num_task;
 
-}terminal_t;
+};
 
 void keyboard_init(void);
 int32_t terminal_init();
@@ -64,7 +67,8 @@ int32_t terminal_close(int32_t fd);
 
 
 int32_t terminal_switch(terminal_t *terminal_next);
-int32_t video_mem_map(terminal_t *terminal_next);
+int32_t video_mem_map();
+int32_t video_mem_map_task(PCB_t *next_task);
 #endif
 
 #endif

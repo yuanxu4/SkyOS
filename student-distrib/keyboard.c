@@ -21,7 +21,11 @@ static uint8_t cap_on_flag, shift_on_flag, ctrl_on_flag, alt_on_flag;
 static PT_t kernel_pt ;
 /* three terminals */
 terminal_t _terminal_dp[MAX_TERMINAL_NUM];
-static uint32_t cur_terminal_id;
+uint32_t cur_terminal_id;
+terminal_t *curr_terminal;
+
+extern void flush_TLB();   // defined in boot.S
+extern PCB_t *curr_task(); // defined in boot.
 /* no shift no capson character and numbers */
 const char scancode_simple_lowcase[keynum] = {
     0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
@@ -298,6 +302,7 @@ int32_t terminal_init()
         _terminal_dp[j].cursor_y = 0;
         _terminal_dp[j].terminal_id = j+1;
         _terminal_dp[j].character_num = 0;
+        _terminal_dp[j].num_task = 0;
         memset(_terminal_dp[j].keyboard_buf,0,kb_bufsize); 
     }
     _terminal_dp[0].page_addr = TERM1_ADDR;
@@ -305,6 +310,7 @@ int32_t terminal_init()
     _terminal_dp[2].page_addr = TERM3_ADDR;
 
     cur_terminal_id = 1;
+    curr_terminal = &_terminal_dp[0];
     memcpy(kb_buf,_terminal_dp[0].keyboard_buf,kb_bufsize);
     _terminal_dp[0].character_num = 0;
     screen_x = _terminal_dp[0].cursor_x;
@@ -456,6 +462,7 @@ int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes)
  */
 int32_t terminal_switch(terminal_t *terminal_next)
 {
+    send_eoi(KEYBARD_IRQ);
     if (terminal_next->terminal_id == cur_terminal_id)
     {
         printf("Still in terminal <%d>",cur_terminal_id);
@@ -465,9 +472,12 @@ int32_t terminal_switch(terminal_t *terminal_next)
     terminal_t *pre_terminal = &(_terminal_dp[cur_terminal_id-1]);
     cur_terminal_id = terminal_next->terminal_id;
 
-    /* mapping */
-    video_mem_map(terminal_next);
+    /* set current terminal structure used by task.c */
+    curr_terminal = terminal_next;
 
+    cli();
+    /* mapping */
+    video_mem_map();
     /* copy current terminal content to video page buffer */
     memcpy(pre_terminal->page_addr,VIDEO_MEM_ADDR,(uint32_t)VIDEO_MEM_SIZE);
     pre_terminal->cursor_x = screen_x;
@@ -486,7 +496,15 @@ int32_t terminal_switch(terminal_t *terminal_next)
     char_num = terminal_next->character_num;
     /* change buffer content */
     memcpy(kb_buf,terminal_next->keyboard_buf,kb_bufsize);
+    sti();
+    
 
+    /* switch terminal and check if task has running */
+    if (terminal_next->num_task == 0)
+    {
+        printf("terminal<%d>\n",terminal_next->terminal_id);
+        system_execute((uint8_t *)"shell");
+    }
     
     return 0;
 }
@@ -501,8 +519,35 @@ int32_t terminal_switch(terminal_t *terminal_next)
  * if now scheduled running terminal is not in current terminal -- remapping
  *
  */
-int32_t video_mem_map(terminal_t *terminal_next)
+int32_t video_mem_map()
 {    
+
+    set_PTE_4KB((PTE_4KB_t *)(&kernel_pt.pte[VIDEO_MEM_INDEX]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
+    flush_TLB();
     return 0;
 }
 
+/* video_mem_map()
+ * description: used for schedule, called in switch terminal
+ * map the virtual video Memory to correct video page
+ * Inputs: terminal_t * terminal_next -- next terminal information
+ * Outputs: 0 success, -1 failure
+ * Side Effects: 
+ * if now scheduled running terminal is in current terminal -- direct mapping
+ * if now scheduled running terminal is not in current terminal -- remapping
+ *
+ */
+int32_t video_mem_map_task(PCB_t *next_task)
+{    
+    if (next_task->terminal->terminal_id == cur_terminal_id)
+    {
+        set_PTE_4KB((PTE_4KB_t *)(&kernel_pt.pte[VIDEO_MEM_INDEX]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
+    }
+    else
+    {
+        uint32_t term_id = next_task->terminal->terminal_id;
+        set_PTE_4KB((PTE_4KB_t *)(&kernel_pt.pte[VIDEO_MEM_INDEX]),(VIDEO_MEM_INDEX+term_id)*SIZE_4KB, 1, 0, 1);
+    }
+    flush_TLB();
+    return 0;
+}

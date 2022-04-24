@@ -19,13 +19,14 @@
 #include "pit.h"
 #include "lib.h"
 #include "i8259.h"
+#include "task.h"
 
 /* 
  *  pit_init 
  *
  * Initialize the pit 
  * enable the pit interrupt in the IRG num 0
- * initial the rate of the rtc into 1024hz
+ * initial the rate of the pit into 100hz
  * 
  * reference: https://wiki.osdev.org/Programmable_Interval_Timer
  */
@@ -40,7 +41,7 @@ void pit_init()
     /* Set high byte of divisor */
     outb((uint8_t)(divisor >> 8), 0x40);     
     enable_irq(PIT_IRQNUM);
-    return 0;
+    return;
 }
 
 /* 
@@ -52,6 +53,8 @@ void pit_init()
  */
  void pit_interrupt_handler() 
 {
-    return 0;
+    send_eoi(PIT_IRQNUM);
+    task_switch();
+    return;
 }
 
