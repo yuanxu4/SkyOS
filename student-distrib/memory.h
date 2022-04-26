@@ -6,7 +6,7 @@
 #include "paging.h"
 #include "lib.h"
 
-#define MAX_ORDER_PAGE 10                  // max order of pages in the buddy system
+#define MAX_ORDER_PAGE 11                  // max order of pages in the buddy system
 #define MAX_NUM_PAGE (1 << MAX_ORDER_PAGE) // max num of pages in the buddy system
 #define SIZE_2KB 0x800
 #define MAX_NUM_NODE ((MAX_NUM_PAGE << 1) - 1) // 2047, max num of nodes in the buddy system
@@ -17,6 +17,7 @@
 #define MAX_ORDER_OBJ 11                       // <=> 2K bytes, max size of obj
 #define MAX_ORDER_SLAB 2                       // <=> 4 pages in one slab max
 #define MAX_NUM_CACHE 16                       // max num of cache
+#define PAGE_NUM_FOR_OFF_SLAB 2                // num of pages to store off slabs
 #define MAX_NUM_OFF_SLAB 25                    // max num of off slab
 
 typedef struct buddy_system

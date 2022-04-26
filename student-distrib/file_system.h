@@ -17,6 +17,7 @@
 #include "multiboot.h"
 #include "types.h"
 #include "rtc.h"
+#include "memory.h"
 
 #define MAX_LEN_FILE_NAME 32                                      // 32B, the max length of file name
 #define BLOCK_SIZE 0x1000                                         // 4KB, size of block in this file system
@@ -51,7 +52,7 @@ typedef struct dentry
 typedef struct boot_block
 {
     uint32_t dir_count;        // # of directories
-    uint32_t inode_count;      // # of inodes (N)
+    uint32_t inode_count;      // # of inodes (N), 64
     uint32_t data_block_count; // # of data blocks (D)
     uint8_t reserved[52];      // reserve 52B
     dentry_t dentries[NUM_DIR_ENTRY];
@@ -171,8 +172,6 @@ int32_t close_opening();
 // int32_t get_file_name();
 int32_t get_file_num();
 
-file_array_t* get_file_array();
+file_array_t *get_file_array();
 
 #endif // _FILE_SYSTEM_H
-
-
