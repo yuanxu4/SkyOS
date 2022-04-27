@@ -1032,8 +1032,8 @@ IDT_EXCEPTION_30:
  * output: the interupt reaction
  * return: none
  */
-.globl IDT_INTERUPT_0
-IDT_INTERUPT_0:
+.globl IDT_INTERUPT_21
+IDT_INTERUPT_21:
     # save_pre_reg
     pushf
     pushl %eax

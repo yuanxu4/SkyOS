@@ -120,7 +120,7 @@ void idt_init()
     }
 
     /*** set up interupt and enable ***/
-    SET_IDT_ENTRY(idt[IDT_BY_PIT], IDT_INTERUPT_0);
+    SET_IDT_ENTRY(idt[IDT_BY_PIT], IDT_INTERUPT_21);
     idt[IDT_BY_PIT].present = 1;
     SET_IDT_ENTRY(idt[IDT_BY_KEYBOARD], IDT_INTERUPT_33);
     idt[IDT_BY_KEYBOARD].present = 1;

@@ -67,8 +67,9 @@ int32_t terminal_close(int32_t fd);
 
 
 int32_t terminal_switch(terminal_t *terminal_next);
-int32_t video_mem_map();
-int32_t video_mem_map_task(PCB_t *next_task);
+
+
+
 #endif
 
 #endif

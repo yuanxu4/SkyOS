@@ -167,8 +167,7 @@ void entry(unsigned long magic, unsigned long addr)
 
     /* Init the PIC */
     i8259_init();
-    /* Pit init*/
-    pit_init();
+    
     /* keyboard init */
     keyboard_init();
 
@@ -189,8 +188,7 @@ void entry(unsigned long magic, unsigned long addr)
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
-    terminal_init();
-    sche_init();
+
 
     /* Enable interrupts */
     /* Do not enable the following until after you have set up your
@@ -204,8 +202,11 @@ void entry(unsigned long magic, unsigned long addr)
     launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
-    printf("terminal<1>\n");
-    system_execute((uint8_t *)"shell");
+    
+    // printf("terminal<1>\n");
+    // system_execute((uint8_t *)"shell");
+    start_task();
+    
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile(".1: hlt; jmp .1;");
 }

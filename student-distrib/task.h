@@ -47,7 +47,8 @@ struct PCB
     uint32_t saved_esp;
     uint32_t saved_ebp;
     uint32_t kernel_ebp; // ebp of this task in kernel
-    uint32_t kernel_esp;
+    uint32_t esp;
+    uint32_t ebp;
     uint32_t eip;
     uint32_t vidmap;     // to check whether the vidmap is create
     //uint32_t kernel_esp; // esp of this task in kernel
@@ -85,4 +86,7 @@ int32_t system_getargs(uint8_t *buf, int32_t nbytes);
 
 int32_t sche_init();
 int32_t task_switch();
+int32_t video_mem_map_task(PCB_t *next_task);
+void start_task();
+
 #endif // _TASK_H

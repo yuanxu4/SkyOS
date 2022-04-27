@@ -11,6 +11,7 @@
 #include "paging.h"
 #include "types.h"
 #include "x86_desc.h"
+
 /* keyboard buffer */
 static uint8_t kb_buf[kb_bufsize];
 /* flag used to decide when can copy */
@@ -18,7 +19,7 @@ static volatile uint8_t copy_flag;
 static uint8_t char_num;
 /* keycode flag*/
 static uint8_t cap_on_flag, shift_on_flag, ctrl_on_flag, alt_on_flag;
-static PT_t kernel_pt ;
+// PT_t kernel_pt ;
 /* three terminals */
 terminal_t _terminal_dp[MAX_TERMINAL_NUM];
 uint32_t cur_terminal_id;
@@ -58,6 +59,9 @@ const char scancode_bothon[keynum] = {
 
 void scancode_output(uint8_t scancode);
 void set_flag(uint8_t scancode);
+void printkey_on_curr_terminal(uint8_t keystroke);
+void printf_on_curr_terminal(int8_t* string);
+
 /* keyboard init
  *
  * Inputs: void
@@ -165,12 +169,12 @@ void put_changebuf(uint8_t output_char)
         {
             if (kb_buf[char_num - 1] == '\t')
             { // delete all space if \t
-                putc('\b');
-                putc('\b');
-                putc('\b');
-                putc('\b');
+                printkey_on_curr_terminal('\b');
+                printkey_on_curr_terminal('\b');
+                printkey_on_curr_terminal('\b');
+                printkey_on_curr_terminal('\b');
             }else{
-                putc('\b');               
+                printkey_on_curr_terminal('\b');               
             } 
             kb_buf[char_num - 1] = 0; // reset to 0
             char_num--;               // number of characters in buffer decrement         
@@ -180,7 +184,7 @@ void put_changebuf(uint8_t output_char)
     {
         if (char_num < kb_bufsize - 1) //maximum char = 127
         {
-            putc(output_char);
+            printkey_on_curr_terminal(output_char);
             char_num++;
             kb_buf[char_num - 1] = output_char;
         }
@@ -215,7 +219,7 @@ void scancode_output(uint8_t scancode)
             kb_buf[kb_bufsize - 1] = '\n';
         }
         char_num = 0;
-        putc('\n');
+        printkey_on_curr_terminal('\n');
         copy_flag = 1;
     }
 
@@ -303,7 +307,7 @@ int32_t terminal_init()
         _terminal_dp[j].terminal_id = j+1;
         _terminal_dp[j].character_num = 0;
         _terminal_dp[j].num_task = 0;
-        memset(_terminal_dp[j].keyboard_buf,0,kb_bufsize); 
+        memset((void*)_terminal_dp[j].keyboard_buf,0,(uint32_t)kb_bufsize); 
     }
     _terminal_dp[0].page_addr = TERM1_ADDR;
     _terminal_dp[1].page_addr = TERM2_ADDR;
@@ -311,19 +315,20 @@ int32_t terminal_init()
 
     cur_terminal_id = 1;
     curr_terminal = &_terminal_dp[0];
-    memcpy(kb_buf,_terminal_dp[0].keyboard_buf,kb_bufsize);
+    memcpy((void*)kb_buf,_terminal_dp[0].keyboard_buf,kb_bufsize);
     _terminal_dp[0].character_num = 0;
     screen_x = _terminal_dp[0].cursor_x;
     screen_y = _terminal_dp[0].cursor_y;
     char_num = _terminal_dp[0].character_num;
 
     /* MAPPING */
-    PDE_4KB_t *physical_vid_pde = (PDE_4KB_t *)(&page_directory.pde[0]);
-    set_PDE_4KB(physical_vid_pde, (uint32_t)(&kernel_pt), 1, 0, 1);
-    set_PTE_4KB((PTE_4KB_t *)(&kernel_pt.pte[VIDEO_MEM_INDEX]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
-    set_PTE_4KB((PTE_4KB_t *)(&kernel_pt.pte[VIDEO_MEM_INDEX+1]),TERM1_ADDR, 1, 0, 1);  
-    set_PTE_4KB((PTE_4KB_t *)(&kernel_pt.pte[VIDEO_MEM_INDEX+2]), TERM2_ADDR, 1, 0, 1);
-    set_PTE_4KB((PTE_4KB_t *)(&kernel_pt.pte[VIDEO_MEM_INDEX+3]), TERM3_ADDR, 1, 0, 1);
+    // PDE_4KB_t *physical_vid_pde = (PDE_4KB_t *)(&page_directory.pde[0]);
+    // set_PDE_4KB(physical_vid_pde, (uint32_t)(&kernel_pt), 1, 0, 1);
+    page_directory.pde[1] = 0x00400083;
+    set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
+    set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX+1]),TERM1_ADDR, 1, 0, 1);  
+    set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX+2]), TERM2_ADDR, 1, 0, 1);
+    set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX+3]), TERM3_ADDR, 1, 0, 1);
     flush_TLB();
     
     return 0;
@@ -440,7 +445,7 @@ int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes)
     for (i = 0; i < nbytes; i++)
     {
         output_char = ((uint8_t *)buf)[i];
-        putc(output_char); // put all the character out
+        printkey_on_curr_terminal(output_char); // put all the character out
     }
     // printf("\nterminal_write, return %d\n",nbytes);
     return nbytes;
@@ -448,6 +453,80 @@ int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes)
 
 
 /*########################## FOR CP5 #################################*/
+
+/* 
+ * printkey_on_curr_termianl()
+ *  DESCRIPTION: put one key on the current terminal we are looking at
+ *  INPUTS: none
+ *  OUTPUTS: put the cur_terminal
+ *  RETURN VALUE: none
+*/
+void printkey_on_curr_terminal(uint8_t keystroke){
+    video_mem_map_linear();
+    putc(keystroke);
+    update_cursor(screen_x, screen_y);
+    video_mem_map_switch();
+}
+
+
+/* 
+ * printf_on_curr_terminal()
+ *  DESCRIPTION: put a string on the current terminal we are looking at
+ *                 
+ *  INPUTS: none
+ *  OUTPUTS: put a string on the current terminal we are looking at   
+ *  RETURN VALUE: none
+*/
+void printf_on_curr_terminal(int8_t* string){
+    video_mem_map_linear();
+    printf(string);
+    update_cursor(screen_x, screen_y);
+    video_mem_map_switch();
+}
+
+/* video_mem_map()
+ * description: used for schedule, called in switch terminal
+ * map the virtual video Memory to correct video page
+ * Inputs: terminal_t * terminal_next -- next terminal information
+ * Outputs: 0 success, -1 failure
+ * Side Effects: 
+ * if now scheduled running terminal is in current terminal -- direct mapping
+ * if now scheduled running terminal is not in current terminal -- remapping
+ *
+ */
+int32_t video_mem_map_linear()
+{    
+
+    set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
+    flush_TLB();
+    return 0;
+}
+
+/* video_mem_map()
+ * description: used for schedule, called in switch terminal
+ * map the virtual video Memory to correct video page
+ * Inputs: terminal_t * terminal_next -- next terminal information
+ * Outputs: 0 success, -1 failure
+ * Side Effects: 
+ * if now scheduled running terminal is in current terminal -- direct mapping
+ * if now scheduled running terminal is not in current terminal -- remapping
+ *
+ */
+int32_t video_mem_map_switch()
+{    
+
+    if (curr_task()->terminal->terminal_id == cur_terminal_id)
+    {
+        set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
+    }
+    else
+    {
+        uint32_t term_id = curr_task()->terminal->terminal_id;
+        set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX]),(VIDEO_MEM_INDEX+term_id)*SIZE_4KB, 1, 0, 1);
+    }
+    flush_TLB();
+    return 0;
+}
 
 /* terminal_switch()
  * description: call when press ALT + Function key
@@ -477,9 +556,9 @@ int32_t terminal_switch(terminal_t *terminal_next)
 
     cli();
     /* mapping */
-    video_mem_map();
+    video_mem_map_linear();
     /* copy current terminal content to video page buffer */
-    memcpy(pre_terminal->page_addr,VIDEO_MEM_ADDR,(uint32_t)VIDEO_MEM_SIZE);
+    memcpy((void*)pre_terminal->page_addr,(void*)VIDEO_MEM_ADDR,(uint32_t)VIDEO_MEM_SIZE);
     pre_terminal->cursor_x = screen_x;
     pre_terminal->cursor_y = screen_y;
     pre_terminal->character_num = char_num;
@@ -489,65 +568,29 @@ int32_t terminal_switch(terminal_t *terminal_next)
     memcpy((void*)terminal_next->keyboard_buf,kb_buf,kb_bufsize);
    
     /* copying next video page buffer content to video memory  */
-    memcpy(VIDEO_MEM_ADDR, terminal_next->page_addr,VIDEO_MEM_SIZE);
+    memcpy((void*)VIDEO_MEM_ADDR, (void*)terminal_next->page_addr,(uint32_t)VIDEO_MEM_SIZE);
     update_cursor(terminal_next->cursor_x,terminal_next->cursor_y);
     screen_x = terminal_next->cursor_x;
     screen_y = terminal_next->cursor_y;
     char_num = terminal_next->character_num;
     /* change buffer content */
-    memcpy(kb_buf,terminal_next->keyboard_buf,kb_bufsize);
+    memcpy((void*)kb_buf,terminal_next->keyboard_buf,kb_bufsize);
+    video_mem_map_switch();
+
     sti();
     
 
     /* switch terminal and check if task has running */
     if (terminal_next->num_task == 0)
     {
-        printf("terminal<%d>\n",terminal_next->terminal_id);
+        printf_on_curr_terminal("terminal<");
+        printkey_on_curr_terminal((uint8_t)(cur_terminal_id+48));
+        printf_on_curr_terminal(">\n");
         system_execute((uint8_t *)"shell");
     }
     
     return 0;
 }
 
-/* video_mem_map()
- * description: used for schedule, called in switch terminal
- * map the virtual video Memory to correct video page
- * Inputs: terminal_t * terminal_next -- next terminal information
- * Outputs: 0 success, -1 failure
- * Side Effects: 
- * if now scheduled running terminal is in current terminal -- direct mapping
- * if now scheduled running terminal is not in current terminal -- remapping
- *
- */
-int32_t video_mem_map()
-{    
 
-    set_PTE_4KB((PTE_4KB_t *)(&kernel_pt.pte[VIDEO_MEM_INDEX]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
-    flush_TLB();
-    return 0;
-}
 
-/* video_mem_map()
- * description: used for schedule, called in switch terminal
- * map the virtual video Memory to correct video page
- * Inputs: terminal_t * terminal_next -- next terminal information
- * Outputs: 0 success, -1 failure
- * Side Effects: 
- * if now scheduled running terminal is in current terminal -- direct mapping
- * if now scheduled running terminal is not in current terminal -- remapping
- *
- */
-int32_t video_mem_map_task(PCB_t *next_task)
-{    
-    if (next_task->terminal->terminal_id == cur_terminal_id)
-    {
-        set_PTE_4KB((PTE_4KB_t *)(&kernel_pt.pte[VIDEO_MEM_INDEX]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
-    }
-    else
-    {
-        uint32_t term_id = next_task->terminal->terminal_id;
-        set_PTE_4KB((PTE_4KB_t *)(&kernel_pt.pte[VIDEO_MEM_INDEX]),(VIDEO_MEM_INDEX+term_id)*SIZE_4KB, 1, 0, 1);
-    }
-    flush_TLB();
-    return 0;
-}

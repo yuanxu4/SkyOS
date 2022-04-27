@@ -53,8 +53,10 @@ void pit_init()
  */
  void pit_interrupt_handler() 
 {
+    cli();
     send_eoi(PIT_IRQNUM);
     task_switch();
+    sti();
     return;
 }
 
