@@ -270,7 +270,8 @@ asmlinkage int32_t system_sigreturn(void)
  * output: none
  * return 0 for fail other for success
  */
-asmlinkage int32_t system_open(uint8_t* filename){
+asmlinkage int32_t system_open(uint8_t *filename)
+{
     return file_sys_open(filename);
     // /*** check file valid or not ***/
     // if(filename == NULL){
@@ -301,7 +302,7 @@ asmlinkage int32_t system_open(uint8_t* filename){
     // case 2:
     //     return file_sys_open(filename);
     //     break;
-    
+
     // default:
     //     printf("invalid file type, check again!!!\n");
     //     break;
@@ -317,7 +318,8 @@ asmlinkage int32_t system_open(uint8_t* filename){
  * output: none
  * return 0 for fail other for success
  */
-asmlinkage int32_t system_close(int32_t fd){
+asmlinkage int32_t system_close(int32_t fd)
+{
     return file_sys_close(fd);
 }
 
@@ -328,7 +330,8 @@ asmlinkage int32_t system_close(int32_t fd){
  * output: none
  * return 0 for fail other for success
  */
-asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes){
+asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes)
+{
     return file_sys_write(fd, buf, nbytes);
 }
 
@@ -339,8 +342,19 @@ asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes){
  * output: none
  * return 0 for fail other for success
  */
-asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes){
+asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes)
+{
     return file_sys_read(fd, buf, nbytes);
+}
+
+asmlinkage void *system_alloc(int32_t size)
+{
+    return k_alloc(size, 1); // 1 for user level
+}
+
+asmlinkage int32_t system_free(void *addr)
+{
+    return k_free(addr);
 }
 
 /*

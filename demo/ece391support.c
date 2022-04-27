@@ -4,6 +4,7 @@
 #include "ece391syscall.h"
 
 #define ZERO 0x30
+#define low_a 0x61
 
 uint32_t ece391_strlen(const uint8_t *s)
 {
@@ -231,18 +232,47 @@ uint8_t *ece391_itoa(uint32_t value, uint8_t *buf, int32_t radix)
 
 uint32_t ece391_atoi(uint8_t *buf, int32_t radix)
 {
-    int32_t old_radix=radix;
+    if (radix <= 1 || radix > 16)
+    {
+        return -1;
+    }
+    int32_t old_radix = radix;
     if (buf[0] == '0' && buf[1] == '\0')
     {
         return 0;
     }
-    static uint32_t lookup[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    static uint32_t lookup[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     uint8_t *newbuf = ece391_strrev(buf);
     uint32_t newval;
     uint32_t value = 0;
     while (*newbuf != '\0')
     {
-        newval = lookup[*newbuf - ZERO];
+        if (old_radix <= 10)
+        {
+            if ((*newbuf - ZERO) >= 0 && (*newbuf - ZERO) < old_radix)
+            {
+                newval = lookup[*newbuf - ZERO];
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        else
+        {
+            if ((*newbuf - ZERO) >= 0 && (*newbuf - ZERO) < 10)
+            {
+                newval = lookup[*newbuf - ZERO];
+            }
+            else if ((*newbuf - low_a) >= 0 && (*newbuf - low_a) < old_radix - 10)
+            {
+                newval = lookup[*newbuf - low_a + 10];
+            }
+            else
+            {
+                return -1;
+            }
+        }
         value += radix * newval;
         radix *= old_radix;
         newbuf++;

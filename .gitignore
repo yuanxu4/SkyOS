@@ -117,3 +117,5 @@ source/
 student-distrib/bootimg
 student-distrib/Makefile.dep
 .vscode
+demo/ece391slab.h
+demo/ece391slab.c

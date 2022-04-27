@@ -11,6 +11,7 @@
 #define MAX_NUM_PAGE (1 << MAX_ORDER_PAGE)     // max num of pages in the buddy system
 #define MAX_NUM_NODE ((MAX_NUM_PAGE << 1) - 1) // 2047, max num of nodes in the buddy system
 #define BUFSIZE 1024
+#define SIZE_4KB 4096
 
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #define min(a, b) (((a) < (b)) ? (a) : (b))
@@ -26,15 +27,16 @@ typedef struct buddy_system
     int8_t node_array[MAX_NUM_NODE];
 } buddy_system_t;
 
-buddy_system_t *init_buddy_sys(buddy_system_t * buddy_sys, int32_t order);
-int32_t bd_alloc(buddy_system_t * buddy_sys,int32_t order);
-int32_t bd_free(buddy_system_t * buddy_sys,int32_t offset);
-int32_t bd_display(buddy_system_t * buddy_sys);
-int32_t bd_get_size(buddy_system_t * buddy_sys,int32_t offset);
-int32_t bd_get_start(buddy_system_t * buddy_sys,int32_t offset);
+buddy_system_t *init_buddy_sys(buddy_system_t *buddy_sys, int32_t order);
+void *bd_alloc(buddy_system_t *buddy_sys, int32_t order);
+int32_t bd_free(buddy_system_t *buddy_sys, void *addr);
+int32_t bd_display(buddy_system_t *buddy_sys);
+int32_t bd_get_size(buddy_system_t *buddy_sys, void *addr);
+int32_t bd_get_start(buddy_system_t *buddy_sys, void *addr);
 
+int32_t base_addr = NULL;
 
-buddy_system_t *init_buddy_sys(buddy_system_t * buddy_sys,int32_t order)
+buddy_system_t *init_buddy_sys(buddy_system_t *buddy_sys, int32_t order)
 {
     // print((uint8_t*)"start init\n");
     // garbage check
@@ -56,11 +58,12 @@ buddy_system_t *init_buddy_sys(buddy_system_t * buddy_sys,int32_t order)
         buddy_sys->node_array[i] = node_order;
         // print((uint8_t*)"%d ",buddy_sys->node_array[i]);
     }
+    base_addr = (int32_t)ece391_alloc(get_size(order) * SIZE_4KB);
     return buddy_sys;
 }
 
 // find the smaller child node which still >= order, alaways have a child >= order
-int32_t choose_child(buddy_system_t * buddy_sys,int32_t index, int8_t order)
+int32_t choose_child(buddy_system_t *buddy_sys, int32_t index, int8_t order)
 {
     int32_t left_index = left_child(index);
     int8_t left_order = buddy_sys->node_array[left_index];
@@ -77,7 +80,7 @@ int32_t choose_child(buddy_system_t * buddy_sys,int32_t index, int8_t order)
     return ((left_order <= right_order) ? left_index : right_index);
 }
 
-int32_t bd_alloc(buddy_system_t * buddy_sys,int32_t order)
+void *bd_alloc(buddy_system_t *buddy_sys, int32_t order)
 {
     // size to alloc too large
     if (buddy_sys->node_array[0] < order)
@@ -101,11 +104,12 @@ int32_t bd_alloc(buddy_system_t * buddy_sys,int32_t order)
         buddy_sys->node_array[index] = max(buddy_sys->node_array[left_child(index)], buddy_sys->node_array[right_child(index)]);
     }
     // return addr
-    return offset;
+    return (void *)(offset * SIZE_4KB + base_addr);
 }
 
-int32_t bd_free(buddy_system_t * buddy_sys,int32_t offset)
+int32_t bd_free(buddy_system_t *buddy_sys, void *addr)
 {
+    int32_t offset = ((int32_t)addr - base_addr) >> 12;
     // garbage check
     if ((offset < 0) || (offset > get_size(buddy_sys->max_order)))
     {
@@ -144,11 +148,13 @@ int32_t bd_free(buddy_system_t * buddy_sys,int32_t offset)
             buddy_sys->node_array[index] = max(left_order, right_order);
         }
     }
+    ece391_free(addr);
     return 0;
 }
 
-int32_t bd_get_size(buddy_system_t * buddy_sys,int32_t offset)
+int32_t bd_get_size(buddy_system_t *buddy_sys, void *addr)
 {
+    int32_t offset = ((int32_t)addr - base_addr) >> 12;
     // garbage check
     if ((offset < 0) || (offset > get_size(buddy_sys->max_order)))
     {
@@ -168,8 +174,9 @@ int32_t bd_get_size(buddy_system_t * buddy_sys,int32_t offset)
     return get_size(node_order);
 }
 
-int32_t bd_get_start(buddy_system_t * buddy_sys,int32_t offset)
+int32_t bd_get_start(buddy_system_t *buddy_sys, void *addr)
 {
+    int32_t offset = ((int32_t)addr - base_addr) >> 12;
     // garbage check
     if ((offset < 0) || (offset > get_size(buddy_sys->max_order)))
     {
@@ -197,7 +204,7 @@ int32_t print_int(int32_t i)
     return 0;
 }
 
-int32_t bd_display(buddy_system_t * buddy_sys)
+int32_t bd_display(buddy_system_t *buddy_sys)
 {
     int32_t num_node = get_size(1 + buddy_sys->max_order);
     // print((uint8_t*)"num_node: %d\n", num_node);
@@ -235,7 +242,7 @@ int32_t bd_display(buddy_system_t * buddy_sys)
                 {
                     ece391_fdputc(1, (uint8_t *)" ");
                 }
-                print((uint8_t*)"%d",get_size(node_order));
+                print((uint8_t *)"%d", get_size(node_order));
             }
             else
             {
@@ -243,7 +250,7 @@ int32_t bd_display(buddy_system_t * buddy_sys)
                 {
                     ece391_fdputc(1, (uint8_t *)" ");
                 }
-                print((uint8_t*)"%d",get_size(node_order));
+                print((uint8_t *)"%d", get_size(node_order));
             }
         }
     }

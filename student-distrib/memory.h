@@ -27,13 +27,14 @@ typedef struct buddy_system
 } buddy_system_t;
 
 buddy_system_t *init_buddy_sys(int32_t order);
-void *bd_alloc(int32_t order);
+void *bd_alloc(int8_t order, int32_t priv);
 int32_t bd_free(void *addr);
 int32_t bd_display();
 int32_t bd_get_size(void *addr);
 void *bd_get_start(void *addr);
 
-void *high_level_alloc(int32_t size);
+void *k_alloc(int32_t size, int32_t priv);
+int32_t k_free(void *addr);
 
 typedef struct slab slab_t;
 typedef struct mem_cache mem_cache_t;
@@ -49,7 +50,7 @@ struct slab
     int32_t free_num;                 // num of free objs in this slab
     int32_t next_free_index;          // index of next free obj
     void *obj_start;                  // start addr of objs
-    int8_t free_id_list[MAX_NUM_OBJ]; // store the id of next free obj for every obj
+    int8_t free_id_list[MAX_NUM_OBJ]; // store the id of next free obj, -1 for using obj
 };
 
 int32_t slab_init(slab_t *new_slab, slab_t *next, mem_cache_t *cache, int32_t num_obj, void *obj_start, int32_t off_slab_index);
@@ -68,7 +69,7 @@ struct mem_cache
 
 mem_cache_t *cache_init(int32_t obj_size, int32_t index);
 int32_t cache_estimate(int32_t page_order, int32_t obj_size, int32_t slab_type, int32_t *left_size, int32_t *num_obj);
-void *cache_alloc(int32_t size);
+void *cache_alloc(int32_t size, int32_t priv);
 int32_t cache_free(void *addr);
 slab_t *cache_grow(mem_cache_t *cache, slab_t *end_slab);
 int32_t cache_shrink(mem_cache_t *cache);

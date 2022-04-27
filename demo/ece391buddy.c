@@ -9,7 +9,7 @@ int main()
     int32_t num;
     ece391_fdputs(1, (uint8_t *)"Starting buddy demo. \n");
     ece391_fdputs(1, (uint8_t *)"This is a toy buddy system with up to 64 pages. \n");
-    init_buddy_sys(&buddy_sys,4);
+    init_buddy_sys(&buddy_sys, 4);
     bd_display(&buddy_sys);
     while (1)
     {
@@ -34,21 +34,25 @@ int main()
             ece391_fdputs(1, (uint8_t *)"no argument\n");
             continue;
         }
-        num=ece391_atoi(args, 10);
-        // print((uint8_t*)"num: %d\n",num);        
         if (0 == ece391_strcmp(buf, (uint8_t *)"alloc"))
         {
-            print((uint8_t*)"allocate at: %d\n",bd_alloc(&buddy_sys,num));
+            num = (int32_t)ece391_atoi(args, 10);
+            print((uint8_t *)"num: %d\n", num);
+            print((uint8_t *)"allocate at: %#x\n", bd_alloc(&buddy_sys, num));
             bd_display(&buddy_sys);
         }
         else if (0 == ece391_strcmp(buf, (uint8_t *)"free"))
         {
-            print((uint8_t*)"free(0 for succ): %d\n",bd_free(&buddy_sys,num));
+            num = (int32_t)ece391_atoi(args, 16);
+            print((uint8_t *)"num: %#x\n", num);
+            print((uint8_t *)"free(0 for succ): %d\n", bd_free(&buddy_sys, (void *)num));
             bd_display(&buddy_sys);
         }
         else if (0 == ece391_strcmp(buf, (uint8_t *)"size"))
         {
-            print((uint8_t*)"size is: %d\n",bd_get_size(&buddy_sys,num));
+            num = (int32_t)ece391_atoi(args, 16);
+            print((uint8_t *)"num: %#x\n", num);
+            print((uint8_t *)"size is: %d\n", bd_get_size(&buddy_sys, (void *)num));
         }
     }
 }

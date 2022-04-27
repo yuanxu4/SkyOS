@@ -1122,7 +1122,7 @@ IDT_SYSCALL:
     pushl %ecx
     pushl %ebx
     # check if the call is valid
-    cmpl $10, %eax  # 10 is the max of syscall number
+    cmpl $12, %eax  # 10 is the max of syscall number
     jae invalid_syscall
     cmpl $0, %eax
     je invalid_syscall
@@ -1167,5 +1167,7 @@ syscall_table:
 .long system_vidmap # system_vidmap
 .long system_set_handler # system_set_handler
 .long system_sigreturn # system_sigreturn
+.long system_alloc
+.long system_free
 
 

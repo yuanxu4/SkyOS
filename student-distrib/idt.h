@@ -64,7 +64,7 @@ void print_syscall(uint32_t syscall_num);
 /** cp2 syscall_err **/
 void syscall_err(uint32_t invalid_call);
 
-asmlinkage int32_t system_open(uint8_t* filename);
+asmlinkage int32_t system_open(uint8_t *filename);
 
 asmlinkage int32_t system_close(int32_t fd);
 
@@ -72,8 +72,11 @@ asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes);
 
 asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes);
 
-asmlinkage int32_t system_halt (uint8_t status);
+asmlinkage int32_t system_halt(uint8_t status);
 
+asmlinkage void *system_alloc(int32_t size);
+
+asmlinkage int32_t system_free(void *addr);
 
 #endif
 
