@@ -263,14 +263,14 @@ int32_t system_execute(const uint8_t *command)
         printf("[INFO] Cannot execute more than %d programs!\n", MAX_NUM_TASK);
         return -1;
     }
-    
+
     /* new_task->parent = current_task */
     // curr_terminal->num_task++;
     new_task->terminal = curr_terminal;
     
     /* add to schedule run_queue */
     add_task_to_run_queue(new_task); 
-
+    video_mem_map_task(new_task);
     // Losd file into memory
     file_load(&task_dentry, (uint8_t *)TASK_VIR_ADDR + TASK_VIR_OFFSET);
     // todo: Context Switch
@@ -390,6 +390,7 @@ int32_t restore_task_page(int32_t page_id)
  */
 int32_t system_halt(uint8_t status)
 {
+    cli();
     PCB_t *parent;
     if (page_array.num_using == 0)
     {
@@ -421,7 +422,9 @@ int32_t system_halt(uint8_t status)
     restore_task_page(parent->pid);
     // Write Parent process’ info back to TSS
     tss.esp0 = curr_task()->saved_esp;
-    // restore stack and return value
+    video_mem_map_task(parent);
+    // restore stack and return valueo
+    sti();
     asm volatile("         \n\
             movl %%edx, %%esp   \n\
             movl %%ecx, %%ebp   \n\
@@ -579,7 +582,18 @@ int32_t task_switch()
     {
         return 0;
     }
+    /* switch terminal and check if task has running */
+    
     PCB_t *next_task = (PCB_t*)((uint32_t)(curr_task()->run_list_node.next)&(0xFFFFE000));
+
+    /* everytime switch task then remap */
+    video_mem_map_task(next_task);
+
+    if (curr_terminal->num_task == 0)
+    {
+        ONTO_DISPLAY_WRAP(printf("terminal<%d>\n",cur_terminal_id));
+        system_execute((uint8_t *)"shell");
+    }
     // save esp ebp(in kernel)
     asm volatile("          \n\
         movl %%ebp, %%eax   \n\
@@ -591,13 +605,7 @@ int32_t task_switch()
     {
         return 0;
     }
-
-
-    /* everytime switch task then remap */
-    video_mem_map_task(next_task);
-   
-    
-    
+  
     /* set target location*/
     // print_pcb(curr_task());
     uint32_t next_esp = next_task->esp;

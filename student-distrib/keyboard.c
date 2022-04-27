@@ -88,6 +88,7 @@ void keyboard_init(void)
  */
 void keyboard_handler(void)
 {
+    cli();
     uint8_t scancode;
     /* read scancode input from keyboard */
     scancode = inb(KEYBOARD_PORT);
@@ -100,6 +101,7 @@ void keyboard_handler(void)
     }
 
     send_eoi(KEYBARD_IRQ);
+    sti();
 }
 
 /* set_flag()
@@ -169,12 +171,12 @@ void put_changebuf(uint8_t output_char)
         {
             if (kb_buf[char_num - 1] == '\t')
             { // delete all space if \t
-                printkey_on_curr_terminal('\b');
-                printkey_on_curr_terminal('\b');
-                printkey_on_curr_terminal('\b');
-                printkey_on_curr_terminal('\b');
+                ONTO_DISPLAY_WRAP(putc('\b'));
+                ONTO_DISPLAY_WRAP(putc('\b'));
+                ONTO_DISPLAY_WRAP(putc('\b'));
+                ONTO_DISPLAY_WRAP(putc('\b'));
             }else{
-                printkey_on_curr_terminal('\b');               
+                ONTO_DISPLAY_WRAP(putc('\b'));             
             } 
             kb_buf[char_num - 1] = 0; // reset to 0
             char_num--;               // number of characters in buffer decrement         
@@ -184,7 +186,7 @@ void put_changebuf(uint8_t output_char)
     {
         if (char_num < kb_bufsize - 1) //maximum char = 127
         {
-            printkey_on_curr_terminal(output_char);
+            ONTO_DISPLAY_WRAP(putc(output_char));
             char_num++;
             kb_buf[char_num - 1] = output_char;
         }
@@ -219,7 +221,7 @@ void scancode_output(uint8_t scancode)
             kb_buf[kb_bufsize - 1] = '\n';
         }
         char_num = 0;
-        printkey_on_curr_terminal('\n');
+        ONTO_DISPLAY_WRAP(putc('\n'));
         copy_flag = 1;
     }
 
@@ -325,6 +327,7 @@ int32_t terminal_init()
     // PDE_4KB_t *physical_vid_pde = (PDE_4KB_t *)(&page_directory.pde[0]);
     // set_PDE_4KB(physical_vid_pde, (uint32_t)(&kernel_pt), 1, 0, 1);
     page_directory.pde[1] = 0x00400083;
+    set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX-1]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
     set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
     set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX+1]),TERM1_ADDR, 1, 0, 1);  
     set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX+2]), TERM2_ADDR, 1, 0, 1);
@@ -379,6 +382,7 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
     while (copy_flag == 0)
     {
     } // read function waiting
+    cli();
     to = buf;
     from = kb_buf;
     if ((NULL == buf) || (NULL == kb_buf)||(nbytes < 0))
@@ -420,6 +424,7 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
         kb_buf[i] = 0;
     }
     copy_flag = 0;
+    sti();
     return copied;
 }
 
@@ -435,6 +440,7 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
  */
 int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes)
 {
+    cli();
     int i;
     uint8_t output_char;
     if ((NULL == buf)||(nbytes < 0))
@@ -445,8 +451,9 @@ int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes)
     for (i = 0; i < nbytes; i++)
     {
         output_char = ((uint8_t *)buf)[i];
-        printkey_on_curr_terminal(output_char); // put all the character out
+        putc(output_char); // put all the character out
     }
+    sti();
     // printf("\nterminal_write, return %d\n",nbytes);
     return nbytes;
 }
@@ -549,45 +556,38 @@ int32_t terminal_switch(terminal_t *terminal_next)
     }
     
     terminal_t *pre_terminal = &(_terminal_dp[cur_terminal_id-1]);
-    cur_terminal_id = terminal_next->terminal_id;
+    
 
     /* set current terminal structure used by task.c */
     curr_terminal = terminal_next;
+    cur_terminal_id = terminal_next->terminal_id;
+    pre_terminal->cursor_x = screen_x;
+    pre_terminal->cursor_y = screen_y;
+    pre_terminal->character_num = char_num;
 
     cli();
     /* mapping */
     video_mem_map_linear();
     /* copy current terminal content to video page buffer */
-    memcpy((void*)pre_terminal->page_addr,(void*)VIDEO_MEM_ADDR,(uint32_t)VIDEO_MEM_SIZE);
-    pre_terminal->cursor_x = screen_x;
-    pre_terminal->cursor_y = screen_y;
-    pre_terminal->character_num = char_num;
-
-    
-    /* change buffer content */
-    memcpy((void*)terminal_next->keyboard_buf,kb_buf,kb_bufsize);
-   
+    memcpy((void*)pre_terminal->page_addr,(void*)VIDEO_MEM_ADDR,(uint32_t)VIDEO_MEM_SIZE);   
     /* copying next video page buffer content to video memory  */
     memcpy((void*)VIDEO_MEM_ADDR, (void*)terminal_next->page_addr,(uint32_t)VIDEO_MEM_SIZE);
+    video_mem_map_switch();
+
     update_cursor(terminal_next->cursor_x,terminal_next->cursor_y);
     screen_x = terminal_next->cursor_x;
     screen_y = terminal_next->cursor_y;
     char_num = terminal_next->character_num;
     /* change buffer content */
+    /* change buffer content */
+    memcpy((void*)pre_terminal->keyboard_buf,kb_buf,kb_bufsize);
     memcpy((void*)kb_buf,terminal_next->keyboard_buf,kb_bufsize);
-    video_mem_map_switch();
+    
 
     sti();
     
 
-    /* switch terminal and check if task has running */
-    if (terminal_next->num_task == 0)
-    {
-        printf_on_curr_terminal("terminal<");
-        printkey_on_curr_terminal((uint8_t)(cur_terminal_id+48));
-        printf_on_curr_terminal(">\n");
-        system_execute((uint8_t *)"shell");
-    }
+    
     
     return 0;
 }
