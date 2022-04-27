@@ -134,8 +134,23 @@ idt_bottom:
 
 .macro entry_fill start, cnt, step
     .long \start
-    .if \cnt
-        sum "(\start+\step)", \cnt - 1, \step
+    .long \start+\step*1
+    .long \start+\step*2
+    .long \start+\step*3
+    .long \start+\step*4
+    .long \start+\step*5
+    .long \start+\step*6
+    .long \start+\step*7
+    .long \start+\step*8
+    .long \start+\step*9
+    .long \start+\step*10
+    .long \start+\step*11
+    .long \start+\step*12
+    .long \start+\step*13
+    .long \start+\step*14
+    .long \start+\step*15
+    .if (\cnt - 1)
+        entry_fill "(\start+\step*16)", "(\cnt - 1)", \step
     .endif
 .endm
 
@@ -143,7 +158,7 @@ idt_bottom:
 # see mp3 doc
 page_directory:
     # init pde with direct mapping(vir addr = phys addr), r/w, kernel, not present, 4MB
-    entry_fill 0x00000082, 1024, 0x00400000
+    entry_fill 0x00000082, 64, 0x00400000
     /*
     # 0-4MB, for page table of 4KB pages
     .long   0x00000003  # init base addr(will be set when enable), set bit 0&1, present and R/W, bit7=0 for 4KB
@@ -158,7 +173,7 @@ page_directory:
 # 0-4MB
 page_table:
     # init pte with direct mapping(vir addr = phys addr), r/w, kernel, not present, 4MB
-    entry_fill 0x00000002, 1024, 0x000001000
+    entry_fill 0x00000002, 64, 0x000001000
     /*
     # entry 0-0xB8, before video memory, not presented
     .rept VIDEO_MEM_INDEX

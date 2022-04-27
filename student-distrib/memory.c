@@ -2,7 +2,7 @@
 
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #define min(a, b) (((a) < (b)) ? (a) : (b))
-#define is_power_two(num) (!(num & (num - 1)))
+#define is_power_two(num) (!((num) & (num - 1)))
 #define left_child(index) ((index << 1) + 1)
 #define right_child(index) ((index << 1) + 2)
 #define parent(index) (((index + 1) >> 1) - 1)

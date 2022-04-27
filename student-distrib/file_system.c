@@ -564,48 +564,6 @@ int32_t read_dentry_by_index(uint32_t index, dentry_t *dentry)
  *          0 if offset reach the end of the file, -1 for failure
  *
  */
-// int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length)
-// {
-//     // inode invalid
-//     if ((inode >= boot_block->inode_count))
-//     {
-//         PRINT("fail to read. bad input\n");
-//         return -1;
-//     };
-//     uint32_t file_len = inodes[inode].length;
-//     // offset reach the end of the file
-//     if (offset >= file_len)
-//     {
-//         // PRINT("\n\nread nothing. reach to the end\n");
-//         return 0;
-//     }
-//     uint32_t copy_size = MIN((file_len - offset), length);                       // size to copy
-//     uint32_t dt_blk_idx_in_inode = offset / BLOCK_SIZE;                          // index of data block in inode, init as the starting block
-//     uint32_t local_offset = offset % BLOCK_SIZE;                                 // offset in the data block
-//     uint32_t dt_blk_idx_abs = inodes[inode].data_block_num[dt_blk_idx_in_inode]; // index of data block absolutely
-//     int32_t copied;                                                              // copied size
-//     // start copy
-//     for (copied = 0; copied < copy_size; copied++)
-//     {
-//         // // index invalid, should never happen
-//         // if (dt_blk_idx_abs >= dt_blk_num)
-//         // {
-//         //     PRINT("stop copying. out of range\n");
-//         //     return copied;
-//         // }
-//         // copy 1 bit
-//         buf[copied] = data_blocks[dt_blk_idx_abs].data[local_offset];
-//         local_offset++;
-//         // reach to end of one data block, move to the next block
-//         if (local_offset == BLOCK_SIZE)
-//         {
-//             local_offset = 0;
-//             dt_blk_idx_in_inode++;
-//             dt_blk_idx_abs = inodes[inode].data_block_num[dt_blk_idx_in_inode];
-//         }
-//     }
-//     return copied;
-// }
 
 int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length)
 {
@@ -741,72 +699,6 @@ int32_t file_read(int32_t fd, void *buf, int32_t nbytes)
  *
  */
 /*
-int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
-{
-    inode_t *inode = &inodes[curr_task()->fd_array.entries[fd].inode];
-    uint32_t file_len = inode->length;
-    uint32_t new_len = nbytes;
-    uint8_t *new_dt_blk;
-    if (nbytes > (SIZE_4MB - SIZE_4KB))
-    {
-        return -1;
-    }
-    uint32_t dt_blk_idx = 0;
-    uint32_t size_rewrite;
-    uint32_t size_to_copy;
-    size_rewrite = ((file_len + SIZE_4KB - 1) >> 12) << 12; // size rewrote should be file_len align to 4KB
-    while (nbytes > 0 && size_rewrite > 0)
-    {
-        size_to_copy = MIN(nbytes, SIZE_4KB);
-        memcpy((void *)&inode->data_block_num[dt_blk_idx], (const uint8_t *)((uint8_t *)buf + dt_blk_idx * SIZE_4KB), size_to_copy);
-        nbytes -= size_to_copy;
-        size_rewrite -= size_to_copy;
-        dt_blk_idx++;
-    }
-    if (size_rewrite == 0 && nbytes == 0)
-    {
-        inode->length = new_len;
-    }
-    if (size_rewrite > 0)
-    {
-        dt_blk_idx--;
-        size_to_copy = SIZE_4KB - size_to_copy;
-        memset_word((void *)(&inode->data_block_num[dt_blk_idx] + (SIZE_4KB - size_to_copy)), 0, size_to_copy);
-        size_rewrite -= size_to_copy;
-        dt_blk_idx++;
-        while (size_rewrite > 0)
-        {
-            size_to_copy = SIZE_4KB;
-            memset_word((void *)(&inode->data_block_num[dt_blk_idx]), 0, size_to_copy);
-            size_rewrite -= size_to_copy;
-            dt_blk_idx++;
-        }
-        inode->length = new_len;
-    }
-    if (nbytes > 0)
-    {
-        inode->data_block_num[dt_blk_idx] = -1; // -1 indicates following data block are new alloced
-        dt_blk_idx++;
-        while (nbytes > 0)
-        {
-            size_to_copy = MIN(nbytes, SIZE_4KB);
-            new_dt_blk = bd_alloc(0); // alloc 1 pages i.e., 1 datablock
-            if (new_dt_blk == NULL)
-            {
-                inode->length = new_len - nbytes;
-                break;
-            }
-            inode->data_block_num[dt_blk_idx] = (uint32_t)new_dt_blk; // store the addr directly
-            memcpy(new_dt_blk, (const uint8_t *)((uint8_t *)buf + (dt_blk_idx - 1) * SIZE_4KB), size_to_copy);
-            nbytes -= size_to_copy;
-            dt_blk_idx++;
-        }
-        inode->length = new_len;
-    }
-    PRINT("finish writing: file length: %d\n", inode->length);
-    return -1;
-}
-*/
 
 int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
 {

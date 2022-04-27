@@ -15,7 +15,7 @@ ALL: buddy
 
 %: %.exe
 	../elfconvert $<
-	mv $<.converted to_fsdir/$@
+	mv $<.converted ../fsdir/$@
 
 clean::
 	rm -f *~ *.o

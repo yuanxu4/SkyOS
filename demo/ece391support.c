@@ -231,22 +231,23 @@ uint8_t *ece391_itoa(uint32_t value, uint8_t *buf, int32_t radix)
 
 uint32_t ece391_atoi(uint8_t *buf, int32_t radix)
 {
+    int32_t old_radix=radix;
     if (buf[0] == '0' && buf[1] == '\0')
     {
         return 0;
     }
     static uint32_t lookup[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
     uint8_t *newbuf = ece391_strrev(buf);
-    int32_t i = 1;
     uint32_t newval;
     uint32_t value = 0;
     while (*newbuf != '\0')
     {
         newval = lookup[*newbuf - ZERO];
         value += radix * newval;
-        radix *= radix;
+        radix *= old_radix;
+        newbuf++;
     }
-    value /= radix;
+    value /= old_radix;
     return value;
 }
 

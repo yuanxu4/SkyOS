@@ -203,7 +203,8 @@ int32_t system_execute(const uint8_t *command)
     uint32_t eip;
     uint8_t args_array[MAX_ARGS + 1];
     uint8_t name_array[MAX_LEN_FILE_NAME + 1];
-    // uint32_t len; // tem len
+    memset((void*)args_array, (int32_t)"\0", MAX_ARGS + 1);
+    memset((void*)name_array, (int32_t)"\0", MAX_LEN_FILE_NAME + 1);
     // Parse args
     args = parse_args((uint8_t *)command);
     // printf("%s\n", command);

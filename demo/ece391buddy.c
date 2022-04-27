@@ -2,15 +2,19 @@
 
 int main()
 {
-    int32_t cnt, rval;
+    buddy_system_t buddy_sys;
+    int32_t cnt;
     uint8_t *args;
     uint8_t buf[BUFSIZE];
+    int32_t num;
     ece391_fdputs(1, (uint8_t *)"Starting buddy demo. \n");
     ece391_fdputs(1, (uint8_t *)"This is a toy buddy system with up to 64 pages. \n");
-
+    init_buddy_sys(&buddy_sys,4);
+    bd_display(&buddy_sys);
     while (1)
     {
-        ece391_fdputs(1, (uint8_t *)"HELP: alloc <order>; free <addr index>; size <addr index>");
+        ece391_fdputs(1, (uint8_t *)"HELP: alloc <order>; free <addr index>; size <addr index>; exit\n");
+        ece391_fdputs(1, (uint8_t *)"NOTE: -1 means operation failed. \n");
         ece391_fdputs(1, (uint8_t *)"BUDDY> ");
         if (-1 == (cnt = ece391_read(0, buf, BUFSIZE - 1)))
         {
@@ -27,26 +31,24 @@ int main()
         args = parse_args(buf);
         if (args == NULL)
         {
-            ece391_fdputs(1, (uint8_t *)"no argument");
+            ece391_fdputs(1, (uint8_t *)"no argument\n");
             continue;
         }
+        num=ece391_atoi(args, 10);
+        // print((uint8_t*)"num: %d\n",num);        
         if (0 == ece391_strcmp(buf, (uint8_t *)"alloc"))
         {
-            ece391_fdputs(1, (uint8_t *)"allocate at: ");
-            print_int(bd_alloc(ece391_atoi(args, 10)));
-            ece391_fdputs(1, (uint8_t *)"\n");
+            print((uint8_t*)"allocate at: %d\n",bd_alloc(&buddy_sys,num));
+            bd_display(&buddy_sys);
         }
         else if (0 == ece391_strcmp(buf, (uint8_t *)"free"))
         {
-            ece391_fdputs(1, (uint8_t *)"free (0 for succ):");
-            print_int(bd_alloc(ece391_atoi(args, 10)));
-            ece391_fdputs(1, (uint8_t *)"\n");
+            print((uint8_t*)"free(0 for succ): %d\n",bd_free(&buddy_sys,num));
+            bd_display(&buddy_sys);
         }
         else if (0 == ece391_strcmp(buf, (uint8_t *)"size"))
         {
-            ece391_fdputs(1, (uint8_t *)"size is: ");
-            print_int(bd_get_size(ece391_atoi(args, 10)));
-            ece391_fdputs(1, (uint8_t *)"\n");
+            print((uint8_t*)"size is: %d\n",bd_get_size(&buddy_sys,num));
         }
     }
 }
