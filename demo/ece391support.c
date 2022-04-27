@@ -25,6 +25,147 @@ void ece391_fdputs(int32_t fd, const uint8_t *s)
     (void)ece391_write(fd, s, ece391_strlen(s));
 }
 
+void ece391_fdputc(int32_t fd, const uint8_t *s)
+{
+    (void)ece391_write(fd, s, 1);
+}
+
+/* Standard printf().
+ * Only supports the following format strings:
+ * %%  - print a literal '%' character
+ * %x  - print a number in hexadecimal
+ * %u  - print a number as an unsigned integer
+ * %d  - print a number as a signed integer
+ * %c  - print a character
+ * %s  - print a string
+ * %#x - print a number in 32-bit aligned hexadecimal, i.e.
+ *       print 8 hexadecimal digits, zero-padded on the left.
+ *       For example, the hex number "E" would be printed as
+ *       "0000000E".
+ *       Note: This is slightly different than the libc specification
+ *       for the "#" modifier (this implementation doesn't add a "0x" at
+ *       the beginning), but I think it's more flexible this way.
+ *       Also note: %x is the only conversion specifier that can use
+ *       the "#" modifier to alter output. */
+int32_t print(uint8_t *format, ...)
+{
+
+    /* Pointer to the format string */
+    uint8_t *buf = format;
+
+    /* Stack pointer for the other parameters */
+    int32_t *esp = (void *)&format;
+    esp++;
+
+    while (*buf != '\0')
+    {
+        switch (*buf)
+        {
+        case '%':
+        {
+            int32_t alternate = 0;
+            buf++;
+
+        format_char_switch:
+            /* Conversion specifiers */
+            switch (*buf)
+            {
+            /* Print a literal '%' character */
+            case '%':
+                ece391_fdputc(1, (uint8_t *)'%');
+                break;
+
+            /* Use alternate formatting */
+            case '#':
+                alternate = 1;
+                buf++;
+                /* Yes, I know gotos are bad.  This is the
+                 * most elegant and general way to do this,
+                 * IMHO. */
+                goto format_char_switch;
+
+            /* Print a number in hexadecimal form */
+            case 'x':
+            {
+                uint8_t conv_buf[64];
+                if (alternate == 0)
+                {
+                    ece391_itoa(*((uint32_t *)esp), conv_buf, 16);
+                    ece391_fdputs(1, conv_buf);
+                }
+                else
+                {
+                    int32_t starting_index;
+                    int32_t i;
+                    ece391_itoa(*((uint32_t *)esp), &conv_buf[8], 16);
+                    i = starting_index = ece391_strlen(&conv_buf[8]);
+                    while (i < 8)
+                    {
+                        conv_buf[i] = '0';
+                        i++;
+                    }
+                    ece391_fdputs(1, &conv_buf[starting_index]);
+                }
+                esp++;
+            }
+            break;
+
+            /* Print a number in unsigned int form */
+            case 'u':
+            {
+                uint8_t conv_buf[36];
+                ece391_itoa(*((uint32_t *)esp), conv_buf, 10);
+                ece391_fdputs(1, conv_buf);
+                esp++;
+            }
+            break;
+
+            /* Print a number in signed int form */
+            case 'd':
+            {
+                uint8_t conv_buf[36];
+                int32_t value = *((int32_t *)esp);
+                if (value < 0)
+                {
+                    conv_buf[0] = '-';
+                    ece391_itoa(-value, &conv_buf[1], 10);
+                }
+                else
+                {
+                    ece391_itoa(value, conv_buf, 10);
+                }
+                ece391_fdputs(1, conv_buf);
+                esp++;
+            }
+            break;
+
+            /* Print a single character */
+            case 'c':
+                ece391_fdputc(1, (uint8_t *)esp);
+                esp++;
+                break;
+
+            /* Print a NULL-terminated string */
+            case 's':
+                ece391_fdputs(1, (uint8_t *)esp);
+                esp++;
+                break;
+
+            default:
+                break;
+            }
+        }
+        break;
+
+        default:
+            ece391_fdputc(1, buf);
+            break;
+        }
+        buf++;
+    }
+    return (buf - format);
+}
+
 int32_t ece391_strcmp(const uint8_t *s1, const uint8_t *s2)
 {
     while (*s1 == *s2)

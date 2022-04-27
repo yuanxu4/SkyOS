@@ -213,8 +213,7 @@ int32_t bd_display()
             curr_size >>= 1;
             curr_order--;
             idx = 0;
-            print_int(curr_order);
-            ece391_fdputs(1, (uint8_t *)": ");
+            print((uint8_t *)"%d: ", curr_order);
         }
         node_order = buddy_sys.node_array[i];
         if (node_order < 0)
@@ -253,8 +252,7 @@ int32_t bd_display()
             curr_size >>= 1;
             curr_order--;
             idx = 0;
-            print_int(curr_order);
-            ece391_fdputs(1, (uint8_t *)": ");
+            print((uint8_t *)"%d: ", curr_order);
         }
         if (buddy_sys.node_array[i] > -1)
         {
@@ -273,6 +271,7 @@ int32_t bd_display()
     ece391_fdputs(1, (uint8_t *)"\n");
     return 0;
 }
+
 /*
  * int32_t parse_args(uint8_t *command)
  * split executable name and arguments
