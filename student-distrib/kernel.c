@@ -21,7 +21,7 @@
 #include "rtc.h"
 #include "keyboard.h"
 #include "file_system.h"
-
+#include "memory.h"
 #include "task.h"
 
 #define RUN_TESTS
@@ -184,6 +184,7 @@ void entry(unsigned long magic, unsigned long addr)
 
     /* Enable paging */
     enable_paging();
+    memory_init();
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
@@ -200,7 +201,7 @@ void entry(unsigned long magic, unsigned long addr)
     launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
-    system_execute((uint8_t *)"shell");
+    system_execute((uint8_t *)"buddy");
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile(".1: hlt; jmp .1;");
 }

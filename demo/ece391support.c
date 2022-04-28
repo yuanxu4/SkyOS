@@ -236,7 +236,8 @@ uint32_t ece391_atoi(uint8_t *buf, int32_t radix)
     {
         return -1;
     }
-    int32_t old_radix = radix;
+    uint32_t old_radix = radix;
+    radix=1;
     if (buf[0] == '0' && buf[1] == '\0')
     {
         return 0;
@@ -277,7 +278,6 @@ uint32_t ece391_atoi(uint8_t *buf, int32_t radix)
         radix *= old_radix;
         newbuf++;
     }
-    value /= old_radix;
     return value;
 }
 

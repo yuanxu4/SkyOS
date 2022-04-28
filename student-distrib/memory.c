@@ -12,18 +12,16 @@ memory_system_t mem_sys;
 
 int32_t memory_init()
 {
-    int32_t i;
-    int32_t num_pte;
+    int32_t i = 1;
+    int32_t num_pte = PAGE_NUM_FOR_OFF_SLAB;
     // set pte as present to store off slab
-    num_pte = PAGE_NUM_FOR_OFF_SLAB;
-    i = 1;
     while (num_pte >= i)
     {
         page_table.pte[PT_SIZE - i] |= 1;
         i++;
     }
     mem_sys.off_slab_array = (slab_t *)(SIZE_4MB - (SIZE_4KB * num_pte));
-    memset(mem_sys.off_slab_array, 0, (SIZE_4KB * num_pte));
+    // memset(mem_sys.off_slab_array, 0, (SIZE_4KB * num_pte));
     mem_sys.num_off_slab = 0;
     // set pte as present to store page table for pages in buddy system
     num_pte += MAX_NUM_PAGE / PT_SIZE;
@@ -33,7 +31,22 @@ int32_t memory_init()
         i++;
     }
     mem_sys.pt_for_bd = (PT_t *)(SIZE_4MB - (SIZE_4KB * num_pte));
-    memset(mem_sys.pt_for_bd, 0, (SIZE_4KB * num_pte));
+    // memset(mem_sys.pt_for_bd, 0, (SIZE_4KB * num_pte));
+    int32_t j;
+    for (j = 0; j < num_pte-PAGE_NUM_FOR_OFF_SLAB; j++)
+    {
+        page_directory.pde[BASE_PD_INDEX+j] = (int32_t)(mem_sys.pt_for_bd+j) | 0x00000007; // set to 4KB mode, r/w, kernel, present
+    }
+    int32_t k;
+    // set pages in buddy system to r/w, kernel, not present
+    int32_t pte = BASE_ADDR_BD_SYS | 0x00000002;
+    uint32_t *pte_addr = ((uint32_t *)mem_sys.pt_for_bd);
+    for (k = 0; k < MAX_NUM_PAGE; k++)
+    {
+        *pte_addr = pte;
+        pte += SIZE_4KB;
+        pte_addr++;
+    }
     // set entry as present to store buddy system struct
     num_pte += (MAX_NUM_NODE + 1) / SIZE_4KB;
     while (num_pte >= i)
@@ -96,22 +109,25 @@ void *k_alloc(int32_t size, int32_t priv)
         ret_addr = cache_alloc(size, priv);
         if (ret_addr == NULL)
         {
-            ret_addr = bd_alloc(get_order(size), priv);
+            ret_addr = bd_alloc(get_order(size/SIZE_4KB), priv);
         }
     }
     else
     {
-        ret_addr = bd_alloc(get_order(size), priv);
+        ret_addr = bd_alloc(get_order(size/SIZE_4KB), priv);
     }
     return ret_addr;
 }
 
-int32_t system_free(void *addr)
+int32_t k_free(void *addr)
 {
-    if (cache_free(addr) == -1 || bd_free(addr) == -1)
+    printf("k_free at %x\n", addr);
+    if (cache_free(addr) == -1 && bd_free(addr) == -1)
     {
+        printf("k_free fail\n");
         return -1;
     }
+    printf("k_free succ\n");
     return 0;
 }
 
@@ -124,16 +140,6 @@ buddy_system_t *init_buddy_sys(int32_t order)
     }
     // set mapping
     int32_t i;
-    page_directory.pde[BASE_PD_INDEX] = (int32_t)mem_sys.pt_for_bd | 0x00000003; // set to 4KB mode, r/w, kernel, present
-    // set pages in buddy system to r/w, kernel, not present
-    int32_t pte = BASE_ADDR_BD_SYS | 0x00000002;
-    uint32_t *pte_addr = ((uint32_t *)mem_sys.pt_for_bd);
-    for (i = 0; i < MAX_NUM_PAGE; i++)
-    {
-        *pte_addr = pte;
-        pte += SIZE_4KB;
-        pte_addr++;
-    }
     // init fields
     mem_sys.buddy_sys->max_order = order;
     // init the order fo every node, get_size(1 + order) = num of nodes
@@ -169,7 +175,8 @@ int32_t choose_child(int32_t index, int8_t order)
 
 void *bd_alloc(int8_t order, int32_t priv)
 {
-    if (priv != 0 || priv != 1)
+    printf("bd_alloc %d pages\n", get_size(order));
+    if (priv < 0 && priv > 1)
     {
         return NULL;
     }
@@ -204,6 +211,7 @@ void *bd_alloc(int8_t order, int32_t priv)
         pte_addr--;
     }
     // return addr
+    printf("bd_alloc at %#x\n", (offset * SIZE_4KB + BASE_ADDR_BD_SYS));
     return (void *)(offset * SIZE_4KB + BASE_ADDR_BD_SYS);
 }
 
@@ -371,12 +379,12 @@ int32_t find_unuse_off_slab()
     return -1;
 }
 
-int32_t slab_init(slab_t *new_slab, slab_t *next, mem_cache_t *cache, int32_t num_obj, void *obj_start, int32_t off_slab_index)
+int32_t slab_init(slab_t *new_slab, slab_t *next, mem_cache_t *cache, int32_t num_obj,int32_t obj_size, void *obj_start, int32_t off_slab_index)
 {
     int32_t i;
-    new_slab->next = NULL;
+    new_slab->next = next;
     new_slab->cache = cache;
-    new_slab->obj_size = new_slab->cache->obj_size;
+    new_slab->obj_size = obj_size;
     new_slab->off_slab_index = off_slab_index;
     new_slab->total_num = num_obj;
     new_slab->free_num = num_obj;
@@ -452,13 +460,13 @@ mem_cache_t *cache_init(int32_t obj_size, int32_t index)
             return NULL;
         }
         new_slab = &mem_sys.off_slab_array[off_slab_index];
-        slab_init(new_slab, NULL, cache, num_obj, bd_alloc(curr_order, 1), off_slab_index);
+        slab_init(new_slab, NULL, cache, num_obj,obj_size, bd_alloc(curr_order, 1), off_slab_index);
         mem_sys.num_off_slab++;
     }
     else
     { // on slab
         new_slab = (slab_t *)bd_alloc(curr_order, 1);
-        slab_init(new_slab, NULL, cache, num_obj, (void *)(new_slab + 1), -1);
+        slab_init(new_slab, NULL, cache, num_obj,obj_size, (void *)(new_slab + 1), -1);
     }
     // init cache
     cache->slabs_head = new_slab;
@@ -641,7 +649,7 @@ int32_t cache_shrink(mem_cache_t *cache)
             // free space
             if (slab_type == 1)
             { // off slab
-                slab_init(rm_slab, NULL, NULL, -1, NULL, -1);
+                slab_init(rm_slab, NULL, NULL, -1,-1, NULL, -1);
                 mem_sys.num_off_slab--;
             }
             // for on slab, will be free directly since curr_slab==obj_start
@@ -668,13 +676,13 @@ slab_t *cache_grow(mem_cache_t *cache, slab_t *end_slab)
             return NULL;
         }
         new_slab = &mem_sys.off_slab_array[off_slab_index];
-        slab_init(new_slab, NULL, cache, end_slab->total_num, bd_alloc(cache->page_order, 1), off_slab_index);
+        slab_init(new_slab, NULL, cache, end_slab->total_num,cache->obj_size, bd_alloc(cache->page_order, 1), off_slab_index);
         mem_sys.num_off_slab++;
     }
     else
     { // on slab
         new_slab = (slab_t *)bd_alloc(cache->page_order, 1);
-        slab_init(new_slab, NULL, cache, end_slab->total_num, (void *)(new_slab + 1), -1);
+        slab_init(new_slab, NULL, cache, end_slab->total_num,cache->obj_size, (void *)(new_slab + 1), -1);
     }
     end_slab->next = new_slab;
     cache->free_num += end_slab->total_num;

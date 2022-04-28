@@ -53,7 +53,7 @@ struct slab
     int8_t free_id_list[MAX_NUM_OBJ]; // store the id of next free obj, -1 for using obj
 };
 
-int32_t slab_init(slab_t *new_slab, slab_t *next, mem_cache_t *cache, int32_t num_obj, void *obj_start, int32_t off_slab_index);
+int32_t slab_init(slab_t *new_slab, slab_t *next, mem_cache_t *cache, int32_t num_obj,int32_t obj_size, void *obj_start, int32_t off_slab_index);
 void *slab_get_obj(slab_t *slab);
 int32_t slab_put_obj(slab_t *slab, void *obj);
 struct mem_cache

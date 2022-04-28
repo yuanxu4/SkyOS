@@ -698,8 +698,6 @@ int32_t file_read(int32_t fd, void *buf, int32_t nbytes)
  * return value: 0 for success, -1 for failure
  *
  */
-/*
-
 int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
 {
     inode_t *inode = &inodes[curr_task()->fd_array.entries[fd].inode];
@@ -764,7 +762,7 @@ int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
         }
         while (diff_size >= BLOCK_SIZE)
         {
-            data_block = (uint32_t)bd_alloc(0); // alloc 1 pages i.e., 1 datablock
+            data_block = (uint32_t)bd_alloc(0,0); // alloc 1 pages i.e., 1 datablock
             if (data_block == 0)
             {
                 inode->length = new_file_len - diff_size;
@@ -777,7 +775,7 @@ int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
         }
         if (diff_size > 0)
         {
-            data_block = (uint32_t)bd_alloc(0); // alloc 1 pages i.e., 1 datablock
+            data_block = (uint32_t)bd_alloc(0,0); // alloc 1 pages i.e., 1 datablock
             if (data_block == 0)
             {
                 inode->length = new_file_len - diff_size;
@@ -790,6 +788,7 @@ int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
         }
     }
     inode->length = new_file_len;
+    PRINT("finish writing: file length: %d B, %d B unwriting\n", inode->length, diff_size);
     return new_file_len;
 }
 

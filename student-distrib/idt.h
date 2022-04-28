@@ -6,6 +6,7 @@
 /*** include lib ***/
 #include "types.h"
 #include "asmlink.h"
+#include "memory.h"
 
 /*** default number ***/
 #define IDT_BY_INTEL_START 0x00 // interupt defined by intel 0x00 - 0x1F

@@ -1123,7 +1123,7 @@ IDT_SYSCALL:
     pushl %ebx
     # check if the call is valid
     cmpl $12, %eax  # 10 is the max of syscall number
-    jae invalid_syscall
+    ja invalid_syscall
     cmpl $0, %eax
     je invalid_syscall
     # call handler according to eax
