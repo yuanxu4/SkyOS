@@ -60,6 +60,7 @@ struct terminal_t{
     uint32_t cursor_y;
     // PCB_t *current_process;
     uint32_t num_task;
+    volatile uint32_t enter_flag;
 
 };
 

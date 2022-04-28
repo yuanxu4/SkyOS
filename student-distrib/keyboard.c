@@ -15,7 +15,7 @@
 /* keyboard buffer */
 static uint8_t kb_buf[kb_bufsize];
 /* flag used to decide when can copy */
-static volatile uint8_t copy_flag;
+// static volatile uint8_t copy_flag;
 static uint8_t char_num;
 /* keycode flag*/
 static uint8_t cap_on_flag, shift_on_flag, ctrl_on_flag, alt_on_flag;
@@ -209,7 +209,7 @@ void scancode_output(uint8_t scancode)
     uint8_t output_char;
 
     /* press Enter */
-    if (scancode == ENTER && (copy_flag == 0))
+    if (scancode == ENTER && (curr_terminal->enter_flag == 0))
     {
         /* clean all the numbers we count */
         if (char_num <= kb_bufsize-1)   //maximum char number are 127
@@ -222,11 +222,11 @@ void scancode_output(uint8_t scancode)
         }
         char_num = 0;
         ONTO_DISPLAY_WRAP(putc('\n'));
-        copy_flag = 1;
+        curr_terminal->enter_flag = 1;
     }
 
     /* if scancode is in press range */
-    if (scancode <= keynum && (copy_flag == 0))
+    if (scancode <= keynum && (curr_terminal->enter_flag == 0))
     {
         /* find corresponding keycode */
         /* press ctrl+ l */
@@ -292,7 +292,7 @@ void scancode_output(uint8_t scancode)
 int32_t terminal_init()
 {
     int j;
-    copy_flag = 0;
+    // copy_flag = 0;
     /* 25 is the number of rows in the terminal */
     enable_cursor(0, 25);
     /* clear all the keyboard buffer*/
@@ -309,6 +309,7 @@ int32_t terminal_init()
         _terminal_dp[j].terminal_id = j+1;
         _terminal_dp[j].character_num = 0;
         _terminal_dp[j].num_task = 0;
+        _terminal_dp[j].enter_flag = 0;
         memset((void*)_terminal_dp[j].keyboard_buf,0,(uint32_t)kb_bufsize); 
     }
     _terminal_dp[0].page_addr = TERM1_ADDR;
@@ -379,7 +380,7 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
     uint8_t *to;    // copy to
     uint8_t *from;  // copy from
     sti();          // interrupt gate has set IF to 0, we need set 1 back
-    while (copy_flag == 0)
+    while (curr_terminal->enter_flag == 0)
     {
     } // read function waiting
     cli();
@@ -407,7 +408,7 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
             {
                 kb_buf[i] = 0;
             }
-            copy_flag = 0;
+            curr_terminal->enter_flag = 0;
             return nbytes;
         }
     }
@@ -423,7 +424,7 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
     {
         kb_buf[i] = 0;
     }
-    copy_flag = 0;
+    curr_terminal->enter_flag = 0;
     sti();
     return copied;
 }
@@ -505,6 +506,9 @@ int32_t video_mem_map_linear()
 {    
 
     set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
+    set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX+1]),TERM1_ADDR, 1, 0, 1);  
+    set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX+2]), TERM2_ADDR, 1, 0, 1);
+    set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX+3]), TERM3_ADDR, 1, 0, 1);
     flush_TLB();
     return 0;
 }
