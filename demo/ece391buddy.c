@@ -13,7 +13,7 @@ int main()
     bd_display(&buddy_sys);
     while (1)
     {
-        ece391_fdputs(1, (uint8_t *)"HELP: alloc <order>; free <addr index>; size <addr index>; init <order>; exit\n");
+        ece391_fdputs(1, (uint8_t *)"HELP: alloc <order>; free <addr>; size <addr>; init <max order>; exit\n");
         ece391_fdputs(1, (uint8_t *)"NOTE: -1 means operation failed. \n");
         ece391_fdputs(1, (uint8_t *)"BUDDY> ");
         if (-1 == (cnt = ece391_read(0, buf, BUFSIZE - 1)))
@@ -56,10 +56,10 @@ int main()
             // print((uint8_t *)"num: %#x\n", num);
             print((uint8_t *)"size is: %d pages\n", bd_get_size(&buddy_sys, (void *)num));
         }
-        else if(0 == ece391_strcmp(buf, (uint8_t *)"init"))
+        else if (0 == ece391_strcmp(buf, (uint8_t *)"init"))
         {
             num = (uint32_t)ece391_atoi(args, 10);
-            num=min(num,MAX_ORDER_PAGE);
+            num = min(num, MAX_ORDER_PAGE);
             ece391_free((void *)base_addr);
             init_buddy_sys(&buddy_sys, num);
             bd_display(&buddy_sys);

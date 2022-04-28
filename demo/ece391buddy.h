@@ -32,7 +32,7 @@ void *bd_alloc(buddy_system_t *buddy_sys, int32_t order);
 int32_t bd_free(buddy_system_t *buddy_sys, void *addr);
 int32_t bd_display(buddy_system_t *buddy_sys);
 int32_t bd_get_size(buddy_system_t *buddy_sys, void *addr);
-int32_t bd_get_start(buddy_system_t *buddy_sys, void *addr);
+void *bd_get_start(buddy_system_t *buddy_sys, void *addr);
 
 uint32_t base_addr = NULL;
 
@@ -59,7 +59,7 @@ buddy_system_t *init_buddy_sys(buddy_system_t *buddy_sys, int32_t order)
         // print((uint8_t*)"%d ",buddy_sys->node_array[i]);
     }
     base_addr = (int32_t)ece391_alloc(get_size(order) * SIZE_4KB);
-    print((uint8_t*)"base addr:%#x\n", base_addr);
+    print((uint8_t *)"base addr:%#x\n", base_addr);
     return buddy_sys;
 }
 
@@ -86,7 +86,7 @@ void *bd_alloc(buddy_system_t *buddy_sys, int32_t order)
     // size to alloc too large
     if (buddy_sys->node_array[0] < order)
     {
-        print((uint8_t*)"alloc fail\n");
+        print((uint8_t *)"alloc fail\n");
         return NULL;
     }
     // search down recursively to find the node to alloc
@@ -111,11 +111,11 @@ void *bd_alloc(buddy_system_t *buddy_sys, int32_t order)
 
 int32_t bd_free(buddy_system_t *buddy_sys, void *addr)
 {
-    int32_t offset = ((int32_t)addr - (int32_t)base_addr) /SIZE_4KB;
+    int32_t offset = ((int32_t)addr - (int32_t)base_addr) / SIZE_4KB;
     // garbage check
     if ((offset < 0) || (offset > get_size(buddy_sys->max_order)))
     {
-        print((uint8_t*)"free fail: offset: %d\n", offset);
+        print((uint8_t *)"free fail: offset: %d\n", offset);
         return -1;
     }
     // init to bottom node order and node index
@@ -177,7 +177,7 @@ int32_t bd_get_size(buddy_system_t *buddy_sys, void *addr)
     return get_size(node_order);
 }
 
-int32_t bd_get_start(buddy_system_t *buddy_sys, void *addr)
+void *bd_get_start(buddy_system_t *buddy_sys, void *addr)
 {
     int32_t offset = ((int32_t)addr - base_addr) >> 12;
     // garbage check
@@ -197,7 +197,7 @@ int32_t bd_get_start(buddy_system_t *buddy_sys, void *addr)
         }
     }
     offset = (index + 1) * get_size(node_order) - get_size(buddy_sys->max_order);
-    return offset;
+    return (void *)(offset * SIZE_4KB + base_addr);
 }
 int32_t print_int(int32_t i)
 {
