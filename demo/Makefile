@@ -1,5 +1,5 @@
-CFLAGS += -Wall -nostdlib -ffreestanding
-LDFLAGS += -nostdlib -ffreestanding
+CFLAGS += -g -Wall -nostdlib -ffreestanding
+LDFLAGS += -g -nostdlib -ffreestanding
 CC = gcc
 
 ALL: buddy slab

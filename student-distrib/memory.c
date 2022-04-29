@@ -31,6 +31,7 @@ int32_t memory_init()
         i++;
     }
     mem_sys.pt_for_bd = (PT_t *)(SIZE_4MB - (SIZE_4KB * num_pte));
+    printf("pt_for_bd:%#x\n",mem_sys.pt_for_bd);
     // memset(mem_sys.pt_for_bd, 0, (SIZE_4KB * num_pte));
     int32_t j;
     for (j = 0; j < num_pte-PAGE_NUM_FOR_OFF_SLAB; j++)
@@ -39,7 +40,7 @@ int32_t memory_init()
     }
     int32_t k;
     // set pages in buddy system to r/w, kernel, not present
-    int32_t pte = BASE_ADDR_BD_SYS | 0x00000002;
+    int32_t pte = BASE_ADDR_BD_SYS | 0x00000006;
     uint32_t *pte_addr = ((uint32_t *)mem_sys.pt_for_bd);
     for (k = 0; k < MAX_NUM_PAGE; k++)
     {
@@ -55,7 +56,7 @@ int32_t memory_init()
         i++;
     }
     mem_sys.buddy_sys = (buddy_system_t *)(SIZE_4MB - (SIZE_4KB * num_pte));
-    memset(mem_sys.buddy_sys, 0, (SIZE_4KB * num_pte));
+    // memset(mem_sys.buddy_sys, 0, (SIZE_4KB * num_pte));
     // init buddy system
     init_buddy_sys(MAX_ORDER_PAGE);
     // init first 8 caches with 16B, 32B, ... ,2KB, last 8 caches unused
@@ -175,7 +176,7 @@ int32_t choose_child(int32_t index, int8_t order)
 
 void *bd_alloc(int8_t order, int32_t priv)
 {
-    printf("bd_alloc %d pages\n", get_size(order));
+    // printf("bd_alloc %d pages\n", get_size(order));
     if (priv < 0 && priv > 1)
     {
         return NULL;
@@ -208,10 +209,13 @@ void *bd_alloc(int8_t order, int32_t priv)
     {
         pte_addr->p = 1;
         pte_addr->u_s = priv;
+        pte_addr->r_w =1;
+        // printf("pte: %#x    ",*pte_addr);
+        // printf("pte_addr: %#x\n",pte_addr);
         pte_addr--;
     }
     // return addr
-    printf("bd_alloc at %#x\n", (offset * SIZE_4KB + BASE_ADDR_BD_SYS));
+    // printf("bd_alloc at %#x, priv: %d\n", (offset * SIZE_4KB + BASE_ADDR_BD_SYS), priv);
     return (void *)(offset * SIZE_4KB + BASE_ADDR_BD_SYS);
 }
 
@@ -392,7 +396,7 @@ int32_t slab_init(slab_t *new_slab, slab_t *next, mem_cache_t *cache, int32_t nu
     new_slab->obj_start = obj_start;
     for (i = 0; i < num_obj; i++)
     {
-        new_slab->free_id_list[i] = (int8_t)(i + 1);
+        new_slab->free_id_list[i] = (uint8_t)(i + 1);
     }
     // new_slab->free_id_list[num_obj] = (int8_t)MAX_NUM_OBJ; // list end
     return 0;
@@ -502,7 +506,7 @@ void *slab_get_obj(slab_t *slab)
     uint8_t *ret_addr = (uint8_t *)slab->obj_start + slab->next_free_index * slab->obj_size;
     // update next_free_index from free_id_list
     slab->next_free_index = slab->free_id_list[slab->next_free_index];
-    slab->free_id_list[slab->next_free_index] = -1; // mark as used
+    slab->free_id_list[slab->next_free_index] = MAX_NUM_OBJ; // mark as used
     slab->free_num--;
     slab->cache->free_num--;
     return (void *)ret_addr;
@@ -572,7 +576,7 @@ int32_t slab_put_obj(slab_t *slab, void *obj)
 {
     int32_t index = (int32_t)((uint8_t *)obj - (uint8_t *)slab->obj_start) / slab->obj_size;
     // have free
-    if (slab->free_id_list[index] != -1)
+    if (slab->free_id_list[index] != MAX_NUM_OBJ)
     {
         return -1;
     }

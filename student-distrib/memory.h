@@ -10,9 +10,9 @@
 #define MAX_NUM_PAGE (1 << MAX_ORDER_PAGE) // max num of pages in the buddy system
 #define SIZE_2KB 0x800
 #define MAX_NUM_NODE ((MAX_NUM_PAGE << 1) - 1) // 2047, max num of nodes in the buddy system
-#define BASE_ADDR_BD_SYS 0x40000000            // 1GB, base addr of buddy system
-#define BASE_PD_INDEX 256                      // 1GB/4MB-1, pde index of base addr
-#define MAX_NUM_OBJ 256                        // 4K/16, max num of obj in one slab
+#define BASE_ADDR_BD_SYS 0x04000000            // 1GB, base addr of buddy system
+#define BASE_PD_INDEX BASE_ADDR_BD_SYS/SIZE_4MB                      // 1GB/4MB-1, pde index of base addr
+#define MAX_NUM_OBJ 255                        // 4K/16, max num of obj in one slab
 #define MIN_ORDER_OBJ 4                        // <=> 16 bytes, min size of obj
 #define MAX_ORDER_OBJ 11                       // <=> 2K bytes, max size of obj
 #define MAX_ORDER_SLAB 2                       // <=> 4 pages in one slab max
@@ -50,7 +50,7 @@ struct slab
     int32_t free_num;                 // num of free objs in this slab
     int32_t next_free_index;          // index of next free obj
     void *obj_start;                  // start addr of objs
-    int8_t free_id_list[MAX_NUM_OBJ]; // store the id of next free obj, -1 for using obj
+    uint8_t free_id_list[MAX_NUM_OBJ]; // store the id of next free obj, -1 for using obj
 };
 
 int32_t slab_init(slab_t *new_slab, slab_t *next, mem_cache_t *cache, int32_t num_obj,int32_t obj_size, void *obj_start, int32_t off_slab_index);
