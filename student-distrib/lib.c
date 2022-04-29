@@ -2,15 +2,23 @@
  * vim:ts=4 noexpandtab */
 
 #include "lib.h"
-
+#include "keyboard.h"
+#include "task.h"
 
 #define NUM_COLS 80
 #define NUM_ROWS 25
 #define ATTRIB 0x7
 
+extern terminal_t _terminal_dp[MAX_TERMINAL_NUM];
+extern uint32_t cur_terminal_id;
+extern terminal_t *curr_terminal;
+extern PCB_t *curr_task(); // defined in boot.
+extern page_usage_array_t page_array; // manage pages
+
 int screen_x;
 int screen_y;
 char *video_mem = (char *)VIDEO;
+
 
 /* void clear(void);
  * Inputs: void
@@ -31,7 +39,8 @@ void clear(void)
 
 void align_space(int32_t size)
 {
-    while (screen_x < size)
+    int index = curr_task()->terminal->terminal_id - 1;
+    while (_terminal_dp[index].cursor_x < size)
     {
         putc(' ');
     }
@@ -173,6 +182,141 @@ int32_t printf(int8_t *format, ...)
     return (buf - format);
 }
 
+/* Standard printf().
+ * Only supports the following format strings:
+ * %%  - print a literal '%' character
+ * %x  - print a number in hexadecimal
+ * %u  - print a number as an unsigned integer
+ * %d  - print a number as a signed integer
+ * %c  - print a character
+ * %s  - print a string
+ * %#x - print a number in 32-bit aligned hexadecimal, i.e.
+ *       print 8 hexadecimal digits, zero-padded on the left.
+ *       For example, the hex number "E" would be printed as
+ *       "0000000E".
+ *       Note: This is slightly different than the libc specification
+ *       for the "#" modifier (this implementation doesn't add a "0x" at
+ *       the beginning), but I think it's more flexible this way.
+ *       Also note: %x is the only conversion specifier that can use
+ *       the "#" modifier to alter output. */
+int32_t printf_sche(int8_t *format, ...)
+{
+
+    /* Pointer to the format string */
+    int8_t *buf = format;
+
+    /* Stack pointer for the other parameters */
+    int32_t *esp = (void *)&format;
+    esp++;
+
+    while (*buf != '\0')
+    {
+        switch (*buf)
+        {
+        case '%':
+        {
+            int32_t alternate = 0;
+            buf++;
+
+        format_char_switch:
+            /* Conversion specifiers */
+            switch (*buf)
+            {
+            /* Print a literal '%' character */
+            case '%':
+                putc('%');
+                break;
+
+            /* Use alternate formatting */
+            case '#':
+                alternate = 1;
+                buf++;
+                /* Yes, I know gotos are bad.  This is the
+                 * most elegant and general way to do this,
+                 * IMHO. */
+                goto format_char_switch;
+
+            /* Print a number in hexadecimal form */
+            case 'x':
+            {
+                int8_t conv_buf[64];
+                if (alternate == 0)
+                {
+                    itoa(*((uint32_t *)esp), conv_buf, 16);
+                    puts_sche(conv_buf);
+                }
+                else
+                {
+                    int32_t starting_index;
+                    int32_t i;
+                    itoa(*((uint32_t *)esp), &conv_buf[8], 16);
+                    i = starting_index = strlen(&conv_buf[8]);
+                    while (i < 8)
+                    {
+                        conv_buf[i] = '0';
+                        i++;
+                    }
+                    puts_sche(&conv_buf[starting_index]);
+                }
+                esp++;
+            }
+            break;
+
+            /* Print a number in unsigned int form */
+            case 'u':
+            {
+                int8_t conv_buf[36];
+                itoa(*((uint32_t *)esp), conv_buf, 10);
+                puts_sche(conv_buf);
+                esp++;
+            }
+            break;
+
+            /* Print a number in signed int form */
+            case 'd':
+            {
+                int8_t conv_buf[36];
+                int32_t value = *((int32_t *)esp);
+                if (value < 0)
+                {
+                    conv_buf[0] = '-';
+                    itoa(-value, &conv_buf[1], 10);
+                }
+                else
+                {
+                    itoa(value, conv_buf, 10);
+                }
+                puts_sche(conv_buf);
+                esp++;
+            }
+            break;
+
+            /* Print a single character */
+            case 'c':
+                putc_sche((uint8_t) * ((int32_t *)esp));
+                esp++;
+                break;
+
+            /* Print a NULL-terminated string */
+            case 's':
+                puts_sche(*((int8_t **)esp));
+                esp++;
+                break;
+
+            default:
+                break;
+            }
+        }
+        break;
+
+        default:
+            putc_sche(*buf);
+            break;
+        }
+        buf++;
+    }
+    return (buf - format);
+}
 /* int32_t puts(int8_t* s);
  *   Inputs: int_8* s = pointer to a string of characters
  *   Return Value: Number of bytes written
@@ -188,6 +332,20 @@ int32_t puts(int8_t *s)
     return index;
 }
 
+/* int32_t puts(int8_t* s);
+ *   Inputs: int_8* s = pointer to a string of characters
+ *   Return Value: Number of bytes written
+ *    Function: Output a string to the console */
+int32_t puts_sche(int8_t *s)
+{
+    register int32_t index = 0;
+    while (s[index] != '\0')
+    {
+        putc_sche(s[index]);
+        index++;
+    }
+    return index;
+}
 /*   enable_cursor(uint8_t cursor_start, uint8_t cursor_end);
  *   Inputs: cursor_start -- start scanline
  *          cursor_end -- end scan line
@@ -246,6 +404,7 @@ void scroll_down_oneline()
     }
 }
 
+
 /* void char_to_mem;
  * Inputs: c -- show char on the screen
  *          screen_x --
@@ -253,104 +412,244 @@ void scroll_down_oneline()
  *  Function: put correct character to the memory
  *
  */
+
 void char_to_mem(c)
 {
-    *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
-    *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
-    screen_x++;
-    screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
-    screen_x %= NUM_COLS;
+    int index = curr_task()->terminal->terminal_id - 1;
+    *(uint8_t *)(video_mem + ((NUM_COLS * _terminal_dp[index].cursor_y + _terminal_dp[index].cursor_x) << 1)) = c;
+    *(uint8_t *)(video_mem + ((NUM_COLS * _terminal_dp[index].cursor_y + _terminal_dp[index].cursor_x) << 1) + 1) = ATTRIB;
+    _terminal_dp[index].cursor_x++;
+    _terminal_dp[index].cursor_y = (_terminal_dp[index].cursor_y + (_terminal_dp[index].cursor_x / NUM_COLS)) % NUM_ROWS;
+    _terminal_dp[index].cursor_x %= NUM_COLS;
 }
 
+/* void char_to_mem;
+ * Inputs: c -- show char on the screen
+ *          screen_x --
+ * Return Value: void
+ *  Function: put correct character to the memory
+ *
+ */
+
+void char_to_mem_sche(c)
+{
+    int index = curr_terminal->terminal_id - 1;
+    *(uint8_t *)(video_mem + ((NUM_COLS * _terminal_dp[index].cursor_y + _terminal_dp[index].cursor_x) << 1)) = c;
+    *(uint8_t *)(video_mem + ((NUM_COLS * _terminal_dp[index].cursor_y + _terminal_dp[index].cursor_x) << 1) + 1) = ATTRIB;
+    _terminal_dp[index].cursor_x++;
+    _terminal_dp[index].cursor_y = (_terminal_dp[index].cursor_y + (_terminal_dp[index].cursor_x / NUM_COLS)) % NUM_ROWS;
+    _terminal_dp[index].cursor_x %= NUM_COLS;
+}
 /* void putc(uint8_t c);
  * Inputs: uint_8* c = character to print
  * Return Value: void
  *  Function: Output a character to the console */
 void putc(uint8_t c)
 {
-    int i;
-    /* change line  */
-    if (c == '\n' || c == '\r')
+    
+    if (page_array.num_using == 0)
     {
-        if (screen_y == NUM_ROWS - 1)
-        {
-            scroll_down_oneline();
-            screen_x = 0; // begin at start of screen
-            screen_y = NUM_ROWS - 1;
-        }
-        else
-        {
-            screen_y++; // else
-            screen_x = 0;
-        }
-    }
-    else if (c == 0)
-    {
-        /* do nothing */
-    }
-    /* if press backspace */
-    else if (c == '\b')
-    {
-        /* if the screen_x is at the beginning of line */
-        if ((screen_y != 0) && (screen_x == 0))
-        {
-            *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x - 1) << 1)) = ' ';
-            screen_y--;
-            screen_x = NUM_COLS - 1;
-            /* if at the start of screen*/
-        }
-        else if ((screen_y == 0) && (screen_x == 0))
-        {
-            screen_x = 0;
-            screen_y = 0;
-        }
-        else
-        {
-            *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x - 1) << 1)) = ' ';
-            screen_x--;
-        }
-    }
-    /* if press tab */
-    else if (c == '\t')
-    {
-        if ((screen_x >= NUM_COLS - 4) && (screen_y == NUM_ROWS - 1))
-        {
-            scroll_down_oneline();
-            /* new char printed */
-            for (i = 0; i < 4; i++)
-            {
-                char_to_mem(' ');
-            }
-            screen_y = NUM_ROWS - 1;
-        }
-        else
-        {
-            for (i = 0; i < 4; i++)
-            {
-                char_to_mem(' ');
-            }
-        }
+        // putc_sche(c);
     }
     else
     {
-        /* scroll down */
-        if ((screen_x == NUM_COLS - 1) && (screen_y == NUM_ROWS - 1))
+        int index = curr_task()->terminal->terminal_id - 1;
+        int i;
+
+        /* change line  */
+        if (c == '\n' || c == '\r')
         {
-            scroll_down_oneline();
-            /* the first character of last line */
-            screen_y--;
-            char_to_mem(c);
-            screen_y = NUM_ROWS - 1;
+            if ( _terminal_dp[index].cursor_y == NUM_ROWS - 1)
+            {
+                scroll_down_oneline();
+                _terminal_dp[index].cursor_x = 0; // begin at start of screen
+                _terminal_dp[index].cursor_y = NUM_ROWS - 1;
+            }
+            else
+            {
+                _terminal_dp[index].cursor_y++; // else
+                _terminal_dp[index].cursor_x = 0;
+            }
+        }
+        else if (c == 0)
+        {
+            /* do nothing */
+        }
+        /* if press backspace */
+        else if (c == '\b')
+        {
+            /* if the screen_x is at the beginning of line */
+            if ((_terminal_dp[index].cursor_y != 0) && (_terminal_dp[index].cursor_x == 0))
+            {
+                *(uint8_t *)(video_mem + ((NUM_COLS * _terminal_dp[index].cursor_y + _terminal_dp[index].cursor_x - 1) << 1)) = ' ';
+                _terminal_dp[index].cursor_y--;
+                _terminal_dp[index].cursor_x = NUM_COLS - 1;
+                /* if at the start of screen*/
+            }
+            else if ((_terminal_dp[index].cursor_y == 0) && (_terminal_dp[index].cursor_x == 0))
+            {
+                _terminal_dp[index].cursor_x = 0;
+                _terminal_dp[index].cursor_y = 0;
+            }
+            else
+            {
+                *(uint8_t *)(video_mem + ((NUM_COLS * _terminal_dp[index].cursor_y + 
+                            _terminal_dp[index].cursor_x - 1) << 1)) = ' ';
+                _terminal_dp[index].cursor_x--;
+            }
+        }
+        /* if press tab */
+        else if (c == '\t')
+        {
+            if ((_terminal_dp[index].cursor_y >= NUM_COLS - 4) && (_terminal_dp[index].cursor_y == NUM_ROWS - 1))
+            {
+                scroll_down_oneline();
+                /* new char printed */
+                for (i = 0; i < 4; i++)
+                {
+                    char_to_mem(' ');
+                }
+                _terminal_dp[index].cursor_y = NUM_ROWS - 1;
+            }
+            else
+            {
+                for (i = 0; i < 4; i++)
+                {
+                    char_to_mem(' ');
+                }
+            }
         }
         else
         {
-            char_to_mem(c);
+            /* scroll down */
+            if ((_terminal_dp[index].cursor_x == NUM_COLS - 1) && (_terminal_dp[index].cursor_y == NUM_ROWS - 1))
+            {
+                scroll_down_oneline();
+                /* the first character of last line */
+                _terminal_dp[index].cursor_y--;
+                char_to_mem(c);
+                _terminal_dp[index].cursor_y = NUM_ROWS - 1;
+            }
+            else
+            {
+                char_to_mem(c);
+            }
+            
+        }
+        /* update the cursor if update the location */
+        if (curr_task()->terminal->terminal_id == cur_terminal_id)
+        {
+            update_cursor(_terminal_dp[index].cursor_x,_terminal_dp[index].cursor_y);
         }
     }
-    /* update the cursor if update the location */
-    update_cursor(screen_x, screen_y);
+    
+    
 }
 
+/* void putc(uint8_t c);
+ * Inputs: uint_8* c = character to print
+ * Return Value: void
+ *  Function: Output a character to the console */
+void putc_sche(uint8_t c)
+{
+    
+    if (page_array.num_using == 0)
+    {
+        // putc_sche(c);
+    }
+    else
+    {
+        
+            int index = curr_terminal->terminal_id - 1;
+            int i;
+
+            /* change line  */
+            if (c == '\n' || c == '\r')
+            {
+                if ( _terminal_dp[index].cursor_y == NUM_ROWS - 1)
+                {
+                    scroll_down_oneline();
+                    _terminal_dp[index].cursor_x = 0; // begin at start of screen
+                    _terminal_dp[index].cursor_y = NUM_ROWS - 1;
+                }
+                else
+                {
+                    _terminal_dp[index].cursor_y++; // else
+                    _terminal_dp[index].cursor_x = 0;
+                }
+            }
+            else if (c == 0)
+            {
+                /* do nothing */
+            }
+            /* if press backspace */
+            else if (c == '\b')
+            {
+                /* if the screen_x is at the beginning of line */
+                if ((_terminal_dp[index].cursor_y != 0) && (_terminal_dp[index].cursor_x == 0))
+                {
+                    *(uint8_t *)(video_mem + ((NUM_COLS * _terminal_dp[index].cursor_y + _terminal_dp[index].cursor_x - 1) << 1)) = ' ';
+                    _terminal_dp[index].cursor_y--;
+                    _terminal_dp[index].cursor_x = NUM_COLS - 1;
+                    /* if at the start of screen*/
+                }
+                else if ((_terminal_dp[index].cursor_y == 0) && (_terminal_dp[index].cursor_x == 0))
+                {
+                    _terminal_dp[index].cursor_x = 0;
+                    _terminal_dp[index].cursor_y = 0;
+                }
+                else
+                {
+                    *(uint8_t *)(video_mem + ((NUM_COLS * _terminal_dp[index].cursor_y + 
+                                _terminal_dp[index].cursor_x - 1) << 1)) = ' ';
+                    _terminal_dp[index].cursor_x--;
+                }
+            }
+            /* if press tab */
+            else if (c == '\t')
+            {
+                if ((_terminal_dp[index].cursor_y >= NUM_COLS - 4) && (_terminal_dp[index].cursor_y == NUM_ROWS - 1))
+                {
+                    scroll_down_oneline();
+                    /* new char printed */
+                    for (i = 0; i < 4; i++)
+                    {
+                        char_to_mem_sche(' ');
+                    }
+                    _terminal_dp[index].cursor_y = NUM_ROWS - 1;
+                }
+                else
+                {
+                    for (i = 0; i < 4; i++)
+                    {
+                        char_to_mem_sche(' ');
+                    }
+                }
+            }
+            else
+            {
+                /* scroll down */
+                if ((_terminal_dp[index].cursor_x == NUM_COLS - 1) && (_terminal_dp[index].cursor_y == NUM_ROWS - 1))
+                {
+                    scroll_down_oneline();
+                    /* the first character of last line */
+                    _terminal_dp[index].cursor_y--;
+                    char_to_mem_sche(c);
+                    _terminal_dp[index].cursor_y = NUM_ROWS - 1;
+                }
+                else
+                {
+                    char_to_mem_sche(c);
+                }
+                
+            }
+            
+            update_cursor(_terminal_dp[index].cursor_x,_terminal_dp[index].cursor_y);
+               
+    }
+    
+    
+}
 /* int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix);
  * Inputs: uint32_t value = number to convert
  *            int8_t* buf = allocated buffer to place string in

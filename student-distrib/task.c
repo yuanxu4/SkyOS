@@ -264,10 +264,14 @@ int32_t system_execute(const uint8_t *command)
         return -1;
     }
 
+    
     /* new_task->parent = current_task */
     // curr_terminal->num_task++;
     new_task->terminal = curr_terminal;
-    
+    if (page_array.num_using == 1)
+    {
+        ONTO_DISPLAY_WRAP(printf_sche("terminal<1>\n"));
+    }
     /* add to schedule run_queue */
     add_task_to_run_queue(new_task); 
     video_mem_map_task(new_task);
@@ -561,7 +565,7 @@ void start_task()
     terminal_init();
     pit_init();  
     /* execute first task */
-    printf("terminal<1>\n");
+    
     system_execute((uint8_t *)"shell"); 
     
 }
@@ -586,20 +590,22 @@ int32_t task_switch()
     
     PCB_t *next_task = (PCB_t*)((uint32_t)(curr_task()->run_list_node.next)&(0xFFFFE000));
 
-    /* everytime switch task then remap */
-    video_mem_map_task(next_task);
-
-    if (curr_terminal->num_task == 0)
-    {
-        ONTO_DISPLAY_WRAP(printf("terminal<%d>\n",cur_terminal_id));
-        system_execute((uint8_t *)"shell");
-    }
     // save esp ebp(in kernel)
     asm volatile("          \n\
         movl %%ebp, %%eax   \n\
         movl %%esp, %%ebx   \n\
         "
                  : "=a"(curr_task()->ebp), "=b"(curr_task()->esp));
+                 
+    /* everytime switch task then remap */
+    video_mem_map_task(next_task);
+
+    if (curr_terminal->num_task == 0)
+    {
+        ONTO_DISPLAY_WRAP(printf_sche("terminal<%d>\n",cur_terminal_id));
+        system_execute((uint8_t *)"shell");
+    }
+    
     /* if only one task running */
     if (curr_task()->run_list_node.next == &(curr_task()->run_list_node))
     {

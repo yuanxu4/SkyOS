@@ -95,7 +95,7 @@ void keyboard_handler(void)
     /* set flag */
     set_flag(scancode);
     /* handle scancode and print to terminal */
-    if ((scancode < keynum) && (scancode_simple_lowcase[scancode] != 0))
+    if ((scancode < keynum) && (scancode_simple_lowcase[scancode] != 0)  )
     {
         scancode_output(scancode);
     }
@@ -171,12 +171,14 @@ void put_changebuf(uint8_t output_char)
         {
             if (kb_buf[char_num - 1] == '\t')
             { // delete all space if \t
-                ONTO_DISPLAY_WRAP(putc('\b'));
-                ONTO_DISPLAY_WRAP(putc('\b'));
-                ONTO_DISPLAY_WRAP(putc('\b'));
-                ONTO_DISPLAY_WRAP(putc('\b'));
+                
+                ONTO_DISPLAY_WRAP(putc_sche('\b'));
+                ONTO_DISPLAY_WRAP(putc_sche('\b'));
+                ONTO_DISPLAY_WRAP(putc_sche('\b'));
+                ONTO_DISPLAY_WRAP(putc_sche('\b'));
+                
             }else{
-                ONTO_DISPLAY_WRAP(putc('\b'));             
+                ONTO_DISPLAY_WRAP(putc_sche('\b'));             
             } 
             kb_buf[char_num - 1] = 0; // reset to 0
             char_num--;               // number of characters in buffer decrement         
@@ -186,7 +188,8 @@ void put_changebuf(uint8_t output_char)
     {
         if (char_num < kb_bufsize - 1) //maximum char = 127
         {
-            ONTO_DISPLAY_WRAP(putc(output_char));
+            
+            ONTO_DISPLAY_WRAP(putc_sche(output_char));
             char_num++;
             kb_buf[char_num - 1] = output_char;
         }
@@ -221,7 +224,8 @@ void scancode_output(uint8_t scancode)
             kb_buf[kb_bufsize - 1] = '\n';
         }
         char_num = 0;
-        ONTO_DISPLAY_WRAP(putc('\n'));
+               
+        ONTO_DISPLAY_WRAP(putc_sche('\n'));
         curr_terminal->enter_flag = 1;
     }
 
@@ -320,8 +324,8 @@ int32_t terminal_init()
     curr_terminal = &_terminal_dp[0];
     memcpy((void*)kb_buf,_terminal_dp[0].keyboard_buf,kb_bufsize);
     _terminal_dp[0].character_num = 0;
-    screen_x = _terminal_dp[0].cursor_x;
-    screen_y = _terminal_dp[0].cursor_y;
+    // screen_x = _terminal_dp[0].cursor_x;
+    // screen_y = _terminal_dp[0].cursor_y;
     char_num = _terminal_dp[0].character_num;
 
     /* MAPPING */
@@ -380,7 +384,7 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
     uint8_t *to;    // copy to
     uint8_t *from;  // copy from
     sti();          // interrupt gate has set IF to 0, we need set 1 back
-    while (curr_terminal->enter_flag == 0)
+    while (curr_task()->terminal->enter_flag == 0)
     {
     } // read function waiting
     cli();
@@ -462,35 +466,6 @@ int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes)
 
 /*########################## FOR CP5 #################################*/
 
-/* 
- * printkey_on_curr_termianl()
- *  DESCRIPTION: put one key on the current terminal we are looking at
- *  INPUTS: none
- *  OUTPUTS: put the cur_terminal
- *  RETURN VALUE: none
-*/
-void printkey_on_curr_terminal(uint8_t keystroke){
-    video_mem_map_linear();
-    putc(keystroke);
-    update_cursor(screen_x, screen_y);
-    video_mem_map_switch();
-}
-
-
-/* 
- * printf_on_curr_terminal()
- *  DESCRIPTION: put a string on the current terminal we are looking at
- *                 
- *  INPUTS: none
- *  OUTPUTS: put a string on the current terminal we are looking at   
- *  RETURN VALUE: none
-*/
-void printf_on_curr_terminal(int8_t* string){
-    video_mem_map_linear();
-    printf(string);
-    update_cursor(screen_x, screen_y);
-    video_mem_map_switch();
-}
 
 /* video_mem_map()
  * description: used for schedule, called in switch terminal
@@ -555,7 +530,8 @@ int32_t terminal_switch(terminal_t *terminal_next)
     send_eoi(KEYBARD_IRQ);
     if (terminal_next->terminal_id == cur_terminal_id)
     {
-        printf("Still in terminal <%d>",cur_terminal_id);
+        if (curr_task()->terminal->terminal_id == cur_terminal_id)
+            ONTO_DISPLAY_WRAP(printf_sche("Still in terminal <%d>",cur_terminal_id));
         return 0; 
     }
     
@@ -565,8 +541,8 @@ int32_t terminal_switch(terminal_t *terminal_next)
     /* set current terminal structure used by task.c */
     curr_terminal = terminal_next;
     cur_terminal_id = terminal_next->terminal_id;
-    pre_terminal->cursor_x = screen_x;
-    pre_terminal->cursor_y = screen_y;
+    // pre_terminal->cursor_x = screen_x;
+    // pre_terminal->cursor_y = screen_y;
     pre_terminal->character_num = char_num;
 
     cli();
@@ -578,20 +554,18 @@ int32_t terminal_switch(terminal_t *terminal_next)
     memcpy((void*)VIDEO_MEM_ADDR, (void*)terminal_next->page_addr,(uint32_t)VIDEO_MEM_SIZE);
     video_mem_map_switch();
 
-    update_cursor(terminal_next->cursor_x,terminal_next->cursor_y);
-    screen_x = terminal_next->cursor_x;
-    screen_y = terminal_next->cursor_y;
+    
+    // screen_x = terminal_next->cursor_x;
+    // screen_y = terminal_next->cursor_y;
     char_num = terminal_next->character_num;
-    /* change buffer content */
+    update_cursor(_terminal_dp[terminal_next->terminal_id-1].cursor_x
+                ,_terminal_dp[terminal_next->terminal_id-1].cursor_y);
+
     /* change buffer content */
     memcpy((void*)pre_terminal->keyboard_buf,kb_buf,kb_bufsize);
     memcpy((void*)kb_buf,terminal_next->keyboard_buf,kb_bufsize);
     
-
     sti();
-    
-
-    
     
     return 0;
 }
