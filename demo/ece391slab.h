@@ -7,7 +7,7 @@
 #include "ece391syscall.h"
 
 #define NULL 0
-#define MAX_ORDER_PAGE 5                  // max order of pages in the buddy system
+#define MAX_ORDER_PAGE 5                   // max order of pages in the buddy system
 #define MAX_NUM_PAGE (1 << MAX_ORDER_PAGE) // max num of pages in the buddy system
 #define SIZE_2KB 0x800
 #define MAX_NUM_NODE ((MAX_NUM_PAGE << 1) - 1) // 2047, max num of nodes in the buddy system
@@ -59,12 +59,12 @@ struct slab
     slab_t *next;       // next slab
     mem_cache_t *cache; // the cache manages this slab
     // slab_t *head; // the first slab
-    int32_t obj_size;                 // size of obj
-    int32_t off_slab_index;           // used if it is a off slab, -1 of on slab
-    int32_t total_num;                // num of total objs in this slab
-    int32_t free_num;                 // num of free objs in this slab
-    int32_t next_free_index;          // index of next free obj
-    void *obj_start;                  // start addr of objs
+    int32_t obj_size;                  // size of obj
+    int32_t off_slab_index;            // used if it is a off slab, -1 of on slab
+    int32_t total_num;                 // num of total objs in this slab
+    int32_t free_num;                  // num of free objs in this slab
+    int32_t next_free_index;           // index of next free obj
+    void *obj_start;                   // start addr of objs
     uint8_t free_id_list[MAX_NUM_OBJ]; // store the id of next free obj, -1 for using obj
 };
 
@@ -79,8 +79,8 @@ struct mem_cache
     int8_t page_order;  // the order of page managed by one slab
     int16_t obj_size;   // size of obj
     int16_t num_per_slab;
-    int16_t total_num;  // num of total objs in cache
-    int16_t free_num;   // num of free objs in cache
+    int16_t total_num; // num of total objs in cache
+    int16_t free_num;  // num of free objs in cache
     int32_t cache_id;
 };
 

@@ -31,12 +31,12 @@ int32_t memory_init()
         i++;
     }
     mem_sys.pt_for_bd = (PT_t *)(SIZE_4MB - (SIZE_4KB * num_pte));
-    printf("pt_for_bd:%#x\n",mem_sys.pt_for_bd);
+    printf("pt_for_bd:%#x\n", mem_sys.pt_for_bd);
     // memset(mem_sys.pt_for_bd, 0, (SIZE_4KB * num_pte));
     int32_t j;
-    for (j = 0; j < num_pte-PAGE_NUM_FOR_OFF_SLAB; j++)
+    for (j = 0; j < num_pte - PAGE_NUM_FOR_OFF_SLAB; j++)
     {
-        page_directory.pde[BASE_PD_INDEX+j] = (int32_t)(mem_sys.pt_for_bd+j) | 0x00000007; // set to 4KB mode, r/w, kernel, present
+        page_directory.pde[BASE_PD_INDEX + j] = (int32_t)(mem_sys.pt_for_bd + j) | 0x00000007; // set to 4KB mode, r/w, kernel, present
     }
     int32_t k;
     // set pages in buddy system to r/w, kernel, not present
@@ -64,6 +64,28 @@ int32_t memory_init()
     {
         cache_init(get_size(i + 4), i);
         cache_init(-1, i + (MAX_NUM_CACHE >> 1));
+    }
+    return 0;
+}
+
+int32_t memory_shrink()
+{
+    int32_t i;
+    for (i = 0; i < MAX_NUM_CACHE; i++)
+    {
+        if (mem_sys.cache_size_array[i] == -1)
+        {
+            continue;
+        }
+        cache_shrink(&mem_sys.cache_array[i]);
+    }
+    for (i = 0; i < MAX_NUM_CACHE; i++)
+    {
+        if (mem_sys.cache_size_array[i] == -1)
+        {
+            continue;
+        }
+        cache_display(&mem_sys.cache_array[i], i);
     }
     return 0;
 }
@@ -110,20 +132,25 @@ void *k_alloc(int32_t size, int32_t priv)
         ret_addr = cache_alloc(size, priv);
         if (ret_addr == NULL)
         {
-            ret_addr = bd_alloc(get_order(size/SIZE_4KB), priv);
+            ret_addr = bd_alloc(get_order(size / SIZE_4KB), priv);
         }
     }
     else
     {
-        ret_addr = bd_alloc(get_order(size/SIZE_4KB), priv);
+        ret_addr = bd_alloc(get_order(size / SIZE_4KB), priv);
     }
     return ret_addr;
 }
 
 int32_t k_free(void *addr)
 {
-    printf("k_free at %x\n", addr);
-    if (cache_free(addr) == -1 && bd_free(addr) == -1)
+    // printf("k_free at %x\n", addr);
+    int32_t ret = cache_free(addr);
+    if (ret == -2)
+    {
+        return -2;
+    }
+    if (ret == -1 && bd_free(addr) == -1)
     {
         printf("k_free fail\n");
         return -1;
@@ -209,7 +236,7 @@ void *bd_alloc(int8_t order, int32_t priv)
     {
         pte_addr->p = 1;
         pte_addr->u_s = priv;
-        pte_addr->r_w =1;
+        pte_addr->r_w = 1;
         // printf("pte: %#x    ",*pte_addr);
         // printf("pte_addr: %#x\n",pte_addr);
         pte_addr--;
@@ -383,7 +410,7 @@ int32_t find_unuse_off_slab()
     return -1;
 }
 
-int32_t slab_init(slab_t *new_slab, slab_t *next, mem_cache_t *cache, int32_t num_obj,int32_t obj_size, void *obj_start, int32_t off_slab_index)
+int32_t slab_init(slab_t *new_slab, slab_t *next, mem_cache_t *cache, int32_t num_obj, int32_t obj_size, void *obj_start, int32_t off_slab_index)
 {
     int32_t i;
     new_slab->next = next;
@@ -417,6 +444,7 @@ mem_cache_t *cache_init(int32_t obj_size, int32_t index)
         cache->slab_type = -1;
         cache->page_order = -1;
         cache->obj_size = -1;
+        cache->num_per_slab = -1;
         cache->total_num = -1;
         cache->free_num = -1;
         cache->cache_id = -1;
@@ -464,19 +492,20 @@ mem_cache_t *cache_init(int32_t obj_size, int32_t index)
             return NULL;
         }
         new_slab = &mem_sys.off_slab_array[off_slab_index];
-        slab_init(new_slab, NULL, cache, num_obj,obj_size, bd_alloc(curr_order, 1), off_slab_index);
+        slab_init(new_slab, NULL, cache, num_obj, obj_size, bd_alloc(curr_order, 1), off_slab_index);
         mem_sys.num_off_slab++;
     }
     else
     { // on slab
         new_slab = (slab_t *)bd_alloc(curr_order, 1);
-        slab_init(new_slab, NULL, cache, num_obj,obj_size, (void *)(new_slab + 1), -1);
+        slab_init(new_slab, NULL, cache, num_obj, obj_size, (void *)(new_slab + 1), -1);
     }
     // init cache
     cache->slabs_head = new_slab;
     cache->slab_type = slab_type;
     cache->page_order = curr_order;
     cache->obj_size = obj_size;
+    cache->num_per_slab = num_obj;
     cache->total_num = num_obj;
     cache->free_num = num_obj;
     cache->cache_id = index;
@@ -516,6 +545,7 @@ void *slab_get_obj(slab_t *slab)
 void *cache_alloc(int32_t size, int32_t priv)
 {
     int32_t i;
+    mem_cache_t *cache;
     int32_t good_size = SIZE_4KB;  // a good existing size which > given size
     int32_t good_index;            // the id of cache with good_size
     int32_t curr_size;             // curr size in loop
@@ -541,7 +571,8 @@ void *cache_alloc(int32_t size, int32_t priv)
     {
         if (first_free_index != -1)
         {
-            good_slab = cache_init(size, first_free_index)->slabs_head;
+            cache = cache_init(size, first_free_index);
+            good_slab = cache->slabs_head;
         }
     }
     // never create new slab or create fail
@@ -554,7 +585,7 @@ void *cache_alloc(int32_t size, int32_t priv)
         }
         // alloc in existing slab
         good_slab = mem_sys.cache_array[good_index].slabs_head;
-        mem_cache_t *cache = good_slab->cache;
+        cache = &mem_sys.cache_array[good_index];
         slab_t *prev_slab = NULL;
         // find avaliable slab
         while (good_slab != NULL && good_slab->free_num == 0)
@@ -606,7 +637,7 @@ int32_t cache_free(void *addr)
     { // in on slab, start is slab head
         slab = (slab_t *)start;
         // check if a vaild slab, if not, addr may not alloced by slab
-        if (slab->obj_start != start)
+        if (((slab_t *)slab->obj_start - 1) != (void *)start)
         {
             return -1;
         }
@@ -653,7 +684,7 @@ int32_t cache_shrink(mem_cache_t *cache)
             // free space
             if (slab_type == 1)
             { // off slab
-                slab_init(rm_slab, NULL, NULL, -1,-1, NULL, -1);
+                slab_init(rm_slab, NULL, NULL, -1, -1, NULL, -1);
                 mem_sys.num_off_slab--;
             }
             // for on slab, will be free directly since curr_slab==obj_start
@@ -680,16 +711,109 @@ slab_t *cache_grow(mem_cache_t *cache, slab_t *end_slab)
             return NULL;
         }
         new_slab = &mem_sys.off_slab_array[off_slab_index];
-        slab_init(new_slab, NULL, cache, end_slab->total_num,cache->obj_size, bd_alloc(cache->page_order, 1), off_slab_index);
+        slab_init(new_slab, NULL, cache, cache->num_per_slab, cache->obj_size, bd_alloc(cache->page_order, 1), off_slab_index);
         mem_sys.num_off_slab++;
     }
     else
     { // on slab
         new_slab = (slab_t *)bd_alloc(cache->page_order, 1);
-        slab_init(new_slab, NULL, cache, end_slab->total_num,cache->obj_size, (void *)(new_slab + 1), -1);
+        slab_init(new_slab, NULL, cache, cache->num_per_slab, cache->obj_size, (void *)(new_slab + 1), -1);
     }
-    end_slab->next = new_slab;
+    if (end_slab == NULL)
+    {
+        cache->slabs_head = new_slab;
+    }
+    else
+    {
+        end_slab->next = new_slab;
+    }
     cache->free_num += end_slab->total_num;
     cache->total_num += end_slab->total_num;
     return new_slab;
 };
+
+int32_t slab_display(slab_t *slab, int32_t index)
+{
+    // printf("----[slab %#x] ", slab);
+    if (slab->off_slab_index >= 0)
+    {
+        printf("OFF id %d |", slab->off_slab_index);
+    }
+    else
+    {
+        printf("ON type |");
+    }
+    printf("obj size %d |", slab->obj_size);
+    printf("# free %d/%d |", slab->free_num, slab->total_num);
+    printf("next free id %d |", slab->next_free_index);
+
+    // printf("cache %#x |", slab->cache);
+    printf("\n        ");
+    int32_t obj_index = 0;
+    for (obj_index = 0; obj_index < slab->total_num; obj_index++)
+    {
+        if (slab->free_id_list[obj_index] == MAX_NUM_OBJ)
+        {
+            printf("x");
+        }
+        else
+        {
+            // printf("_%d",slab->free_id_list[obj_index]);
+            printf("_");
+        }
+    }
+    printf("\n");
+    return 0;
+}
+
+int32_t cache_display(mem_cache_t *cache, int32_t index)
+{
+    if (index < 0)
+    {
+        printf("[cache] ");
+    }
+    else
+    {
+        printf("[cache %d] ", index);
+    }
+    if (cache->slab_type == 0)
+    {
+        printf("[ON] |");
+    }
+    else
+    {
+        printf("[OFF] |");
+    }
+    printf("slab size %d |", SIZE_4KB * get_size(cache->page_order));
+    printf("obj size %d |", cache->obj_size);
+    // printf("# obj %d |", cache->total_num);
+    printf("# free %d/%d |", cache->free_num, cache->total_num);
+    // printf("head %#x |", cache->slabs_head);
+    printf("\n        ");
+    slab_t *curr_slab = cache->slabs_head;
+    while (curr_slab != NULL)
+    {
+        if (curr_slab->free_num == 0)
+        {
+            printf("x");
+        }
+        else if (curr_slab->free_num == curr_slab->total_num)
+        {
+            printf("_");
+        }
+        else
+        {
+            printf("-");
+        }
+        curr_slab = curr_slab->next;
+    }
+    printf("\n");
+    curr_slab = cache->slabs_head;
+    int32_t slab_index = 0;
+    while (curr_slab != NULL)
+    {
+        slab_display(curr_slab, slab_index);
+        curr_slab = curr_slab->next;
+    }
+    return 0;
+}

@@ -20,9 +20,9 @@ int32_t main()
     init_buddy_sys(mem_sys.buddy_sys, MAX_ORDER_PAGE);
     // init first 8 caches with 16B, 32B, ... ,2KB, last 8 caches unused
     int32_t i;
-    for (i = 0; i < (MAX_NUM_CACHE ); i++)
+    for (i = 0; i < (MAX_NUM_CACHE); i++)
     {
-        mem_sys.cache_size_array[i]=-1;
+        mem_sys.cache_size_array[i] = -1;
         // cache_init(mem_sys, -1, i + (MAX_NUM_CACHE >> 1));
     }
     for (i = 0; i < (MAX_NUM_CACHE >> 3); i++)
@@ -32,7 +32,7 @@ int32_t main()
     }
     for (i = 0; i < (MAX_NUM_CACHE >> 3); i++)
     {
-        if (mem_sys.cache_size_array[i]==-1)
+        if (mem_sys.cache_size_array[i] == -1)
         {
             continue;
         }
@@ -40,7 +40,7 @@ int32_t main()
         // cache_init(mem_sys, -1, i + (MAX_NUM_CACHE >> 1));
     }
     // memory_init(&mem_sys);
-    //bd_display(mem_sys.buddy_sys);
+    // bd_display(mem_sys.buddy_sys);
     while (1)
     {
         // ece391_fdputs(1, (uint8_t *)"HELP: alloc <size>; free <addr>; size <addr index>; init <order>; exit\n");
@@ -77,11 +77,12 @@ int32_t main()
             args2 = parse_args(args1);
             num1 = (uint32_t)ece391_atoi(args1, 10);
             // print((uint8_t *)"num1: %d\n", num1);
-            if (args2==NULL)
+            if (args2 == NULL)
             {
                 print((uint8_t *)"allocate at: %#x\n", k_alloc(&mem_sys, num1));
             }
-            else{
+            else
+            {
                 for (num2 = (uint32_t)ece391_atoi(args2, 10); num2 > 0; num2--)
                 {
                     print((uint8_t *)"allocate at: %#x\n", k_alloc(&mem_sys, num1));
@@ -113,7 +114,6 @@ int32_t main()
     return 0;
 }
 
-
 int32_t memory_init(memory_system_t *mem_sys)
 {
     buddy_system_t buddy_sys;
@@ -125,9 +125,9 @@ int32_t memory_init(memory_system_t *mem_sys)
     init_buddy_sys(mem_sys->buddy_sys, MAX_ORDER_PAGE);
     // init first 8 caches with 16B, 32B, ... ,2KB, last 8 caches unused
     int32_t i;
-    for (i = 0; i < (MAX_NUM_CACHE ); i++)
+    for (i = 0; i < (MAX_NUM_CACHE); i++)
     {
-        mem_sys->cache_size_array[i]=-1;
+        mem_sys->cache_size_array[i] = -1;
         // cache_init(mem_sys, -1, i + (MAX_NUM_CACHE >> 1));
     }
     for (i = 0; i < (MAX_NUM_CACHE >> 3); i++)
@@ -146,17 +146,17 @@ int32_t memory_init(memory_system_t *mem_sys)
 int32_t memory_shrink(memory_system_t *mem_sys)
 {
     int32_t i;
-    for ( i = 0; i < MAX_NUM_CACHE; i++)
+    for (i = 0; i < MAX_NUM_CACHE; i++)
     {
-        if (mem_sys->cache_size_array[i]==-1)
+        if (mem_sys->cache_size_array[i] == -1)
         {
             continue;
         }
         cache_shrink(mem_sys, &mem_sys->cache_array[i]);
     }
-    for ( i = 0; i < MAX_NUM_CACHE; i++)
+    for (i = 0; i < MAX_NUM_CACHE; i++)
     {
-        if (mem_sys->cache_size_array[i]==-1)
+        if (mem_sys->cache_size_array[i] == -1)
         {
             continue;
         }
@@ -221,21 +221,19 @@ void *k_alloc(memory_system_t *mem_sys, int32_t size)
 int32_t k_free(memory_system_t *mem_sys, void *addr)
 {
     // print((uint8_t *)"k_free at %x\n", addr);
-    int32_t ret=cache_free(mem_sys, addr);
-    if (ret==-2)
+    int32_t ret = cache_free(mem_sys, addr);
+    if (ret == -2)
     {
         return -2;
     }
-    if ( ret == -1 && bd_free(mem_sys->buddy_sys, addr) == -1)
+    if (ret == -1 && bd_free(mem_sys->buddy_sys, addr) == -1)
     {
-        //print((uint8_t*)"k_free fail\n");
+        // print((uint8_t*)"k_free fail\n");
         return -1;
     }
-    //print((uint8_t*)"k_free succ\n");
+    // print((uint8_t*)"k_free succ\n");
     return 0;
 }
-
-
 
 buddy_system_t *init_buddy_sys(buddy_system_t *buddy_sys, int32_t order)
 {
@@ -537,21 +535,10 @@ int32_t find_unuse_off_slab(memory_system_t *mem_sys)
 
 int32_t slab_init(slab_t *new_slab, slab_t *next, mem_cache_t *cache, int32_t num_obj, int32_t obj_size, void *obj_start, int32_t off_slab_index)
 {
-    int32_t i;   
-    // int32_t* addr=0x40020000;
-    // print((uint8_t*)"slab_init %#x\n",*addr);
-    // *addr=10;
-    // print((uint8_t*)"slab_init %#x\n",*addr);
+    int32_t i;
     new_slab->next = next;
-    // print((uint8_t*)"slab_init %#x\n",new_slab->next);
-    // print((uint8_t*)"slab_init: cache %#x\n",cache);
-    // print((uint8_t*)"slab_init: new_slab->cache %#x\n",new_slab->cache);
     new_slab->cache = cache;
-    // print((uint8_t*)"slab_init: new_slab->cache %#x\n",new_slab->cache);
-    // print((uint8_t*)"slab_init: &new_slab->cache %#x\n\n",&new_slab->cache);
-    // print((uint8_t*)"slab_init %d\n",obj_size);
     new_slab->obj_size = obj_size;
-    // print((uint8_t*)"slab_init %d\n",new_slab->obj_size);
     new_slab->off_slab_index = off_slab_index;
     new_slab->total_num = num_obj;
     new_slab->free_num = num_obj;
@@ -573,17 +560,17 @@ mem_cache_t *cache_init(memory_system_t *mem_sys, int32_t obj_size, int32_t inde
     {
         return NULL;
     }
-    print((uint8_t*)"cache_init, %d, %d\n",obj_size,index);
+    print((uint8_t *)"cache_init, %d, %d\n", obj_size, index);
     mem_cache_t *cache = &mem_sys->cache_array[index];
-    //print((uint8_t*)"cache_init, %#x",cache);
-    // init as invaild
+    // print((uint8_t*)"cache_init, %#x",cache);
+    //  init as invaild
     if (obj_size <= 0)
     {
         cache->slabs_head = NULL;
         cache->slab_type = -1;
         cache->page_order = -1;
         cache->obj_size = -1;
-        cache->num_per_slab=-1;
+        cache->num_per_slab = -1;
         cache->total_num = -1;
         cache->free_num = -1;
         cache->cache_id = -1;
@@ -647,7 +634,7 @@ mem_cache_t *cache_init(memory_system_t *mem_sys, int32_t obj_size, int32_t inde
     cache->slab_type = slab_type;
     cache->page_order = curr_order;
     cache->obj_size = obj_size;
-    cache->num_per_slab=num_obj;
+    cache->num_per_slab = num_obj;
     cache->total_num = num_obj;
     cache->free_num = num_obj;
     cache->cache_id = index;
@@ -679,11 +666,11 @@ void *slab_get_obj(slab_t *slab)
     // print((uint8_t*)"slab_get_obj, %d \n",slab->next_free_index);
     uint8_t *ret_addr = (uint8_t *)slab->obj_start + slab->next_free_index * slab->obj_size;
     int32_t index;
-    // update next_free_index from free_id_list  
-    
-    index= slab->free_id_list[slab->next_free_index];
+    // update next_free_index from free_id_list
+
+    index = slab->free_id_list[slab->next_free_index];
     slab->free_id_list[slab->next_free_index] = MAX_NUM_OBJ; // mark as used
-    slab->next_free_index =index;
+    slab->next_free_index = index;
     slab->free_num--;
     slab->cache->free_num--;
     return (void *)ret_addr;
@@ -692,9 +679,9 @@ void *slab_get_obj(slab_t *slab)
 // size < SIZE_4KB
 void *cache_alloc(memory_system_t *mem_sys, int32_t size)
 {
-    //print((uint8_t*)"cache_alloc, %#x,%d \n",mem_sys,size);
+    // print((uint8_t*)"cache_alloc, %#x,%d \n",mem_sys,size);
     int32_t i;
-    mem_cache_t *cache ;
+    mem_cache_t *cache;
     int32_t good_size = SIZE_4KB;  // a good existing size which > given size
     int32_t good_index;            // the id of cache with good_size
     int32_t curr_size;             // curr size in loop
@@ -714,7 +701,7 @@ void *cache_alloc(memory_system_t *mem_sys, int32_t size)
             good_index = i;
         }
     }
-    
+
     slab_t *good_slab = NULL;
     // if size < 3/4 * good_size or size > all existing size, not good enough, try to create new cache
     if (((good_size - size) << 2) > good_size || good_size == SIZE_4KB)
@@ -722,7 +709,7 @@ void *cache_alloc(memory_system_t *mem_sys, int32_t size)
         // print((uint8_t*)"cache_alloc, create new cache \n");
         if (first_free_index != -1)
         {
-            cache=cache_init(mem_sys, size, first_free_index);
+            cache = cache_init(mem_sys, size, first_free_index);
             good_slab = cache->slabs_head;
             // print((uint8_t*)"cache_alloc, new slab %#x\n",good_slab);
         }
@@ -738,7 +725,7 @@ void *cache_alloc(memory_system_t *mem_sys, int32_t size)
         // alloc in existing slab
         // print((uint8_t*)"cache_alloc, good %d,%d \n",good_size,good_index);
         good_slab = mem_sys->cache_array[good_index].slabs_head;
-        cache= &mem_sys->cache_array[good_index];
+        cache = &mem_sys->cache_array[good_index];
         slab_t *prev_slab = NULL;
         // find avaliable slab
         while (good_slab != NULL && good_slab->free_num == 0)
@@ -750,7 +737,7 @@ void *cache_alloc(memory_system_t *mem_sys, int32_t size)
         if (good_slab == NULL)
         {
             // print((uint8_t*)"cache_alloc, cache grow \n");
-            good_slab = cache_grow(mem_sys,cache, prev_slab);
+            good_slab = cache_grow(mem_sys, cache, prev_slab);
         }
     }
     void *ret_val = slab_get_obj(good_slab);
@@ -796,7 +783,7 @@ int32_t cache_free(memory_system_t *mem_sys, void *addr)
         slab = (slab_t *)start;
         // print((uint8_t *)"cache_free: %#x, %#x\n", start, slab->obj_start);
         // check if a vaild slab, if not, addr may not alloced by slab
-        if (((slab_t *)slab->obj_start-1) != (void*)start)
+        if (((slab_t *)slab->obj_start - 1) != (void *)start)
         {
             return -1;
         }
@@ -806,7 +793,7 @@ int32_t cache_free(memory_system_t *mem_sys, void *addr)
         slab = &mem_sys->off_slab_array[i];
     }
     int32_t ret_val = slab_put_obj(slab, addr);
-    cache_display(slab->cache,-1);
+    cache_display(slab->cache, -1);
     return ret_val;
 }
 
@@ -880,11 +867,12 @@ slab_t *cache_grow(memory_system_t *mem_sys, mem_cache_t *cache, slab_t *end_sla
         new_slab = (slab_t *)bd_alloc(mem_sys->buddy_sys, cache->page_order);
         slab_init(new_slab, NULL, cache, cache->num_per_slab, cache->obj_size, (void *)(new_slab + 1), -1);
     }
-    if (end_slab==NULL)
+    if (end_slab == NULL)
     {
-        cache->slabs_head=new_slab;
+        cache->slabs_head = new_slab;
     }
-    else{
+    else
+    {
         end_slab->next = new_slab;
     }
     cache->free_num += cache->num_per_slab;
@@ -895,25 +883,25 @@ slab_t *cache_grow(memory_system_t *mem_sys, mem_cache_t *cache, slab_t *end_sla
 
 int32_t slab_display(slab_t *slab, int32_t index)
 {
-    print((uint8_t *)"----[slab %#x] ", slab);
-    // if (slab->off_slab_index >= 0)
-    // {
-    //     print((uint8_t *)"OFF id %d |", slab->off_slab_index);
-    // }
-    // else
-    // {
-    //     print((uint8_t *)"ON type |");
-    // }
+    // print((uint8_t *)"----[slab %#x] ", slab);
+    if (slab->off_slab_index >= 0)
+    {
+        print((uint8_t *)"OFF id %d |", slab->off_slab_index);
+    }
+    else
+    {
+        print((uint8_t *)"ON type |");
+    }
     print((uint8_t *)"obj size %d |", slab->obj_size);
     print((uint8_t *)"# free %d/%d |", slab->free_num, slab->total_num);
     print((uint8_t *)"next free id %d |", slab->next_free_index);
-    
+
     // print((uint8_t *)"cache %#x |", slab->cache);
     print((uint8_t *)"\n        ");
     int32_t obj_index = 0;
     for (obj_index = 0; obj_index < slab->total_num; obj_index++)
     {
-        if (slab->free_id_list[obj_index]==MAX_NUM_OBJ)
+        if (slab->free_id_list[obj_index] == MAX_NUM_OBJ)
         {
             print((uint8_t *)"x");
         }
@@ -948,7 +936,7 @@ int32_t cache_display(mem_cache_t *cache, int32_t index)
     print((uint8_t *)"slab size %d |", SIZE_4KB * get_size(cache->page_order));
     print((uint8_t *)"obj size %d |", cache->obj_size);
     // print((uint8_t *)"# obj %d |", cache->total_num);
-    print((uint8_t *)"# free %d/%d |", cache->free_num,cache->total_num);
+    print((uint8_t *)"# free %d/%d |", cache->free_num, cache->total_num);
     // print((uint8_t *)"head %#x |", cache->slabs_head);
     print((uint8_t *)"\n        ");
     slab_t *curr_slab = cache->slabs_head;
