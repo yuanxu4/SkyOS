@@ -18,6 +18,7 @@
 
 page_usage_array_t page_array; // manage pages
 static run_queue_t* run_queue_head;
+static uint32_t num_task_in_queue;
 
 extern void flush_TLB();   // defined in boot.S
 extern PCB_t *curr_task(); // defined in boot.
@@ -396,7 +397,7 @@ int32_t system_halt(uint8_t status)
 {
     cli();
     PCB_t *parent;
-    if (page_array.num_using == 0)
+    if (page_array.num_using == 0||(curr_terminal->num_task == 0))
     {
         printf("[INFO] nothing to halt\n");
         // system_execute((uint8_t *)"shell");
@@ -506,20 +507,33 @@ int32_t add_task_to_run_queue(PCB_t *new_task)
         run_queue_head = &(new_task->run_list_node);
         new_task->run_list_node.next = &(new_task->run_list_node);
         new_task->run_list_node.pre = &(new_task->run_list_node);
+        num_task_in_queue++;
     }
     else
     {
         if (new_task->parent != NULL)
         {
-            new_task->run_list_node.next = new_task->parent->run_list_node.next;
-            new_task->run_list_node.pre = new_task->parent->run_list_node.pre;
-            (new_task->run_list_node.pre)->next = &(new_task->run_list_node);
-            (new_task->run_list_node.next)->pre = &(new_task->run_list_node);
-            /* if old_task is the first */
-            if (run_queue_head == &(new_task->parent->run_list_node))
+            if (1 == num_task_in_queue)
             {
                 run_queue_head = &(new_task->run_list_node);
+                new_task->run_list_node.next = &(new_task->run_list_node);
+                new_task->run_list_node.pre = &(new_task->run_list_node);
             }
+            else
+            {
+                new_task->run_list_node.next = new_task->parent->run_list_node.next;
+                new_task->run_list_node.pre = new_task->parent->run_list_node.pre;
+                (new_task->run_list_node.pre)->next = &(new_task->run_list_node);
+                (new_task->run_list_node.next)->pre = &(new_task->run_list_node);
+
+                /* if old_task is the first */
+                if (run_queue_head == &(new_task->parent->run_list_node))
+                {
+                    run_queue_head = &(new_task->run_list_node);
+                }
+                num_task_in_queue++;
+            }
+            
         }
         else
         {
@@ -530,6 +544,7 @@ int32_t add_task_to_run_queue(PCB_t *new_task)
             new_task->run_list_node.next = run_queue_head;
             new_task->run_list_node.pre = last_node;
             run_queue_head = &(new_task->run_list_node);
+            num_task_in_queue++;
         }        
     }
     return 0;
@@ -541,9 +556,9 @@ int32_t remove_task_from_run_queue(PCB_t *new_task)
     {
         printf("[INFO]ERROR: NO task can be removed \n");
     }
-    else if (page_array.num_using == 1)     //only 1 in list
+    else if (num_task_in_queue == 1)     //only 1 in list
     {
-        run_queue_head = NULL;
+        run_queue_head = NULL;        
     }
     else
     {    
@@ -555,6 +570,7 @@ int32_t remove_task_from_run_queue(PCB_t *new_task)
             run_queue_head = new_task->run_list_node.next;
         }
     }
+    num_task_in_queue--;
     return 0;
 
 }

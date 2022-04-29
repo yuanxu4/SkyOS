@@ -158,7 +158,7 @@ void entry(unsigned long magic, unsigned long addr)
 
         tss.ldt_segment_selector = KERNEL_LDT;
         tss.ss0 = KERNEL_DS;
-        tss.esp0 = 0x7FD000;
+        tss.esp0 = 0x8000000;
         ltr(KERNEL_TSS);
     }
 
