@@ -51,6 +51,10 @@ struct PCB
     uint32_t ebp;
     uint32_t eip;
     uint32_t vidmap;     // to check whether the vidmap is create
+    uint32_t rtc_active;  //open --> rtc_active = 1, close --> rtc active = 0
+    volatile uint32_t rtc_counter; //when the counter == 0, set the flag = 1
+    uint32_t rtc_frequency;
+
     //uint32_t kernel_esp; // esp of this task in kernel
     // uint32_t flags;
     uint8_t *task_name; // process executable name
