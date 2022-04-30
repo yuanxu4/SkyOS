@@ -221,7 +221,9 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
  */
 int32_t system_execute(const uint8_t *command)
 {
+    
     cli();
+    
     dentry_t task_dentry; // copied task dentry
     uint8_t *args;        // arguments
     // int32_t page_id;      // new page id
@@ -245,6 +247,7 @@ int32_t system_execute(const uint8_t *command)
         }
     }
 
+    
     // get the dentry in fs
     if (read_dentry_by_name(command, &task_dentry) == -1)
     {
@@ -274,7 +277,16 @@ int32_t system_execute(const uint8_t *command)
         ONTO_DISPLAY_WRAP(printf_sche("terminal<1>\n"));
     }
     /* add to schedule run_queue */
-    add_task_to_run_queue(new_task); 
+    if (new_task->parent == NULL)
+    {
+        add_task_to_run_queue(new_task); 
+    }
+    else
+    {
+        remove_task_from_run_queue(new_task->parent);
+        add_task_to_run_queue(new_task);
+    }
+    
     video_mem_map_task(new_task);
     // Losd file into memory
     file_load(&task_dentry, (uint8_t *)TASK_VIR_ADDR + TASK_VIR_OFFSET);
@@ -410,12 +422,12 @@ int32_t system_halt(uint8_t status)
 
     /* remove current task from run_queue */
     remove_task_from_run_queue(curr_task());
-
+    curr_terminal->num_task--;
     // try to deactivate task, get parent task
     parent = deactivate_task(curr_task());
     if (parent == NULL)
     {
-        /* system_execute has contained add to queue */
+        /* system_execute has contained add to queue */        
         system_execute((uint8_t *)"shell");
     }
     else
@@ -507,46 +519,21 @@ int32_t add_task_to_run_queue(PCB_t *new_task)
         run_queue_head = &(new_task->run_list_node);
         new_task->run_list_node.next = &(new_task->run_list_node);
         new_task->run_list_node.pre = &(new_task->run_list_node);
-        num_task_in_queue++;
+
     }
     else
     {
-        if (new_task->parent != NULL)
-        {
-            if (1 == num_task_in_queue)
-            {
-                run_queue_head = &(new_task->run_list_node);
-                new_task->run_list_node.next = &(new_task->run_list_node);
-                new_task->run_list_node.pre = &(new_task->run_list_node);
-            }
-            else
-            {
-                new_task->run_list_node.next = new_task->parent->run_list_node.next;
-                new_task->run_list_node.pre = new_task->parent->run_list_node.pre;
-                (new_task->run_list_node.pre)->next = &(new_task->run_list_node);
-                (new_task->run_list_node.next)->pre = &(new_task->run_list_node);
-
-                /* if old_task is the first */
-                if (run_queue_head == &(new_task->parent->run_list_node))
-                {
-                    run_queue_head = &(new_task->run_list_node);
-                }
-                num_task_in_queue++;
-            }
-            
-        }
-        else
-        {
-            /* add to the head of running list */          
-            run_queue_t* last_node = run_queue_head->pre;
-            run_queue_head->pre =  &(new_task->run_list_node);
-            last_node->next = &(new_task->run_list_node);
-            new_task->run_list_node.next = run_queue_head;
-            new_task->run_list_node.pre = last_node;
-            run_queue_head = &(new_task->run_list_node);
-            num_task_in_queue++;
-        }        
+        
+        /* add to the head of running list */          
+        run_queue_t* last_node = run_queue_head->pre;
+        run_queue_head->pre =  &(new_task->run_list_node);
+        last_node->next = &(new_task->run_list_node);
+        new_task->run_list_node.next = run_queue_head;
+        new_task->run_list_node.pre = last_node;
+        run_queue_head = &(new_task->run_list_node);
+          
     }
+    num_task_in_queue++; 
     return 0;
 }
 
@@ -624,7 +611,7 @@ int32_t task_switch()
     }
     
     /* if only one task running */
-    if (curr_task()->run_list_node.next == &(curr_task()->run_list_node))
+    if ((curr_task()->run_list_node.next == &(curr_task()->run_list_node))||(num_task_in_queue == 1))
     {
         return 0;
     }

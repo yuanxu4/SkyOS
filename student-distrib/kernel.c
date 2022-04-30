@@ -206,7 +206,7 @@ void entry(unsigned long magic, unsigned long addr)
     // printf("terminal<1>\n");
     // system_execute((uint8_t *)"shell");
     start_task();
-    
+    printf("dgdbfv\n");
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile(".1: hlt; jmp .1;");
 }

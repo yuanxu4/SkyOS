@@ -530,17 +530,19 @@ int32_t terminal_switch(terminal_t *terminal_next)
     send_eoi(KEYBARD_IRQ);
     if (terminal_next->terminal_id == cur_terminal_id)
     {
-        if (curr_task()->terminal->terminal_id == cur_terminal_id)
-            ONTO_DISPLAY_WRAP(printf_sche("Still in terminal <%d>",cur_terminal_id));
+        ONTO_DISPLAY_WRAP(printf_sche("Still in terminal <%d>",cur_terminal_id));
         return 0; 
     }
     
-    if (page_array.num_using==MAX_NUM_TASK)
+    if (page_array.num_using == MAX_NUM_TASK)
     {
-        if (curr_task()->terminal->terminal_id == cur_terminal_id)
+        if (terminal_next->num_task == 0)
+        {
             ONTO_DISPLAY_WRAP(printf_sche("Already have 6 tasks! Cannot open terminal!"));
-        return 0;
+            return 0;
+        }
     }
+    
     
     terminal_t *pre_terminal = &(_terminal_dp[cur_terminal_id-1]);
     
@@ -571,6 +573,8 @@ int32_t terminal_switch(terminal_t *terminal_next)
     /* change buffer content */
     memcpy((void*)pre_terminal->keyboard_buf,kb_buf,kb_bufsize);
     memcpy((void*)kb_buf,terminal_next->keyboard_buf,kb_bufsize);
+
+    
     
     sti();
     
