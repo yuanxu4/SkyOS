@@ -535,6 +535,13 @@ int32_t terminal_switch(terminal_t *terminal_next)
         return 0; 
     }
     
+    if (page_array.num_using==MAX_NUM_TASK)
+    {
+        if (curr_task()->terminal->terminal_id == cur_terminal_id)
+            ONTO_DISPLAY_WRAP(printf_sche("Already have 6 tasks! Cannot open terminal!"));
+        return 0;
+    }
+    
     terminal_t *pre_terminal = &(_terminal_dp[cur_terminal_id-1]);
     
 

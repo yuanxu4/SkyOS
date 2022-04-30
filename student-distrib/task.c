@@ -26,8 +26,8 @@ extern uint32_t cur_terminal_id;
 extern terminal_t *curr_terminal;
 // extern PT_t kernel_pt;
 
-static int32_t add_task_to_run_queue(PCB_t *new_task);
-static int32_t remove_task_from_run_queue(PCB_t *new_task);
+int32_t add_task_to_run_queue(PCB_t *new_task);
+int32_t remove_task_from_run_queue(PCB_t *new_task);
 // extern  terminal_t *curr_terminal;
 
 // int32_t print_pcb(PCB_t *task)
@@ -616,6 +616,7 @@ int32_t task_switch()
     /* everytime switch task then remap */
     video_mem_map_task(next_task);
 
+    set_vidmap();
     if (curr_terminal->num_task == 0)
     {
         ONTO_DISPLAY_WRAP(printf_sche("terminal<%d>\n",cur_terminal_id));

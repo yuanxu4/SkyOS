@@ -88,5 +88,7 @@ int32_t sche_init();
 int32_t task_switch();
 int32_t video_mem_map_task(PCB_t *next_task);
 void start_task();
+int32_t add_task_to_run_queue(PCB_t *new_task);
+int32_t remove_task_from_run_queue(PCB_t *new_task);
 
 #endif // _TASK_H
