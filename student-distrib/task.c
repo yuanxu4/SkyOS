@@ -16,6 +16,10 @@
 
 page_usage_array_t page_array; // manage pages
 
+// inode array for pipeline
+uint32_t tem_inode_array[3] = {-1, -1, -1};
+uint32_t exist_inode_array[3] = {-1, -1, -1};
+
 extern void flush_TLB();   // defined in boot.S
 extern PCB_t *curr_task(); // defined in boot.S
 
@@ -164,6 +168,21 @@ PCB_t *get_task_ptr(int32_t id)
     return NULL;
 }
 
+uint8_t *skip_space(uint8_t *tep)
+{
+    while (*tep != '\0')
+    {
+        if (*tep == ' ')
+        {
+            tep++;
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
 /*
  * PCB_t *create_task(uint8_t *name, uint8_t *args)
  * create a new task
@@ -199,24 +218,14 @@ PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t cmd_type)
     new_task->vidmap = 0;
 
     init_file_array(&new_task->fd_array);
-    uint8_t *tep ;
-    int32_t ret;
+    uint8_t *tep;
     dentry_t file_dentry;
+    int32_t io_type = 0;
     switch (cmd_type)
     {
     case 1: // '>'
-        tep= args + 1;
-        while (*tep != '\0')
-        {
-            if (*tep == ' ')
-            {
-                tep++;
-            }
-            else
-            {
-                break;
-            }
-        }
+        tep = args + 1;
+        tep = skip_space(tep);
         dir_write(0, tep, MAX_LEN_FILE_NAME);
         if (0 == read_dentry_by_name((uint8_t *)tep, &file_dentry))
         {
@@ -229,18 +238,8 @@ PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t cmd_type)
         }
         break;
     case 2: // '>>'
-        tep= args + 2;
-        while (*tep != '\0')
-        {
-            if (*tep == ' ')
-            {
-                tep++;
-            }
-            else
-            {
-                break;
-            }
-        }    
+        tep = args + 2;
+        tep = skip_space(tep);
         dir_write(0, tep, MAX_LEN_FILE_NAME);
         if (0 == read_dentry_by_name((uint8_t *)tep, &file_dentry))
         {
@@ -254,6 +253,24 @@ PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t cmd_type)
         }
         break;
     case 3: // '|'
+        tep = args;
+        if (*tep == '|')
+        {
+            io_type = 1;
+        }
+        tep = skip_space(tep);
+
+        /* code */
+        break;
+    case 4: // '|'
+        tep = args;
+        int32_t io_type = 0;
+        if (*tep == '|')
+        {
+            io_type = 1;
+        }
+        tep = skip_space(tep);
+
         /* code */
         break;
     default:
@@ -311,11 +328,37 @@ int32_t system_execute(const uint8_t *command)
     // Check for executable
     if (!is_exe_file(&task_dentry))
     {
-        printf("[INFO] Cannot execute unexecutable file\n");
-        return -1;
+        if (cmd_type == 3)
+        {
+            exist_inode_array[0] = task_dentry.inode_num;
+            cmd_type = 4;
+            int32_t cmd_type1;
+            uint8_t *args1;
+            args1 = parse_args((uint8_t *)args, &cmd_type1);
+            if (read_dentry_by_name(args1, &task_dentry) == -1 || !is_exe_file(&task_dentry))
+            {
+                printf("[INFO] Cannot execute non-exist/unexecutable file\n");
+                return -1;
+            }
+            strcpy((int8_t *)name_array, (const int8_t *)args);
+            if (args1 != NULL)
+            {
+                // printf("%s\n", args);
+                strcpy((int8_t *)args_array, (const int8_t *)args1);
+            }
+            new_task = create_task(name_array, args_array, cmd_type);
+        }
+        else
+        {
+            printf("[INFO] Cannot execute unexecutable file\n");
+            return -1;
+        }
     }
-    // Create PCB, Set up paging
-    new_task = create_task(name_array, args_array, cmd_type);
+    else
+    {
+        // Create PCB, Set up paging
+        new_task = create_task(name_array, args_array, cmd_type);
+    }
     if (new_task == NULL)
     {
         printf("[INFO] Cannot execute more than %d programs!\n", MAX_NUM_TASK);

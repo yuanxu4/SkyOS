@@ -5,7 +5,7 @@
 
 extern uint32_t ece391_strlen(const uint8_t *s);
 extern void ece391_strcpy(uint8_t *dst, const uint8_t *src);
-extern void ece391_fdputs(int32_t fd, const uint8_t *s);
+extern int32_t ece391_fdputs(int32_t fd, const uint8_t *s);
 extern void ece391_fdputc(int32_t fd, const uint8_t *s);
 extern int32_t print(uint8_t *format, ...);
 extern int32_t ece391_strcmp(const uint8_t *s1, const uint8_t *s2);

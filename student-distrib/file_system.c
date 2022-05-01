@@ -786,6 +786,8 @@ int32_t write_data(uint32_t inode_num, uint32_t offset, uint8_t *buf, uint32_t l
             memcpy((uint8_t *)data_block, (const uint8_t *)buf, BLOCK_SIZE);
             diff_size -= BLOCK_SIZE;
             buf += BLOCK_SIZE;
+            inode->data_block_num[dt_blk_idx_in_inode] = data_block;
+            dt_blk_idx_in_inode++;
         }
         if (diff_size > 0)
         {
@@ -799,6 +801,8 @@ int32_t write_data(uint32_t inode_num, uint32_t offset, uint8_t *buf, uint32_t l
             memcpy((uint8_t *)data_block, (const uint8_t *)buf, diff_size);
             diff_size -= diff_size;
             buf += diff_size;
+            inode->data_block_num[dt_blk_idx_in_inode] = data_block;
+            dt_blk_idx_in_inode++;
         }
     }
     inode->length = new_file_len;
@@ -895,7 +899,7 @@ int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
     }
     // copy
     buf = strncpy((int8_t *)buf, (const int8_t *)(boot_block->dentries[dir->file_position].file_name), copy_size);
-    copy_size=MIN(copy_size, strlen(buf));
+    copy_size = MIN(copy_size, strlen(buf));
     curr_task()->fd_array.entries[fd].file_position++;
     return copy_size;
 }
@@ -934,6 +938,51 @@ int32_t dir_write(int32_t fd, const void *buf, int32_t nbytes)
     inodes[index].length = 0;
     PRINT("create new file at %d\n", index);
     return copy_size;
+}
+
+int32_t file_reset(uint32_t inode)
+{
+    uint32_t file_size = inodes[inode].length;
+    uint32_t file_size_align = ((file_size + BLOCK_SIZE - 1) >> 12) << 12;
+    uint32_t size_unreset = file_size_align;
+    uint32_t dt_blk_idx_in_inode = 0;
+    uint32_t size_single_reset;
+    uint32_t data_block;
+    while (size_unreset >= BLOCK_SIZE)
+    {
+        data_block = inodes[inode].data_block_num[dt_blk_idx_in_inode];
+        if (ADDR_or_ID(data_block))
+        { // addr
+            memset((uint8_t *)(data_block), 0, BLOCK_SIZE);
+            bd_free((void *)data_block);
+        }
+        else
+        {
+            memset((uint8_t *)&data_blocks[data_block], 0, BLOCK_SIZE);
+        }
+        size_unreset -= BLOCK_SIZE;
+        dt_blk_idx_in_inode++;
+    }
+    memset((uint8_t *)&inodes[inode], 0, BLOCK_SIZE);
+    return 0;
+}
+
+int32_t del_file(uint8_t *fname)
+{
+    dentry_t file_dentry;
+    inode_t *inode;
+    // need not to create to new file
+    if (-1 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
+    {
+        return -1;
+    }
+    if (file_dentry.inode_num < 0)
+    {
+        return -1;
+    }
+    boot_block->dir_count--;
+    file_reset(file_dentry.inode_num);
+    return 0;
 }
 
 // do not implement for now

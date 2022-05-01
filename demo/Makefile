@@ -2,7 +2,7 @@ CFLAGS += -g -Wall -nostdlib -ffreestanding
 LDFLAGS += -g -nostdlib -ffreestanding
 CC = gcc
 
-ALL: vim
+ALL: pingpong
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<

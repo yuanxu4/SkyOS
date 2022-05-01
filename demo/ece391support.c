@@ -21,9 +21,9 @@ void ece391_strcpy(uint8_t *dst, const uint8_t *src)
         ;
 }
 
-void ece391_fdputs(int32_t fd, const uint8_t *s)
+int32_t ece391_fdputs(int32_t fd, const uint8_t *s)
 {
-    (void)ece391_write(fd, s, ece391_strlen(s));
+    return ece391_write(fd, s, ece391_strlen(s));
 }
 
 void ece391_fdputc(int32_t fd, const uint8_t *s)
@@ -237,7 +237,7 @@ uint32_t ece391_atoi(uint8_t *buf, int32_t radix)
         return -1;
     }
     uint32_t old_radix = radix;
-    radix=1;
+    radix = 1;
     if (buf[0] == '0' && buf[1] == '\0')
     {
         return 0;
