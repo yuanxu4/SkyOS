@@ -58,8 +58,8 @@ extern page_usage_array_t page_array; // manage pages
 
 int32_t init_task_page_array();
 int32_t set_task_page();
-uint8_t *parse_args(uint8_t *command);
-PCB_t *create_task(uint8_t *name, uint8_t *args);
+uint8_t *parse_args(uint8_t *command, int32_t *type);
+PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t cmd_type);
 PCB_t *get_task_ptr(int32_t id);
 PCB_t *deactivate_task(PCB_t *task);
 int32_t deactivate_task_page(int32_t page_id);

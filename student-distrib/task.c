@@ -104,10 +104,11 @@ int32_t set_task_page()
  * Side Effects: change command
  * return value: the pointer to arguments
  */
-uint8_t *parse_args(uint8_t *command)
+uint8_t *parse_args(uint8_t *command, int32_t *type)
 {
     // printf("%s\n", command);
     uint8_t *args = NULL;
+    *type = 0;
     while (*command != '\0')
     {
         if (*command == ' ')
@@ -119,6 +120,20 @@ uint8_t *parse_args(uint8_t *command)
                 if (*args == ' ')
                 {
                     args++;
+                }
+                else if (*args == '>')
+                {
+                    *type = 1;
+                    if (*(args + 1) == '>')
+                    {
+                        *type = 2;
+                    }
+                    break;
+                }
+                else if (*args == '|')
+                {
+                    *type = 3;
+                    break;
                 }
                 else
                 {
@@ -158,7 +173,7 @@ PCB_t *get_task_ptr(int32_t id)
  * Side Effects:
  * return value: the pointer to the new task, NULL for failure
  */
-PCB_t *create_task(uint8_t *name, uint8_t *args)
+PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t cmd_type)
 {
     int32_t page_id; // new page id
     PCB_t *new_task; // new task
@@ -184,6 +199,54 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
     new_task->vidmap = 0;
 
     init_file_array(&new_task->fd_array);
+    uint8_t *tep = args + 1;
+    while (*tep != '\0')
+    {
+        if (*tep == ' ')
+        {
+            tep++;
+        }
+        else
+        {
+            break;
+        }
+    }
+    int32_t ret;
+    dentry_t file_dentry;
+    switch (cmd_type)
+    {
+    case 1: // '>'
+        dir_write(0, tep, MAX_LEN_FILE_NAME);
+        if (0 == read_dentry_by_name((uint8_t *)tep, &file_dentry))
+        {
+            set_entry(&new_task->fd_array, STDOUT_FD, 2);
+            new_task->fd_array.entries[STDOUT_FD].inode = file_dentry.inode_num;
+        }
+        else
+        {
+            printf("redirect fail\n");
+        }
+        break;
+    case 2: // '>>'
+        dir_write(0, tep, MAX_LEN_FILE_NAME);
+        if (0 == read_dentry_by_name((uint8_t *)tep, &file_dentry))
+        {
+            set_entry(&new_task->fd_array, STDOUT_FD, 2);
+            new_task->fd_array.entries[STDOUT_FD].inode = file_dentry.inode_num;
+            new_task->fd_array.entries[STDOUT_FD].file_position = get_file_size(file_dentry.inode_num);
+        }
+        else
+        {
+            printf("redirect fail\n");
+        }
+        break;
+    case 3: // '|'
+        /* code */
+        break;
+    default:
+        break;
+    }
+
     // if the only one task(shell)
     if (page_array.num_using == 1)
     {
@@ -209,6 +272,7 @@ int32_t system_execute(const uint8_t *command)
 {
     dentry_t task_dentry; // copied task dentry
     uint8_t *args;        // arguments
+    int32_t cmd_type;
     // int32_t page_id;      // new page id
     PCB_t *new_task; // new task
     uint32_t eip;
@@ -217,7 +281,7 @@ int32_t system_execute(const uint8_t *command)
     memset((void *)args_array, (int32_t) "\0", MAX_ARGS + 1);
     memset((void *)name_array, (int32_t) "\0", MAX_LEN_FILE_NAME + 1);
     // Parse args
-    args = parse_args((uint8_t *)command);
+    args = parse_args((uint8_t *)command, &cmd_type);
     // printf("%s\n", command);
     strcpy((int8_t *)name_array, (const int8_t *)command);
     if (args != NULL)
@@ -225,7 +289,6 @@ int32_t system_execute(const uint8_t *command)
         // printf("%s\n", args);
         strcpy((int8_t *)args_array, (const int8_t *)args);
     }
-
     // get the dentry in fs
     if (read_dentry_by_name(command, &task_dentry) == -1)
     {
@@ -239,7 +302,7 @@ int32_t system_execute(const uint8_t *command)
         return -1;
     }
     // Create PCB, Set up paging
-    new_task = create_task(name_array, args_array);
+    new_task = create_task(name_array, args_array, cmd_type);
     if (new_task == NULL)
     {
         printf("[INFO] Cannot execute more than %d programs!\n", MAX_NUM_TASK);
