@@ -51,8 +51,8 @@ int main ()
 
 		// Draw character
 		buf[j] = curchar;
-		ece391_fdputs (1, buf);
-
+		if (-1 == ece391_fdputs (1, buf))
+			return 3;
 		// Wait for RTC tick
 		ece391_read(rtc_fd, &garbage, 4);
 	}
@@ -68,7 +68,8 @@ int main ()
 
 		// Draw character
 		buf[j] = curchar;
-		ece391_fdputs (1, buf);
+		if (-1 == ece391_fdputs (1, buf))
+			return 3;
 
 		// Wait for RTC tick
 		ece391_read(rtc_fd, &garbage, 4);

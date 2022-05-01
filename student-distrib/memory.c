@@ -13,6 +13,7 @@ memory_system_t mem_sys;
 int32_t memory_init()
 {
     int32_t i = 1;
+    int32_t inc;
     int32_t num_pte = PAGE_NUM_FOR_OFF_SLAB;
     // set pte as present to store off slab
     while (num_pte >= i)
@@ -24,7 +25,8 @@ int32_t memory_init()
     // memset(mem_sys.off_slab_array, 0, (SIZE_4KB * num_pte));
     mem_sys.num_off_slab = 0;
     // set pte as present to store page table for pages in buddy system
-    num_pte += MAX_NUM_PAGE / PT_SIZE;
+    inc=max(MAX_NUM_PAGE / PT_SIZE, 1);
+    num_pte += inc;
     while (num_pte >= i)
     {
         page_table.pte[PT_SIZE - i] |= 1;
@@ -49,7 +51,8 @@ int32_t memory_init()
         pte_addr++;
     }
     // set entry as present to store buddy system struct
-    num_pte += (MAX_NUM_NODE + 1) / SIZE_4KB;
+    inc=max((MAX_NUM_NODE + 1) / SIZE_4KB / PT_SIZE, 1);
+    num_pte += inc;
     while (num_pte >= i)
     {
         page_table.pte[PT_SIZE - i] |= 1;
@@ -498,6 +501,10 @@ mem_cache_t *cache_init(int32_t obj_size, int32_t index)
     else
     { // on slab
         new_slab = (slab_t *)bd_alloc(curr_order, 1);
+        if (new_slab==NULL)
+        {
+            return NULL;
+        }
         slab_init(new_slab, NULL, cache, num_obj, obj_size, (void *)(new_slab + 1), -1);
     }
     // init cache

@@ -33,6 +33,7 @@
 #endif
 // get the min between a and b
 #define MIN(a, b) (a > b ? b : a)
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 // determine whether the num is an addr from buddysystem or index
 #define ADDR_or_ID(num) (num & BASE_ADDR_BD_SYS)
 
@@ -712,7 +713,7 @@ int32_t write_data(uint32_t inode_num, uint32_t offset, uint8_t *buf, uint32_t l
     if (size_single_copy == length)
     {
         inode->length = new_file_len;
-        PRINT("finish writing: file length: %d B\n", inode->length);
+        // PRINT("finish writing: file length: %d B\n", inode->length);
         return new_file_len;
     }
     buf += size_single_copy;
@@ -779,8 +780,8 @@ int32_t write_data(uint32_t inode_num, uint32_t offset, uint8_t *buf, uint32_t l
             if (data_block == 0)
             {
                 inode->length = new_file_len - diff_size;
-                PRINT("finish writing: file length: %d B, %d B unwriting\n", inode->length, diff_size);
-                return inode->length;
+                // PRINT("finish writing: file length: %d B, %d B unwriting\n", inode->length, diff_size);
+                return -1;
             }
             memcpy((uint8_t *)data_block, (const uint8_t *)buf, BLOCK_SIZE);
             diff_size -= BLOCK_SIZE;
@@ -792,8 +793,8 @@ int32_t write_data(uint32_t inode_num, uint32_t offset, uint8_t *buf, uint32_t l
             if (data_block == 0)
             {
                 inode->length = new_file_len - diff_size;
-                PRINT("finish writing: file length: %d B, %d B unwriting\n", inode->length, diff_size);
-                return inode->length;
+                // PRINT("finish writing: file length: %d B, %d B unwriting\n", inode->length, diff_size);
+                return -1;
             }
             memcpy((uint8_t *)data_block, (const uint8_t *)buf, diff_size);
             diff_size -= diff_size;
@@ -801,7 +802,7 @@ int32_t write_data(uint32_t inode_num, uint32_t offset, uint8_t *buf, uint32_t l
         }
     }
     inode->length = new_file_len;
-    PRINT("finish writing: file length: %d B, %d B unwriting\n", inode->length, diff_size);
+    // PRINT("finish writing: file length: %d B, %d B unwriting\n", inode->length, diff_size);
     return new_file_len;
 }
 
@@ -818,7 +819,7 @@ int32_t write_data(uint32_t inode_num, uint32_t offset, uint8_t *buf, uint32_t l
  */
 int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
 {
-    int32_t copy_size; // the size of copied data
+    int32_t new_size; // the size of copied data
     file_array_entry_t *file = &curr_task()->fd_array.entries[fd];
     // uint32_t offset = file->file_position; // current position in file
     // // if reach the end, restart
@@ -827,13 +828,11 @@ int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
     //     file->file_position = 0;
     // }
     // Place the data into buffer
-    copy_size = write_data(curr_task()->fd_array.entries[fd].inode, file->file_position, (uint8_t *)buf, nbytes);
+    new_size = write_data(curr_task()->fd_array.entries[fd].inode, file->file_position, (uint8_t *)buf, nbytes);
 
-    if (copy_size > 0)
-    {
-        file->file_position += copy_size;
-    }
-    return copy_size;
+    file->file_position = inodes[curr_task()->fd_array.entries[fd].inode].length;
+
+    return new_size;
 }
 
 // Operation of the directory
@@ -895,7 +894,8 @@ int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
         return 0;
     }
     // copy
-    strncpy((int8_t *)buf, (const int8_t *)(boot_block->dentries[dir->file_position].file_name), copy_size);
+    buf = strncpy((int8_t *)buf, (const int8_t *)(boot_block->dentries[dir->file_position].file_name), copy_size);
+    copy_size=MIN(copy_size, strlen(buf));
     curr_task()->fd_array.entries[fd].file_position++;
     return copy_size;
 }

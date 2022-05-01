@@ -199,23 +199,24 @@ PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t cmd_type)
     new_task->vidmap = 0;
 
     init_file_array(&new_task->fd_array);
-    uint8_t *tep = args + 1;
-    while (*tep != '\0')
-    {
-        if (*tep == ' ')
-        {
-            tep++;
-        }
-        else
-        {
-            break;
-        }
-    }
+    uint8_t *tep ;
     int32_t ret;
     dentry_t file_dentry;
     switch (cmd_type)
     {
     case 1: // '>'
+        tep= args + 1;
+        while (*tep != '\0')
+        {
+            if (*tep == ' ')
+            {
+                tep++;
+            }
+            else
+            {
+                break;
+            }
+        }
         dir_write(0, tep, MAX_LEN_FILE_NAME);
         if (0 == read_dentry_by_name((uint8_t *)tep, &file_dentry))
         {
@@ -228,6 +229,18 @@ PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t cmd_type)
         }
         break;
     case 2: // '>>'
+        tep= args + 2;
+        while (*tep != '\0')
+        {
+            if (*tep == ' ')
+            {
+                tep++;
+            }
+            else
+            {
+                break;
+            }
+        }    
         dir_write(0, tep, MAX_LEN_FILE_NAME);
         if (0 == read_dentry_by_name((uint8_t *)tep, &file_dentry))
         {
