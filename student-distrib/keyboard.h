@@ -42,9 +42,10 @@
 #define TERM1_ADDR  (0xB8000 + 1*VIDEO_MEM_SIZE)
 #define TERM2_ADDR  (0xB8000 + 2*VIDEO_MEM_SIZE)
 #define TERM3_ADDR  (0xB8000 + 3*VIDEO_MEM_SIZE) 
-#define TERMINAL_DIRECT_ADDR 0xb7000
-#define ONTO_DISPLAY_WRAP(code) {               \
-    video_mem = (char*) TERMINAL_DIRECT_ADDR;   \
+#define TERMINAL_ADDR 0xb7000
+
+#define ONTO_TERMINAL(code) {                   \
+    video_mem = (char*) TERMINAL_ADDR;          \
     code;                                       \
     video_mem = (char*) VIDEO;                  \
 }        

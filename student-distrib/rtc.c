@@ -90,6 +90,7 @@ void rtc_interrupt_handler() {
     //decrement the counter for active process with rtc open
     //if the counter == 0 set the flag into 1 means can return from the rtc read
     /* clear the flag */
+    cli();
     run_queue_t *temp = &(curr_task()->run_list_node);
     do{
         if(((PCB_t*)((uint32_t)(temp)&(0xFFFFE000)))->rtc_counter > 0){
@@ -100,6 +101,7 @@ void rtc_interrupt_handler() {
     
     rtc_reset_R3();  
     send_eoi(RTC_IRQ);
+    sti();
  
 }
  
@@ -135,9 +137,11 @@ void rtc_reset_R3() {
  */
 int32_t rtc_open(const uint8_t* filename) {
     /* start the rtc and set the frequency to 2hz*/
+    cli();
     curr_task()->rtc_active = 1;
     curr_task()->rtc_counter = 512;
     curr_task()->rtc_frequency = 512;
+    sti();
     return 0;
 }
  
@@ -181,6 +185,7 @@ int32_t rtc_read( int32_t fd, void* buf, int32_t nbytes ){
  * this is a very useful website 
  */
 int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes) {
+    cli();
     if(curr_task()->rtc_active == 0) {
         printf("please open the rtc first");
         return -1;
@@ -194,6 +199,7 @@ int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes) {
         return -1;
     /* frequency =  32768 >> (rate-1) */
     curr_task()->rtc_frequency = 1024/frequency;
+    sti();
     return 0;
 }
  

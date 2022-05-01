@@ -172,13 +172,13 @@ void put_changebuf(uint8_t output_char)
             if (kb_buf[char_num - 1] == '\t')
             { // delete all space if \t
                 
-                ONTO_DISPLAY_WRAP(putc_sche('\b'));
-                ONTO_DISPLAY_WRAP(putc_sche('\b'));
-                ONTO_DISPLAY_WRAP(putc_sche('\b'));
-                ONTO_DISPLAY_WRAP(putc_sche('\b'));
+                ONTO_TERMINAL(putc_sche('\b'));
+                ONTO_TERMINAL(putc_sche('\b'));
+                ONTO_TERMINAL(putc_sche('\b'));
+                ONTO_TERMINAL(putc_sche('\b'));
                 
             }else{
-                ONTO_DISPLAY_WRAP(putc_sche('\b'));             
+                ONTO_TERMINAL(putc_sche('\b'));             
             } 
             kb_buf[char_num - 1] = 0; // reset to 0
             char_num--;               // number of characters in buffer decrement         
@@ -189,7 +189,7 @@ void put_changebuf(uint8_t output_char)
         if (char_num < kb_bufsize - 1) //maximum char = 127
         {
             
-            ONTO_DISPLAY_WRAP(putc_sche(output_char));
+            ONTO_TERMINAL(putc_sche(output_char));
             char_num++;
             kb_buf[char_num - 1] = output_char;
         }
@@ -225,7 +225,7 @@ void scancode_output(uint8_t scancode)
         }
         char_num = 0;
                
-        ONTO_DISPLAY_WRAP(putc_sche('\n'));
+        ONTO_TERMINAL(putc_sche('\n'));
         curr_terminal->enter_flag = 1;
     }
 
@@ -530,7 +530,7 @@ int32_t terminal_switch(terminal_t *terminal_next)
     send_eoi(KEYBARD_IRQ);
     if (terminal_next->terminal_id == cur_terminal_id)
     {
-        ONTO_DISPLAY_WRAP(printf_sche("Still in terminal <%d>",cur_terminal_id));
+        ONTO_TERMINAL(printf_sche("Still in terminal <%d>",cur_terminal_id));
         return 0; 
     }
     
@@ -538,7 +538,7 @@ int32_t terminal_switch(terminal_t *terminal_next)
     {
         if (terminal_next->num_task == 0)
         {
-            ONTO_DISPLAY_WRAP(printf_sche("Already have 6 tasks! Cannot open terminal!"));
+            ONTO_TERMINAL(printf_sche("Already have 6 tasks! Cannot open terminal!"));
             return 0;
         }
     }

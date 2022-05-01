@@ -422,7 +422,7 @@ int32_t system_halt(uint8_t status)
 
     /* remove current task from run_queue */
     remove_task_from_run_queue(curr_task());
-    curr_terminal->num_task--;
+    curr_task()->terminal->num_task--;
     // try to deactivate task, get parent task
     parent = deactivate_task(curr_task());
     if (parent == NULL)
@@ -441,7 +441,7 @@ int32_t system_halt(uint8_t status)
     tss.esp0 = curr_task()->saved_esp;
     video_mem_map_task(parent);
     // restore stack and return valueo
-    sti();
+    // sti();
     asm volatile("         \n\
             movl %%edx, %%esp   \n\
             movl %%ecx, %%ebp   \n\
@@ -522,16 +522,14 @@ int32_t add_task_to_run_queue(PCB_t *new_task)
 
     }
     else
-    {
-        
+    {        
         /* add to the head of running list */          
         run_queue_t* last_node = run_queue_head->pre;
         run_queue_head->pre =  &(new_task->run_list_node);
         last_node->next = &(new_task->run_list_node);
         new_task->run_list_node.next = run_queue_head;
         new_task->run_list_node.pre = last_node;
-        run_queue_head = &(new_task->run_list_node);
-          
+        run_queue_head = &(new_task->run_list_node);          
     }
     num_task_in_queue++; 
     return 0;
