@@ -61,8 +61,8 @@ typedef struct boot_block
 // 4KB index node
 typedef struct inode
 {
-    uint32_t length; // the length of the file in Bytes
-    uint32_t data_block_num[NUM_DATA_BLOCK];
+    int32_t length; // the length of the file in Bytes
+    int32_t data_block_num[NUM_DATA_BLOCK];
     // only those blocks necessary to contain the specified size need be valid,
 } inode_t;
 

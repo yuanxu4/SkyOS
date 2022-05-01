@@ -6,7 +6,7 @@
 #include "paging.h"
 #include "lib.h"
 
-#define MAX_ORDER_PAGE 2                  // max order of pages in the buddy system
+#define MAX_ORDER_PAGE 11                  // max order of pages in the buddy system
 #define MAX_NUM_PAGE (1 << MAX_ORDER_PAGE) // max num of pages in the buddy system
 #define SIZE_2KB 0x800
 #define MAX_NUM_NODE ((MAX_NUM_PAGE << 1) - 1)    // 2047, max num of nodes in the buddy system

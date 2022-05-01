@@ -25,8 +25,8 @@ int32_t memory_init()
     // memset(mem_sys.off_slab_array, 0, (SIZE_4KB * num_pte));
     mem_sys.num_off_slab = 0;
     // set pte as present to store page table for pages in buddy system
-    inc = MAX_NUM_PAGE / PT_SIZE + 1;
-    num_pte += inc;
+    inc = MAX_NUM_PAGE / PT_SIZE;
+    num_pte += ++inc;
     while (num_pte >= i)
     {
         page_table.pte[PT_SIZE - i] |= 1;
@@ -51,8 +51,8 @@ int32_t memory_init()
         pte_addr++;
     }
     // set entry as present to store buddy system struct
-    inc = ((MAX_NUM_NODE + 1) / SIZE_4KB / PT_SIZE) + 1;
-    num_pte += inc;
+    inc = ((MAX_NUM_NODE + 1) / SIZE_4KB / PT_SIZE);
+    num_pte += ++inc;
     while (num_pte >= i)
     {
         page_table.pte[PT_SIZE - i] |= 1;
@@ -245,7 +245,7 @@ void *bd_alloc(int8_t order, int32_t priv)
         pte_addr--;
     }
     // return addr
-    // printf("bd_alloc at %#x, priv: %d\n", (offset * SIZE_4KB + BASE_ADDR_BD_SYS), priv);
+    printf("bd_alloc at %#x, priv: %d\n", (offset * SIZE_4KB + BASE_ADDR_BD_SYS), priv);
     return (void *)(offset * SIZE_4KB + BASE_ADDR_BD_SYS);
 }
 

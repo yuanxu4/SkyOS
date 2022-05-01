@@ -569,6 +569,11 @@ int32_t read_dentry_by_index(uint32_t index, dentry_t *dentry)
 int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length)
 {
     uint32_t file_size = inodes[inode].length;
+    if (file_size==0)
+    {
+        return 0;
+    }
+
     uint32_t size_uncopied = MIN((file_size - offset), length); // size to copy
     uint32_t dt_blk_idx_in_inode = offset / BLOCK_SIZE;         // index of data block in inode, init as the starting block
     uint32_t local_offset = offset % BLOCK_SIZE;                // offset in the data block
@@ -691,35 +696,42 @@ int32_t file_read(int32_t fd, void *buf, int32_t nbytes)
 int32_t write_data(uint32_t inode_num, uint32_t offset, uint8_t *buf, uint32_t length)
 {
     inode_t *inode = &inodes[inode_num];
-    uint32_t new_file_len = length + offset;
-    uint32_t file_len = inode->length;
+    uint32_t new_file_len = MIN((length + offset),NUM_DATA_BLOCK*BLOCK_SIZE);
+    int32_t file_len = inode->length;
+    // printf("try write %d, %d", length, file_len);
     uint32_t file_size_align = ((file_len + BLOCK_SIZE - 1) >> 12) << 12; // file_len align to 4KB
     uint32_t diff_size;
     uint32_t data_block;                                // value of data block in inode
     uint32_t dt_blk_idx_in_inode = offset / BLOCK_SIZE; // index of data block in inode, init as the starting block
     uint32_t local_offset = offset % BLOCK_SIZE;        // offset in the data block
-
-    // copy content in the starting block
-    uint32_t size_single_copy = MIN((BLOCK_SIZE - local_offset), length);
-    data_block = inode->data_block_num[dt_blk_idx_in_inode];
-    if (ADDR_or_ID(data_block))
-    { // addr
-        memcpy(((uint8_t *)data_block) + local_offset, buf, size_single_copy);
-    }
-    else
+    if (local_offset!=0)
     {
-        memcpy(((uint8_t *)&data_blocks[data_block]) + local_offset, buf, size_single_copy);
+        // copy content in the starting block
+        uint32_t size_single_copy = MIN((BLOCK_SIZE - local_offset), length);
+        data_block = inode->data_block_num[dt_blk_idx_in_inode];
+        if (ADDR_or_ID(data_block))
+        { // addr
+            memcpy(((uint8_t *)data_block) + local_offset, buf, size_single_copy);
+        }
+        else
+        {
+            memcpy(((uint8_t *)&data_blocks[data_block]) + local_offset, buf, size_single_copy);
+        }
+        if (size_single_copy == length)
+        {
+            inode->length = new_file_len;
+            // PRINT("finish writing: file length: %d B\n", inode->length);
+            return new_file_len;
+        }
+        buf += size_single_copy;
+        dt_blk_idx_in_inode++;
+        length = length + offset - dt_blk_idx_in_inode * BLOCK_SIZE;
+        file_size_align = file_size_align - dt_blk_idx_in_inode * BLOCK_SIZE;
     }
-    if (size_single_copy == length)
-    {
-        inode->length = new_file_len;
-        // PRINT("finish writing: file length: %d B\n", inode->length);
-        return new_file_len;
+    else{
+        length = length + offset - dt_blk_idx_in_inode * BLOCK_SIZE;
+        file_size_align = file_size_align - dt_blk_idx_in_inode * BLOCK_SIZE;
     }
-    buf += size_single_copy;
-    dt_blk_idx_in_inode++;
-    length = length + offset - dt_blk_idx_in_inode * BLOCK_SIZE;
-    file_size_align = file_size_align - dt_blk_idx_in_inode * BLOCK_SIZE;
 
     if (file_size_align >= length)
     {
@@ -831,6 +843,12 @@ int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
     // {
     //     file->file_position = 0;
     // }
+    uint32_t new_file_len= MIN(file->file_position+nbytes,NUM_DATA_BLOCK*BLOCK_SIZE);
+    nbytes=new_file_len- file->file_position;
+    if (file->file_position>=NUM_DATA_BLOCK*BLOCK_SIZE)
+    {
+        return -1;
+    }
     // Place the data into buffer
     new_size = write_data(curr_task()->fd_array.entries[fd].inode, file->file_position, (uint8_t *)buf, nbytes);
 
@@ -934,8 +952,8 @@ int32_t dir_write(int32_t fd, const void *buf, int32_t nbytes)
     strncpy((int8_t *)(boot_block->dentries[index].file_name), (const int8_t *)buf, copy_size);
     boot_block->dentries[index].file_type = 2;
     boot_block->dentries[index].inode_num = index;
-    // memset((uint8_t *)&inodes[index], -1, SIZE_4KB);
-    inodes[index].length = 0;
+    memset((uint8_t *)&inodes[index], -1, SIZE_4KB);
+    inodes[index].length = -1;
     PRINT("create new file at %d\n", index);
     return copy_size;
 }

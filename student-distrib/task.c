@@ -181,6 +181,7 @@ uint8_t *skip_space(uint8_t *tep)
             break;
         }
     }
+    return tep;
 }
 
 /*
