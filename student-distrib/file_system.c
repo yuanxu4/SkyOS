@@ -671,11 +671,7 @@ int32_t file_read(int32_t fd, void *buf, int32_t nbytes)
     int32_t copy_size; // the size of copied data
     file_array_entry_t *file = &curr_task()->fd_array.entries[fd];
     // uint32_t offset = file->file_position; // current position in file
-    // if reach the end, restart
-    if (file->file_position == inodes[file->inode].length)
-    {
-        file->file_position = 0;
-    }
+
     // Place the data into buffer
     copy_size = read_data(curr_task()->fd_array.entries[fd].inode, file->file_position, (uint8_t *)buf, nbytes);
 
@@ -683,6 +679,11 @@ int32_t file_read(int32_t fd, void *buf, int32_t nbytes)
     {
         file->file_position += copy_size;
     }
+    //     // if reach the end, restart
+    // if (file->file_position == inodes[file->inode].length)
+    // {
+    //     file->file_position = 0;
+    // }
     return copy_size;
 }
 
@@ -889,9 +890,9 @@ int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
     int32_t copy_size = MIN(nbytes, MAX_LEN_FILE_NAME); // size to copy
     if (dir->file_position >= boot_block->dir_count)
     {
-        dir->file_position = 0;
+        // dir->file_position = 0;
         // PRINT("\nread nothing in directory. reach to the end\n");
-        // return 0;
+        return 0;
     }
     // copy
     strncpy((int8_t *)buf, (const int8_t *)(boot_block->dentries[dir->file_position].file_name), copy_size);

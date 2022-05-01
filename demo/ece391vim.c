@@ -144,7 +144,7 @@ int main()
 
 int32_t file_disp(int32_t fd)
 {
-    int32_t cnt, tmp, s_len;
+    int32_t tmp;
     uint8_t data[BUFSIZE + 1];
     do
     {

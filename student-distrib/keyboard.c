@@ -331,13 +331,26 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
             return nbytes;
         }
     }
-
-    /* add NULL to the bytes we not require */
-    while (nbytes > copied)
+    if ('\n' == *from)
     {
-        *to++ = '\0';
-        copied++;
+        *to++ = *from++;
+        if (++copied == nbytes)
+        {
+            /* clear kb_board buffer value */
+            for (i = 0; i < kb_bufsize; i++)
+            {
+                kb_buf[i] = 0;
+            }
+            copy_flag = 0;
+            return nbytes;
+        }
     }
+    // /* add NULL to the bytes we not require */
+    // while (nbytes > copied)
+    // {
+    //     *to++ = '\0';
+    //     copied++;
+    // }
     /* clear kb_board buffer value */
     for (i = 0; i < kb_bufsize; i++)
     {
