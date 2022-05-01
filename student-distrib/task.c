@@ -274,7 +274,7 @@ int32_t system_execute(const uint8_t *command)
     new_task->terminal = curr_terminal;
     if (page_array.num_using == 1)
     {
-        ONTO_DISPLAY_WRAP(printf_sche("terminal<1>\n"));
+        ONTO_TERMINAL(printf_sche("terminal<1>\n"));
     }
     /* add to schedule run_queue */
     if (new_task->parent == NULL)
@@ -604,7 +604,7 @@ int32_t task_switch()
     set_vidmap();
     if (curr_terminal->num_task == 0)
     {
-        ONTO_DISPLAY_WRAP(printf_sche("terminal<%d>\n",cur_terminal_id));
+        ONTO_TERMINAL(printf_sche("terminal<%d>\n",cur_terminal_id));
         system_execute((uint8_t *)"shell");
     }
     
