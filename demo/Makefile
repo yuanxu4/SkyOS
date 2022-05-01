@@ -2,7 +2,7 @@ CFLAGS += -g -Wall -nostdlib -ffreestanding
 LDFLAGS += -g -nostdlib -ffreestanding
 CC = gcc
 
-ALL: buddy slab
+ALL: vim
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<

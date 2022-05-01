@@ -305,7 +305,7 @@ int32_t file_sys_open(const uint8_t *filename)
     // return != 0, fail to find the file
     if (read_dentry_by_name(filename, &copied_dentry))
     {
-        PRINT("fail to open %s: non-existent file.\n", filename);
+        // PRINT("fail to open %s: non-existent file.\n", filename);
         return -1;
     }
     // unknown file type, should never happen correctly
@@ -335,12 +335,12 @@ int32_t file_sys_open(const uint8_t *filename)
  */
 int32_t file_sys_close(int32_t fd)
 {
-    // fd is invalid
-    if (fd == 0 || fd == 1)
-    {
-        PRINT("fail to close: cannot close stdin/stdout\n");
-        return -1;
-    }
+    // // fd is invalid
+    // if (fd == 0 || fd == 1)
+    // {
+    //     PRINT("fail to close: cannot close stdin/stdout\n");
+    //     return -1;
+    // }
     if (fd < 0 || fd >= MAX_NUM_OPEN)
     {
         PRINT("fail to close file: invaild file descriptor %d\n", fd);
@@ -571,7 +571,7 @@ int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length
     uint32_t size_uncopied = MIN((file_size - offset), length); // size to copy
     uint32_t dt_blk_idx_in_inode = offset / BLOCK_SIZE;         // index of data block in inode, init as the starting block
     uint32_t local_offset = offset % BLOCK_SIZE;                // offset in the data block
-    int32_t size_single_copy;                                   // copied size
+    uint32_t size_single_copy;                                  // copied size
     uint32_t data_block;                                        // value of data block in inode
 
     // copy content in the starting block
@@ -670,47 +670,59 @@ int32_t file_read(int32_t fd, void *buf, int32_t nbytes)
 {
     int32_t copy_size; // the size of copied data
     file_array_entry_t *file = &curr_task()->fd_array.entries[fd];
-    uint32_t offset = file->file_position; // current position in file
-
+    // uint32_t offset = file->file_position; // current position in file
+    // if reach the end, restart
+    if (file->file_position == inodes[file->inode].length)
+    {
+        file->file_position = 0;
+    }
     // Place the data into buffer
-    copy_size = read_data(curr_task()->fd_array.entries[fd].inode, offset, (uint8_t *)buf, nbytes);
+    copy_size = read_data(curr_task()->fd_array.entries[fd].inode, file->file_position, (uint8_t *)buf, nbytes);
 
     if (copy_size > 0)
     {
         file->file_position += copy_size;
-        // // if reach the end, restart
-        // if (file->file_position == inodes[file->inode].length)
-        // {
-        //     file->file_position = 0;
-        // }
     }
     return copy_size;
 }
 
-/*
- * nt32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
- * try to write data from a regular file to buf(do nothing since read only)
- * Inputs:  fd -- The file descriptor of the file to write
- *          buf -- The buffer storing data
- *          nbytes -- The number of bytes to write
- * Outputs: None
- * Side Effects: none
- * return value: 0 for success, -1 for failure
- *
- */
-int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
+int32_t write_data(uint32_t inode_num, uint32_t offset, uint8_t *buf, uint32_t length)
 {
-    inode_t *inode = &inodes[curr_task()->fd_array.entries[fd].inode];
-    uint32_t new_file_len = nbytes;
+    inode_t *inode = &inodes[inode_num];
+    uint32_t new_file_len = length + offset;
     uint32_t file_len = inode->length;
-    uint32_t file_size_align = ((file_len + BLOCK_SIZE - 1) >> 12) << 12; // size rewrote, should be file_len align to 4KB
+    uint32_t file_size_align = ((file_len + BLOCK_SIZE - 1) >> 12) << 12; // file_len align to 4KB
     uint32_t diff_size;
-    uint32_t data_block;              // value of data block in inode
-    uint32_t dt_blk_idx_in_inode = 0; // index of data block in inode
-    if (file_size_align >= nbytes)
+    uint32_t data_block;                                // value of data block in inode
+    uint32_t dt_blk_idx_in_inode = offset / BLOCK_SIZE; // index of data block in inode, init as the starting block
+    uint32_t local_offset = offset % BLOCK_SIZE;        // offset in the data block
+
+    // copy content in the starting block
+    uint32_t size_single_copy = MIN((BLOCK_SIZE - local_offset), length);
+    data_block = inode->data_block_num[dt_blk_idx_in_inode];
+    if (ADDR_or_ID(data_block))
+    { // addr
+        memcpy(((uint8_t *)data_block) + local_offset, buf, size_single_copy);
+    }
+    else
     {
-        diff_size = file_size_align - nbytes; // size to clear
-        while (nbytes >= BLOCK_SIZE)
+        memcpy(((uint8_t *)&data_blocks[data_block]) + local_offset, buf, size_single_copy);
+    }
+    if (size_single_copy == length)
+    {
+        inode->length = new_file_len;
+        PRINT("finish writing: file length: %d B\n", inode->length);
+        return new_file_len;
+    }
+    buf += size_single_copy;
+    dt_blk_idx_in_inode++;
+    length = length + offset - dt_blk_idx_in_inode * BLOCK_SIZE;
+    file_size_align = file_size_align - dt_blk_idx_in_inode * BLOCK_SIZE;
+
+    if (file_size_align >= length)
+    {
+        diff_size = file_size_align - length; // size to clear
+        while (length >= BLOCK_SIZE)
         {
             data_block = inode->data_block_num[dt_blk_idx_in_inode];
             if (ADDR_or_ID(data_block))
@@ -721,30 +733,30 @@ int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
             {
                 memcpy((uint8_t *)&data_blocks[data_block], (const uint8_t *)buf, BLOCK_SIZE);
             }
-            nbytes -= BLOCK_SIZE;
+            length -= BLOCK_SIZE;
             buf += BLOCK_SIZE;
             dt_blk_idx_in_inode++;
         }
-        if (nbytes > 0)
+        if (length > 0)
         {
             data_block = inode->data_block_num[dt_blk_idx_in_inode];
             if (ADDR_or_ID(data_block))
             {
-                memcpy((uint8_t *)data_block, (const uint8_t *)buf, nbytes);
-                memset((uint8_t *)(data_block + nbytes), 0, BLOCK_SIZE - nbytes);
+                memcpy((uint8_t *)data_block, (const uint8_t *)buf, length);
+                memset((uint8_t *)(data_block + length), 0, BLOCK_SIZE - length);
             }
             else
             {
-                memcpy((uint8_t *)&data_blocks[data_block], (const uint8_t *)buf, nbytes);
-                memset((uint8_t *)&data_blocks[data_block] + nbytes, 0, BLOCK_SIZE - nbytes);
+                memcpy((uint8_t *)&data_blocks[data_block], (const uint8_t *)buf, length);
+                memset((uint8_t *)&data_blocks[data_block] + length, 0, BLOCK_SIZE - length);
             }
-            nbytes -= nbytes;
-            buf += nbytes;
+            length -= length;
+            buf += length;
         }
     }
     else // will alloc
     {
-        diff_size = nbytes - file_size_align; // size to alloc
+        diff_size = length - file_size_align; // size to alloc
         while (file_size_align >= BLOCK_SIZE)
         {
             data_block = inode->data_block_num[dt_blk_idx_in_inode];
@@ -762,7 +774,7 @@ int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
         }
         while (diff_size >= BLOCK_SIZE)
         {
-            data_block = (uint32_t)bd_alloc(0,0); // alloc 1 pages i.e., 1 datablock
+            data_block = (uint32_t)bd_alloc(0, 0); // alloc 1 pages i.e., 1 datablock
             if (data_block == 0)
             {
                 inode->length = new_file_len - diff_size;
@@ -775,7 +787,7 @@ int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
         }
         if (diff_size > 0)
         {
-            data_block = (uint32_t)bd_alloc(0,0); // alloc 1 pages i.e., 1 datablock
+            data_block = (uint32_t)bd_alloc(0, 0); // alloc 1 pages i.e., 1 datablock
             if (data_block == 0)
             {
                 inode->length = new_file_len - diff_size;
@@ -790,6 +802,37 @@ int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
     inode->length = new_file_len;
     PRINT("finish writing: file length: %d B, %d B unwriting\n", inode->length, diff_size);
     return new_file_len;
+}
+
+/*
+ * nt32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
+ * try to write data from a regular file to buf(do nothing since read only)
+ * Inputs:  fd -- The file descriptor of the file to write
+ *          buf -- The buffer storing data
+ *          nbytes -- The number of bytes to write
+ * Outputs: None
+ * Side Effects: none
+ * return value: 0 for success, -1 for failure
+ *
+ */
+int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
+{
+    int32_t copy_size; // the size of copied data
+    file_array_entry_t *file = &curr_task()->fd_array.entries[fd];
+    // uint32_t offset = file->file_position; // current position in file
+    // // if reach the end, restart
+    // if (file->file_position == inodes[file->inode].length)
+    // {
+    //     file->file_position = 0;
+    // }
+    // Place the data into buffer
+    copy_size = write_data(curr_task()->fd_array.entries[fd].inode, file->file_position, (uint8_t *)buf, nbytes);
+
+    if (copy_size > 0)
+    {
+        file->file_position += copy_size;
+    }
+    return copy_size;
 }
 
 // Operation of the directory
@@ -841,15 +884,17 @@ int32_t dir_close(int32_t fd)
  */
 int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
 {
-    uint32_t pst = curr_task()->fd_array.entries[fd].file_position; // position in directory
-    int32_t copy_size = MIN(nbytes, MAX_LEN_FILE_NAME);             // size to copy
-    if (pst >= boot_block->dir_count)
+    file_array_entry_t *dir = &curr_task()->fd_array.entries[fd];
+    // uint32_t pst = dir->file_position;                  // position in directory
+    int32_t copy_size = MIN(nbytes, MAX_LEN_FILE_NAME); // size to copy
+    if (dir->file_position >= boot_block->dir_count)
     {
+        dir->file_position = 0;
         // PRINT("\nread nothing in directory. reach to the end\n");
-        return 0;
+        // return 0;
     }
     // copy
-    strncpy((int8_t *)buf, (const int8_t *)(boot_block->dentries[pst].file_name), copy_size);
+    strncpy((int8_t *)buf, (const int8_t *)(boot_block->dentries[dir->file_position].file_name), copy_size);
     curr_task()->fd_array.entries[fd].file_position++;
     return copy_size;
 }
@@ -867,6 +912,12 @@ int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
  */
 int32_t dir_write(int32_t fd, const void *buf, int32_t nbytes)
 {
+    dentry_t file_dentry;
+    // need not to create to new file
+    if (0 == read_dentry_by_name((uint8_t *)buf, &file_dentry))
+    {
+        return 0;
+    }
     if (boot_block->dir_count >= NUM_DIR_ENTRY)
     {
         PRINT("fail to write . reach max num of file\n");

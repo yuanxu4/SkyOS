@@ -311,4 +311,4 @@ uint8_t *parse_args(uint8_t *command)
     return args;
 }
 
-#endif /* ECE391SYSCALL_H */
+#endif /* ECE391BUDDY_H */

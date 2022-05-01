@@ -114,6 +114,17 @@ uint8_t *parse_args(uint8_t *command)
         {
             *command = '\0';    // terminate cmd, only store the exe file name
             args = command + 1; // output args string
+            while (*args != '\0')
+            {
+                if (*args == ' ')
+                {
+                    args++;
+                }
+                else
+                {
+                    break;
+                }
+            }
             break;
         }
         command++;
@@ -203,8 +214,8 @@ int32_t system_execute(const uint8_t *command)
     uint32_t eip;
     uint8_t args_array[MAX_ARGS + 1];
     uint8_t name_array[MAX_LEN_FILE_NAME + 1];
-    memset((void*)args_array, (int32_t)"\0", MAX_ARGS + 1);
-    memset((void*)name_array, (int32_t)"\0", MAX_LEN_FILE_NAME + 1);
+    memset((void *)args_array, (int32_t) "\0", MAX_ARGS + 1);
+    memset((void *)name_array, (int32_t) "\0", MAX_LEN_FILE_NAME + 1);
     // Parse args
     args = parse_args((uint8_t *)command);
     // printf("%s\n", command);
@@ -268,6 +279,8 @@ int32_t system_execute(const uint8_t *command)
                  :
                  : "a"(USER_DS), "b"(USER_EBP), "c"(USER_CS), "d"(eip)
                  : "memory");
+    // before return, check for pipeline
+
     return 0;
 }
 
@@ -358,7 +371,8 @@ int32_t system_halt(uint8_t status)
         // system_execute((uint8_t *)"shell");
         return -1;
     }
-    if(curr_task()->vidmap == 1) {
+    if (curr_task()->vidmap == 1)
+    {
         PDE_4KB_t *user_vid_pde = (PDE_4KB_t *)(&page_directory.pde[VID_PAGE_INDEX]);
         clear_PDE_4KB(user_vid_pde);
     }
