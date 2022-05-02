@@ -4,6 +4,7 @@
         "x86_desc.h": "c",
         "lib.h": "c",
         "i8259.h": "c",
-        "pit.h": "c"
+        "pit.h": "c",
+        "vidmem.h": "c"
     }
 }

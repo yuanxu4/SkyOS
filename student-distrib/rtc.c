@@ -75,7 +75,7 @@ void rtc_init() {
     outb(RTC_REGISTER_A, RTC_INDEX_PORT);   // set the index of register A
     prev = inb(RTC_DATA_PORT);              // get the value of register A
     outb(RTC_REGISTER_A, RTC_INDEX_PORT);   // reset the index
-    outb((prev & 0xF0) | RTC_RATE_1024, RTC_DATA_PORT); // set the rate to the 2HZ
+    outb((prev & 0xF0) | RTC_RATE_1024, RTC_DATA_PORT); // set the rate to the 1024HZ
     restore_flags(flags);
     
 }

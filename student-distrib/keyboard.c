@@ -11,6 +11,7 @@
 #include "paging.h"
 #include "types.h"
 #include "x86_desc.h"
+#include "vidmem.h"
 
 /* keyboard buffer */
 static uint8_t kb_buf[kb_bufsize];
@@ -220,7 +221,7 @@ void scancode_output(uint8_t scancode)
     uint8_t output_char;
 
     /* press Enter */
-    if (scancode == ENTER && (curr_terminal->enter_flag == 0))
+    if (scancode == ENTER && (curr_terminal->enter_flag == 0)&&(curr_terminal->buf_flag == 1))
     {
         /* clean all the numbers we count */
         if (char_num <= kb_bufsize-1)   //maximum char number are 127
@@ -582,6 +583,8 @@ int32_t terminal_switch(terminal_t *terminal_next)
     /* copying next video page buffer content to video memory  */
     memcpy((void*)VIDEO_MEM_ADDR, (void*)terminal_next->page_addr,(uint32_t)VIDEO_MEM_SIZE);
     video_mem_map_switch();
+    set_vidmap();
+    
 
     
     // screen_x = terminal_next->cursor_x;
