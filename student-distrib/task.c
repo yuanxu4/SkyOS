@@ -17,8 +17,12 @@
 page_usage_array_t page_array; // manage pages
 
 // inode array for pipeline
-uint32_t tem_inode_array[3] = {-1, -1, -1};
+// char *tem_in_array[3] = {"in1.txt", "in2.txt", "in3.txt"};
+char *tem_out_array[3] = {"out1.txt", "out2.txt", "out3.txt"};
+// uint32_t tem_in_inode_array[3] = {-1, -1, -1};
+uint32_t tem_out_inode_array[3] = {-1, -1, -1};
 uint32_t exist_inode_array[3] = {-1, -1, -1};
+uint8_t *exist_fname_array[3];
 
 extern void flush_TLB();   // defined in boot.S
 extern PCB_t *curr_task(); // defined in boot.S
@@ -115,6 +119,12 @@ uint8_t *parse_args(uint8_t *command, int32_t *type)
     *type = 0;
     while (*command != '\0')
     {
+        if (*command == '|')
+        {
+            *type = 5;
+            args = command;
+            return args;
+        }
         if (*command == ' ')
         {
             *command = '\0';    // terminate cmd, only store the exe file name
@@ -193,7 +203,7 @@ uint8_t *skip_space(uint8_t *tep)
  * Side Effects:
  * return value: the pointer to the new task, NULL for failure
  */
-PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t cmd_type)
+PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t *cmd_type)
 {
     int32_t page_id; // new page id
     PCB_t *new_task; // new task
@@ -220,17 +230,19 @@ PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t cmd_type)
 
     init_file_array(&new_task->fd_array);
     uint8_t *tep;
+    uint8_t *fname;
     dentry_t file_dentry;
     int32_t io_type = 0;
-    switch (cmd_type)
+    switch (*cmd_type)
     {
     case 1: // '>'
+    {
         tep = args + 1;
         tep = skip_space(tep);
         dir_write(0, tep, MAX_LEN_FILE_NAME);
         if (0 == read_dentry_by_name((uint8_t *)tep, &file_dentry))
         {
-            set_entry(&new_task->fd_array, STDOUT_FD, 2);
+            set_entry(&new_task->fd_array, STDOUT_FD, 2, file_dentry.file_name);
             new_task->fd_array.entries[STDOUT_FD].inode = file_dentry.inode_num;
         }
         else
@@ -238,13 +250,15 @@ PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t cmd_type)
             printf("redirect fail\n");
         }
         break;
+    }
     case 2: // '>>'
+    {
         tep = args + 2;
         tep = skip_space(tep);
         dir_write(0, tep, MAX_LEN_FILE_NAME);
         if (0 == read_dentry_by_name((uint8_t *)tep, &file_dentry))
         {
-            set_entry(&new_task->fd_array, STDOUT_FD, 2);
+            set_entry(&new_task->fd_array, STDOUT_FD, 2, file_dentry.file_name);
             new_task->fd_array.entries[STDOUT_FD].inode = file_dentry.inode_num;
             new_task->fd_array.entries[STDOUT_FD].file_position = get_file_size(file_dentry.inode_num);
         }
@@ -253,27 +267,76 @@ PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t cmd_type)
             printf("redirect fail\n");
         }
         break;
-    case 3: // '|'
-        tep = args;
-        if (*tep == '|')
-        {
-            io_type = 1;
-        }
-        tep = skip_space(tep);
+    }
+    case 3: // exe '|'
+    {
+        // tep = args;
+        // if (*tep == '|')
+        // {
+        //     io_type = 1;
+        // }
+        // tep = skip_space(tep);
+        // fname = (uint8_t *)tem_in_array[0];
+        // dir_write(0, fname, MAX_LEN_FILE_NAME);
+        // if (0 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
+        // {
+        //     set_entry(&new_task->fd_array, STDIN_FD, 2, file_dentry.file_name);
+        //     new_task->fd_array.entries[STDIN_FD].inode = file_dentry.inode_num;
+        //     tem_in_inode_array[0] = file_dentry.inode_num;
+        //     new_task->fd_array.entries[STDIN_FD].file_position = 0;
+        // }
 
+        fname = (uint8_t *)tem_out_array[0];
+        dir_write(0, fname, MAX_LEN_FILE_NAME);
+        if (0 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
+        {
+            set_entry(&new_task->fd_array, STDOUT_FD, 2, file_dentry.file_name);
+            new_task->fd_array.entries[STDOUT_FD].inode = file_dentry.inode_num;
+            tem_out_inode_array[0] = file_dentry.inode_num;
+            new_task->fd_array.entries[STDOUT_FD].file_position = 0;
+        }
+        break;
+    }
+    case 4: // file '|'
+    {
+        // tep = args;
+        // if (*tep == '|')
+        // {
+        //     io_type = 1;
+        //     tep++;
+        // }
+        // tep = skip_space(tep);
+        set_entry(&new_task->fd_array, STDIN_FD, 2, exist_fname_array[0]);
+        new_task->fd_array.entries[STDIN_FD].inode = exist_inode_array[0];
+        new_task->fd_array.entries[STDIN_FD].file_position = 0;
+        // if (io_type == 1)
+        // {
+        //     fname = (uint8_t *)tem_out_array[0];
+        //     dir_write(0, fname, MAX_LEN_FILE_NAME);
+        //     if (0 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
+        //     {
+        //         set_entry(&new_task->fd_array, STDOUT_FD, 2, file_dentry.file_name);
+        //         new_task->fd_array.entries[STDOUT_FD].inode = file_dentry.inode_num;
+        //         tem_out_inode_array[0] = file_dentry.inode_num;
+        //         new_task->fd_array.entries[STDOUT_FD].file_position = 0;
+        //     }
+        // }
         /* code */
         break;
-    case 4: // '|'
-        tep = args;
-        int32_t io_type = 0;
-        if (*tep == '|')
+    }
+    case 5: // exe '|' out
+    {
+        fname = (uint8_t *)tem_out_array[0];
+        dir_write(0, fname, MAX_LEN_FILE_NAME);
+        if (0 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
         {
-            io_type = 1;
+            set_entry(&new_task->fd_array, STDIN_FD, 2, file_dentry.file_name);
+            new_task->fd_array.entries[STDIN_FD].inode = file_dentry.inode_num;
+            tem_out_inode_array[0] = file_dentry.inode_num;
+            new_task->fd_array.entries[STDIN_FD].file_position = 0;
         }
-        tep = skip_space(tep);
-
-        /* code */
         break;
+    }
     default:
         break;
     }
@@ -303,16 +366,34 @@ int32_t system_execute(const uint8_t *command)
 {
     dentry_t task_dentry; // copied task dentry
     uint8_t *args;        // arguments
-    int32_t cmd_type;
+    int32_t cmd_type = 0;
+    int32_t cmd_type1 = 0;
+    uint8_t *args1;
     // int32_t page_id;      // new page id
     PCB_t *new_task; // new task
     uint32_t eip;
     uint8_t args_array[MAX_ARGS + 1];
     uint8_t name_array[MAX_LEN_FILE_NAME + 1];
+    uint8_t name_array1[MAX_LEN_FILE_NAME + 1];
     memset((void *)args_array, (int32_t) "\0", MAX_ARGS + 1);
     memset((void *)name_array, (int32_t) "\0", MAX_LEN_FILE_NAME + 1);
+    memset((void *)name_array1, (int32_t) "\0", MAX_LEN_FILE_NAME + 1);
     // Parse args
     args = parse_args((uint8_t *)command, &cmd_type);
+    if (cmd_type == 5)
+    {
+        command++;
+        command = skip_space((uint8_t *)command);
+        args = parse_args((uint8_t *)command, &cmd_type1);
+    }
+
+    // if (args == command)
+    // {
+    //     strcpy((int8_t *)name_array, (const int8_t *)command);
+    //     strcpy((int8_t *)args_array, (const int8_t *)args);
+    // }
+    // else
+    // {
     // printf("%s\n", command);
     strcpy((int8_t *)name_array, (const int8_t *)command);
     if (args != NULL)
@@ -320,6 +401,8 @@ int32_t system_execute(const uint8_t *command)
         // printf("%s\n", args);
         strcpy((int8_t *)args_array, (const int8_t *)args);
     }
+    // }
+
     // get the dentry in fs
     if (read_dentry_by_name(command, &task_dentry) == -1)
     {
@@ -332,11 +415,17 @@ int32_t system_execute(const uint8_t *command)
         if (cmd_type == 3)
         {
             exist_inode_array[0] = task_dentry.inode_num;
+            strcpy((int8_t *)name_array1, (const int8_t *)command);
+            exist_fname_array[0] = name_array1;
             cmd_type = 4;
-            int32_t cmd_type1;
-            uint8_t *args1;
-            args1 = parse_args((uint8_t *)args, &cmd_type1);
-            if (read_dentry_by_name(args1, &task_dentry) == -1 || !is_exe_file(&task_dentry))
+
+            if (*args == '|')
+            {
+                args++;
+            }
+            args = skip_space(args);
+            args1 = parse_args((uint8_t *)args, &cmd_type1); // args :exe, args1:args
+            if (read_dentry_by_name(args, &task_dentry) == -1 || !is_exe_file(&task_dentry))
             {
                 printf("[INFO] Cannot execute non-exist/unexecutable file\n");
                 return -1;
@@ -347,7 +436,7 @@ int32_t system_execute(const uint8_t *command)
                 // printf("%s\n", args);
                 strcpy((int8_t *)args_array, (const int8_t *)args1);
             }
-            new_task = create_task(name_array, args_array, cmd_type);
+            new_task = create_task(name_array, args_array, &cmd_type);
         }
         else
         {
@@ -358,7 +447,7 @@ int32_t system_execute(const uint8_t *command)
     else
     {
         // Create PCB, Set up paging
-        new_task = create_task(name_array, args_array, cmd_type);
+        new_task = create_task(name_array, args_array, &cmd_type);
     }
     if (new_task == NULL)
     {
@@ -393,14 +482,35 @@ int32_t system_execute(const uint8_t *command)
         pushl   %%edx   /* 5 iret eip*/         \n\
         iret   /* go to user stack*/        \n\
         EXE_RET: /* after halt*/ \n\
-        leave \n\
-        ret \n\
         "
                  :
                  : "a"(USER_DS), "b"(USER_EBP), "c"(USER_CS), "d"(eip)
                  : "memory");
     // before return, check for pipeline
+    uint8_t *tmp;
+    if (cmd_type == 3)
+    {
+        tmp = args_array;
+        if (*tmp == '|')
+        {
+            tmp++;
+            tmp = skip_space(tmp);
+            system_execute(tmp);
+        }
+    }
+    else if (cmd_type == 5)
+    {
+        del_file((uint8_t *)tem_out_array[0]);
+    }
 
+    // todo
+    asm volatile("            \n\
+        leave \n\
+        ret \n\
+        "
+                 :
+                 :
+                 : "memory");
     return 0;
 }
 

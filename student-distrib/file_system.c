@@ -37,6 +37,8 @@
 // determine whether the num is an addr from buddysystem or index
 #define ADDR_or_ID(num) (num & BASE_ADDR_BD_SYS)
 
+char *std_fname[] = {"stdin", "stdout"};
+
 // File System Utilities, define a file system
 static boot_block_t *boot_block;
 static inode_t *inodes;
@@ -58,13 +60,14 @@ extern PCB_t *curr_task(); // defined in boot.S
  * Side Effects: set entry in file array
  * return value: none
  */
-void set_entry(file_array_t *fd_array, int32_t fd, int32_t file_type)
+void set_entry(file_array_t *fd_array, int32_t fd, int32_t file_type, uint8_t *fname)
 {
     fd_array->entries[fd].op_tbl_ptr = &op_table_total[file_type];
     // PRINT("%#d, %#d, %#d\n",fd_array->entries[fd].op_tbl_ptr, op_table_total, op_table_total+file_type);
     fd_array->entries[fd].inode = 0;
     fd_array->entries[fd].file_position = 0;
-    fd_array->entries[fd].flags = IN_USE;
+    fd_array->entries[fd].flags = IN_USE + file_type;
+    fd_array->entries[fd].fname = fname;
     return;
 }
 
@@ -82,7 +85,7 @@ int32_t find_unused_fd()
     // start from 2 since 0/1 for stdin/out
     for (fd = 2; fd < MAX_NUM_OPEN; fd++)
     {
-        if (!curr_task()->fd_array.entries[fd].flags)
+        if (curr_task()->fd_array.entries[fd].flags == NOT_IN_USE)
         {
             return fd;
         }
@@ -158,7 +161,7 @@ int32_t close_opening()
     int fd;
     for (fd = 2; fd < MAX_NUM_OPEN; fd++)
     {
-        if (curr_task()->fd_array.entries[fd].flags)
+        if (curr_task()->fd_array.entries[fd].flags != NOT_IN_USE)
         {
             file_sys_close(fd);
             cnt++;
@@ -238,8 +241,8 @@ int32_t init_file_array(file_array_t *fd_array)
     // stdout is a write-only file corresponding to terminal output.
     // terminal operations should be implemented in terminal.c by haina
 
-    set_entry(fd_array, STDIN_FD, 3);
-    set_entry(fd_array, STDOUT_FD, 4);
+    set_entry(fd_array, STDIN_FD, 3, (uint8_t *)std_fname[STDIN_FD]);
+    set_entry(fd_array, STDOUT_FD, 4, (uint8_t *)std_fname[STDOUT_FD]);
 
     fd_array->num_opening = 2;
 
@@ -269,7 +272,7 @@ int32_t deactivate_file_array(file_array_t *fd_array)
     // close all files
     for (fd = 2; fd < MAX_NUM_OPEN; fd++)
     {
-        if (curr_task()->fd_array.entries[fd].flags)
+        if (curr_task()->fd_array.entries[fd].flags != NOT_IN_USE)
         {
             file_sys_close(fd); // may print info for unopened file
         }
@@ -309,12 +312,21 @@ int32_t file_sys_open(const uint8_t *filename)
         // PRINT("fail to open %s: non-existent file.\n", filename);
         return -1;
     }
-    // unknown file type, should never happen correctly
-    if (copied_dentry.file_type > 2)
+    // // unknown file type, should never happen correctly
+    // if (copied_dentry.file_type > 2)
+    // {
+    //     PRINT("fail to open %s: unknown file type\n", filename);
+    //     return -1;
+    // }
+    for (fd = 2; fd < MAX_NUM_OPEN; fd++)
     {
-        PRINT("fail to open %s: unknown file type\n", filename);
-        return -1;
+        if ((curr_task()->fd_array.entries[fd].flags != NOT_IN_USE) && (strncmp((int8_t *)filename, (int8_t *)copied_dentry.file_name, MAX_LEN_FILE_NAME)))
+        {
+            PRINT("have open %s at fd %d\n", filename, fd);
+            return fd;
+        }
     }
+    fd = -1;
     fd = op_table_total[copied_dentry.file_type].open(filename); // set flag included
     // fail to open, should never happen correctly
     if (fd < 0)
@@ -348,7 +360,7 @@ int32_t file_sys_close(int32_t fd)
         return -1;
     }
     // file not opening
-    if (!curr_task()->fd_array.entries[fd].flags)
+    if (curr_task()->fd_array.entries[fd].flags == NOT_IN_USE)
     {
         PRINT("fail to close file: unopen file\n");
         return -1;
@@ -394,7 +406,7 @@ int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes)
         return -1;
     }
     // not opening
-    if ((!curr_task()->fd_array.entries[fd].flags))
+    if (curr_task()->fd_array.entries[fd].flags == NOT_IN_USE)
     {
         // PRINT("%x, %d, %d", curr_task(), fd, nbytes);
         PRINT("fail to read: file is not open\n");
@@ -433,7 +445,7 @@ int32_t file_sys_write(int32_t fd, const void *buf, int32_t nbytes)
         return -1;
     }
     // not opening
-    if (!curr_task()->fd_array.entries[fd].flags)
+    if (curr_task()->fd_array.entries[fd].flags == NOT_IN_USE)
     {
         PRINT("fail to write: file is not open\n");
         return -1;
@@ -569,7 +581,7 @@ int32_t read_dentry_by_index(uint32_t index, dentry_t *dentry)
 int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length)
 {
     uint32_t file_size = inodes[inode].length;
-    if (file_size==0)
+    if (file_size == 0)
     {
         return 0;
     }
@@ -641,7 +653,7 @@ int32_t file_open(const uint8_t *filename)
     // available fd, actually need not check
     if (fd != -1)
     {
-        set_entry(&curr_task()->fd_array, fd, 2); // type is 2 for regular file
+        set_entry(&curr_task()->fd_array, fd, 2, (file_dentry.file_name)); // type is 2 for regular file
         curr_task()->fd_array.entries[fd].inode = file_dentry.inode_num;
     }
     return fd;
@@ -696,7 +708,7 @@ int32_t file_read(int32_t fd, void *buf, int32_t nbytes)
 int32_t write_data(uint32_t inode_num, uint32_t offset, uint8_t *buf, uint32_t length)
 {
     inode_t *inode = &inodes[inode_num];
-    uint32_t new_file_len = MIN((length + offset),NUM_DATA_BLOCK*BLOCK_SIZE);
+    uint32_t new_file_len = MIN((length + offset), NUM_DATA_BLOCK * BLOCK_SIZE);
     int32_t file_len = inode->length;
     // printf("try write %d, %d", length, file_len);
     uint32_t file_size_align = ((file_len + BLOCK_SIZE - 1) >> 12) << 12; // file_len align to 4KB
@@ -704,7 +716,7 @@ int32_t write_data(uint32_t inode_num, uint32_t offset, uint8_t *buf, uint32_t l
     uint32_t data_block;                                // value of data block in inode
     uint32_t dt_blk_idx_in_inode = offset / BLOCK_SIZE; // index of data block in inode, init as the starting block
     uint32_t local_offset = offset % BLOCK_SIZE;        // offset in the data block
-    if (local_offset!=0)
+    if (local_offset != 0)
     {
         // copy content in the starting block
         uint32_t size_single_copy = MIN((BLOCK_SIZE - local_offset), length);
@@ -728,7 +740,8 @@ int32_t write_data(uint32_t inode_num, uint32_t offset, uint8_t *buf, uint32_t l
         length = length + offset - dt_blk_idx_in_inode * BLOCK_SIZE;
         file_size_align = file_size_align - dt_blk_idx_in_inode * BLOCK_SIZE;
     }
-    else{
+    else
+    {
         length = length + offset - dt_blk_idx_in_inode * BLOCK_SIZE;
         file_size_align = file_size_align - dt_blk_idx_in_inode * BLOCK_SIZE;
     }
@@ -843,9 +856,9 @@ int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
     // {
     //     file->file_position = 0;
     // }
-    uint32_t new_file_len= MIN(file->file_position+nbytes,NUM_DATA_BLOCK*BLOCK_SIZE);
-    nbytes=new_file_len- file->file_position;
-    if (file->file_position>=NUM_DATA_BLOCK*BLOCK_SIZE)
+    uint32_t new_file_len = MIN(file->file_position + nbytes, NUM_DATA_BLOCK * BLOCK_SIZE);
+    nbytes = new_file_len - file->file_position;
+    if (file->file_position >= NUM_DATA_BLOCK * BLOCK_SIZE)
     {
         return -1;
     }
@@ -868,11 +881,17 @@ int32_t file_write(int32_t fd, const void *buf, int32_t nbytes)
  */
 int32_t dir_open(const uint8_t *filename)
 {
+    dentry_t file_dentry;
+    // actually need not check but need to get dentry
+    if (read_dentry_by_name(filename, &file_dentry))
+    {
+        return -1;
+    }
     int32_t fd = find_unused_fd();
     // available fd, actually need not check
     if (fd != -1)
     {
-        set_entry(&curr_task()->fd_array, fd, 1); // type is 1 for directory
+        set_entry(&curr_task()->fd_array, fd, 1, (file_dentry.file_name)); // type is 1 for directory
     }
 
     return fd;
@@ -981,7 +1000,7 @@ int32_t file_reset(uint32_t inode)
         size_unreset -= BLOCK_SIZE;
         dt_blk_idx_in_inode++;
     }
-    memset((uint8_t *)&inodes[inode], 0, BLOCK_SIZE);
+    memset((uint8_t *)&inodes[inode], -1, BLOCK_SIZE);
     return 0;
 }
 
@@ -1007,11 +1026,17 @@ int32_t del_file(uint8_t *fname)
 // can refer to rtc ops implemented by Yuan
 int32_t rtc_user_open(const uint8_t *filename)
 {
+    dentry_t file_dentry;
+    // actually need not check but need to get dentry
+    if (read_dentry_by_name(filename, &file_dentry))
+    {
+        return -1;
+    }
     int32_t fd = find_unused_fd();
     // available fd, actually need not check
     if (fd != -1)
     {
-        set_entry(&curr_task()->fd_array, fd, 0); // type is 1 for directory
+        set_entry(&curr_task()->fd_array, fd, 0, (file_dentry.file_name)); // type is 1 for directory
     }
     // rtc_open(filename);
     return fd;

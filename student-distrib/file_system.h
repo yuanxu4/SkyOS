@@ -94,6 +94,7 @@ typedef struct file_array_entry
     uint32_t inode;           // inode number for this file, 0 for dir/RTC
     uint32_t file_position;   // “file position” member
     uint32_t flags;           // “flags” member
+    uint8_t *fname;
 } file_array_entry_t;
 
 typedef struct file_array
@@ -162,7 +163,7 @@ int32_t stdin_write(int32_t fd, const void *buf, int32_t nbytes);
 
 // help function
 
-void set_entry(file_array_t *fd_array, int32_t fd, int32_t file_type);
+void set_entry(file_array_t *fd_array, int32_t fd, int32_t file_type, uint8_t *fname);
 int32_t find_unused_fd();
 // used in test
 
