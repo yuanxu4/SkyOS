@@ -138,21 +138,69 @@ page_directory:
     .long   0x00000003  # init base addr(will be set when enable), set bit 0&1, present and R/W, bit7=0 for 4KB
     # 4-8MB, for 4MB kernel page, virtual = physical
     .long   0x00400083  # set base addr, set bit 0&1&7 set, present, R/W and PS for 4MB
+    # .long   0x00800083
+    # .long   0x00C00083
+    # .long   0x01000083
+    # .long   0x01400083
+    # .long   0x01800083
+    # .long   0x01C00083
+    .rept   8 - 2
+    .long   0
+    .endr
+    # 32- 36MB for terminal
+    .long   0x02000083
     # 8MB-4GB, not presented
-    .rept PD_SIZE - 2
+    .rept PD_SIZE - 9
     .long 0 # just set 0 for not presented
     .endr
 
 page_table:
-    # entry 0-0xB8, before video memory, not presented
-    .rept VIDEO_MEM_INDEX
+    # Fill index 0-0xB7
+    .rept 0xA0   # modex
     .long 0
     .endr
-    # entry 0xB8, for video memory
-    .long 0x000B8003 # set base addr, set bit 0&1, present and R/W
-    # other enries, not presented
-    .rept PT_SIZE - VIDEO_MEM_INDEX - 1
+
+    # video memory, modex
+    .long   0x000A0003
+    .long   0x000A1003
+    .long   0x000A2003
+    .long   0x000A3003
+    .long   0x000A4003
+    .long   0x000A5003
+    .long   0x000A6003
+    .long   0x000A7003
+    .long   0x000A8003
+    .long   0x000A9003
+    .long   0x000AA003
+    .long   0x000AB003
+    .long   0x000AC003
+    .long   0x000AD003
+    .long   0x000AE003
+    .long   0x000AF003
+    .long   0x000B0003
+    .long   0x000B1003
+    .long   0x000B2003
+    .long   0x000B3003
+    .long   0x000B4003
+    .long   0x000B5003
+    .long   0x000B6003
+    .long   0x000B7003
+    .long   0x000B8003
+    .long   0x000B9003
+    .long   0x000BA003
+    .long   0x000BB003
+    .long   0x000BC003
+    .long   0x000BD003
+    .long   0x000BE003
+    .long   0x000BF003
+    .long   0x000C0003
+
+
+    # Fill the rest to 1024
+    .rept PT_SIZE - 0xA0 - 33   # modex
     .long 0
     .endr
+
+        
 
     # may use .macro to set addr for every entry

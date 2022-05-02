@@ -15,9 +15,10 @@
 #include "types.h"
 #include "x86_desc.h"
 #include "file_system.h"
+#include "keyboard.h"
 
 #define MAX_ARGS 128                            // pending
-#define MAX_NUM_TASK 2                          // max num of running tasks
+#define MAX_NUM_TASK 6                          // max num of running tasks
 #define TASK_VIR_ADDR 0x08000000                // base virtual addr for task
 #define TASK_VIR_ADDR_END 0x08400000                // base virtual addr for task
 #define TASK_VIR_IDX (TASK_VIR_ADDR / SIZE_4MB) // the index of the pde of TASK_VIR_ADDR in pd
@@ -26,6 +27,13 @@
 #define KERNEL_UPPER_ADDR 0x800000              // 8MB, the upper addr of kernel page
 #define SIZE_8KB 0x2000                         // size of 8KB
 #define USER_EBP (TASK_VIR_ADDR + SIZE_4MB - 4) // the base addr of user stack, -4 for safty
+
+typedef struct run_queue run_queue_t;
+struct run_queue
+{
+    run_queue_t* pre;
+    run_queue_t* next;
+} ;
 
 typedef struct PCB PCB_t;
 struct PCB
@@ -39,13 +47,19 @@ struct PCB
     uint32_t saved_esp;
     uint32_t saved_ebp;
     uint32_t kernel_ebp; // ebp of this task in kernel
+    uint32_t esp;
+    uint32_t ebp;
     uint32_t eip;
     uint32_t vidmap;     // to check whether the vidmap is create
     //uint32_t kernel_esp; // esp of this task in kernel
     // uint32_t flags;
     uint8_t *task_name; // process executable name
     uint8_t *args;      // arguments of process
+    /* used for schedule */
+    run_queue_t run_list_node;
+    struct terminal_t *terminal;
 };
+
 
 typedef struct page_usage_array
 {
@@ -69,5 +83,12 @@ int32_t restore_task_page(int32_t page_id);
 int32_t system_execute(const uint8_t *command);
 int32_t system_halt(uint8_t status);
 int32_t system_getargs(uint8_t *buf, int32_t nbytes);
+
+int32_t sche_init();
+int32_t task_switch();
+int32_t user_program_mem_map(PCB_t *next_task);
+void start_task();
+int32_t add_task_to_run_queue(PCB_t *new_task);
+int32_t remove_task_from_run_queue(PCB_t *new_task);
 
 #endif // _TASK_H

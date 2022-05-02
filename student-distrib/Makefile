@@ -14,7 +14,6 @@ CPPFLAGS+=-nostdinc -g
 
 # This generates the list of source files
 SRC=$(wildcard *.S) $(wildcard *.c) $(wildcard */*.S) $(wildcard */*.c)
-
 # This generates the list of .o files. The order matters, boot.o must be first
 OBJS=boot.o
 OBJS+=$(filter-out boot.o,$(patsubst %.S,%.o,$(filter %.S,$(SRC))))

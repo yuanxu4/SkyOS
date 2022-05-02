@@ -13,6 +13,8 @@
 #include "keyboard.h"
 #include "rtc.h"
 #include "idt.h"
+#include "svga/vga.h"
+#include "GUI/gui.h"
 
 #define PASS 1
 #define FAIL 0
@@ -642,7 +644,58 @@ int sys_call_err_test()
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
 
-/* Test suite entry point */
+void gui_windows_test(){
+	init_gui_window_items();
+	draw_gui_window_frame(0, 0);
+}
+
+void font_test(){
+
+	// char test[] = "Hello World!";
+	// int i;
+	// for(i = 0; i < 12; i ++){
+	// 	gui_putchar(test[i], i * FONT_WIDTH, 0);
+	// }
+    int c = 0;
+    char ch = 0;
+	for(c = 0; c < 128; c ++){
+		gui_putchar(ch, c * FONT_WIDTH, current_buffer * SCREEN_HEIGHT);
+        ch ++;
+	}
+}
+
+void IRQ_TEST(){
+	printf("keyboard IDT: %x%x\n", idt[0x21].offset_31_16, idt[0x21].offset_15_00);
+}
+
+// void background_test(){
+// 	init_background();
+// 	init_gui_window_items();
+// 	init_desktop();
+// 	init_gui_task();
+// 	init_gui_font();
+// 	gui_draw_background();
+// 	//system_execute((uint8_t *)"shell");
+// 	//font_test();
+
+// 	int gui_count = 0;
+// 	while(1){
+// 		gui_count ++;
+// 		if(gui_count == 3){
+// 			gui_count = 0;
+// 			gui_do_task();
+// 		}
+// 	}
+// }
+
+void filename_test(){
+	uint8_t* file_name_pt = get_all_file_name();
+	int i;
+	int count = get_file_num();
+	for(i = 0; i < count; i ++){
+		printf("file name: %s\n", (file_name_pt + i * MAX_LEN_FILE_NAME));
+	}
+}
 
 void launch_tests()
 {
@@ -657,7 +710,7 @@ void launch_tests()
 	//TEST_OUTPUT("file_sys_test", file_sys_test());
 	//TEST_OUTPUT("exe garbage input test", exe_halt_err_test());
 	//TEST_OUTPUT("syscall garbage input test", sys_call_err_test());
-	continue_test();
+	//continue_test();
 
 	clear();
 }

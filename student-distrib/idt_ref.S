@@ -1025,6 +1025,78 @@ IDT_EXCEPTION_30:
     addl $4, %esp
     iret
 
+/*
+ * IDT_INTERUPT_33
+ * description: interupt handler used to handle diferent exception
+ * input: none
+ * output: the interupt reaction
+ * return: none
+ */
+.globl IDT_INTERUPT_21
+IDT_INTERUPT_21:
+    # save_pre_reg
+    pushf
+    pushl %eax
+    pushl %ebx
+    pushl %ecx
+    pushl %edx
+    pushl %ebp
+    pushl %esi
+    pushl %edi
+    push %fs
+    push %es
+    push %ds
+    call pit_interrupt_handler
+    # restore_pre_reg
+    pop %ds
+    pop %es
+    pop %fs
+    popl %edi
+    popl %esi
+    popl %ebp
+    popl %edx
+    popl %ecx
+    popl %ebx
+    popl %eax
+    popf
+    iret
+
+
+/*
+ * IDT_INTERUPT_2C
+ * description: interupt handler used to handle diferent exception
+ * input: none
+ * output: the interupt reaction
+ * return: none
+ */
+.globl IDT_INTERUPT_2C
+IDT_INTERUPT_2C:
+    # save_pre_reg
+    pushf
+    pushl %eax
+    pushl %ebx
+    pushl %ecx
+    pushl %edx
+    pushl %ebp
+    pushl %esi
+    pushl %edi
+    push %fs
+    push %es
+    push %ds
+    call mouse_IRQ_handler
+    # restore_pre_reg
+    pop %ds
+    pop %es
+    pop %fs
+    popl %edi
+    popl %esi
+    popl %ebp
+    popl %edx
+    popl %ecx
+    popl %ebx
+    popl %eax
+    popf
+    iret
 
 /*
  * IDT_INTERUPT_33

@@ -171,7 +171,8 @@ int32_t close_opening();
 // int32_t get_file_name();
 int32_t get_file_num();
 
-file_array_t* get_file_array();
+uint8_t* get_all_file_name();
+dentry_t* get_dentry(int index);
 
 #endif // _FILE_SYSTEM_H
 

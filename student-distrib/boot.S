@@ -44,7 +44,7 @@ continue:
 
 keep_going:
     # Set up ESP so we can have an initial stack
-    movl    $0x7FD000, %esp
+    movl    $0x800000, %esp
 
     # Set up the rest of the segment selector registers
     movw    $KERNEL_DS, %cx
@@ -83,6 +83,7 @@ enable_paging:
     pushl   %ebp
     movl    %esp, %ebp
 # set the page table base addr for 1st PDE (0-4MB)
+
     movl    page_directory, %eax # the 1st entry in PD, 0x00000003
     movl    $page_table, %ecx # the addr of PT, (aligned 4KB) 0xXXXXX000
     orl     %eax, %ecx
@@ -91,7 +92,9 @@ enable_paging:
     # cr3: bit 31-12, Page-Directory Base; bit 4,3, PCD,PWT, both 0; other ignored,0
     movl    $page_directory, %eax # the addr of PD, (aligned 4KB) 0xXXXXX000
     # andl $0xFFFFFFE7, %eax cr3
-    movl    %eax, %cr3
+    movl    %cr3, %ecx
+    orl     %eax, %ecx
+    movl    %ecx, %cr3
 
     # cr4: bit 4: PSE, set
     movl    %cr4, %eax

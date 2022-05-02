@@ -841,6 +841,19 @@ int32_t stdin_write(int32_t fd, const void *buf, int32_t nbytes)
  * output: none
  * return pointer to file_array
  */
-// file_array_t* get_file_array(){
-//     return &file_array;
-// }
+uint8_t* get_all_file_name(){
+    static uint8_t file_name_list[NUM_DIR_ENTRY * MAX_LEN_FILE_NAME];
+    int i, j;
+    for(i = 0; i < boot_block->dir_count; i ++){
+        for(j = 0; j < MAX_LEN_FILE_NAME; j ++){
+            file_name_list[i * MAX_LEN_FILE_NAME + j] = boot_block->dentries[i].file_name[j];
+        }
+        // printf("file name: %s", file_name_list[i]);
+    }
+
+    return file_name_list;
+}
+
+dentry_t* get_dentry(int index){
+    return &boot_block->dentries[index];
+}

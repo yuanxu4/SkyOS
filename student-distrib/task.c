@@ -13,11 +13,22 @@
 #include "lib.h"
 #include "paging.h"
 #include "vidmem.h"
+#include "pit.h"
+#include "keyboard.h"
 
 page_usage_array_t page_array; // manage pages
+static run_queue_t* run_queue_head;
+static uint32_t num_task_in_queue;
 
 extern void flush_TLB();   // defined in boot.S
-extern PCB_t *curr_task(); // defined in boot.S
+extern PCB_t *curr_task(); // defined in boot.
+extern uint32_t cur_terminal_id;
+extern terminal_t *curr_terminal;
+// extern PT_t kernel_pt;
+
+int32_t add_task_to_run_queue(PCB_t *new_task);
+int32_t remove_task_from_run_queue(PCB_t *new_task);
+// extern  terminal_t *curr_terminal;
 
 // int32_t print_pcb(PCB_t *task)
 // {
@@ -26,6 +37,8 @@ extern PCB_t *curr_task(); // defined in boot.S
 //     printf("parent:%x\n", task->parent);
 //     printf("saved_esp:%x\n", task->saved_esp);
 //     printf("saved_ebp:%x\n", task->saved_ebp);
+//     printf("esp:%x\n", task->esp);
+//     printf("ebp:%x\n", task->ebp);
 //     printf("kernel_ebp:%x\n", task->kernel_ebp);
 //     printf("eip:%x\n", task->eip);
 // }
@@ -167,14 +180,16 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
     new_task->pid = page_id;
     new_task->state = IN_USE;
     new_task->kernel_ebp = ((uint32_t)new_task) + SIZE_8KB - 4; // -4 for safty
+    // uint32_t test = new_task->kernel_ebp;
     // new_task->kernel_esp = new_task->kernel_ebp;
     new_task->args = args;
     new_task->task_name = name;
     new_task->vidmap = 0;
 
     init_file_array(&new_task->fd_array);
-    // if the only one task(shell)
-    if (page_array.num_using == 1)
+    
+    curr_terminal->num_task++;
+    if (curr_terminal->num_task == 1)
     {
         new_task->parent = NULL;
     }
@@ -182,6 +197,8 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
     {
         new_task->parent = curr_task();
     }
+    // new_task->esp = ((uint32_t)new_task) + SIZE_8KB - 4;
+    // new_task->ebp = ((uint32_t)new_task) + SIZE_8KB - 4;
     return new_task;
 }
 
@@ -196,6 +213,9 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
  */
 int32_t system_execute(const uint8_t *command)
 {
+    
+    cli();
+    
     dentry_t task_dentry; // copied task dentry
     uint8_t *args;        // arguments
     // int32_t page_id;      // new page id
@@ -203,17 +223,23 @@ int32_t system_execute(const uint8_t *command)
     uint32_t eip;
     uint8_t args_array[MAX_ARGS + 1];
     uint8_t name_array[MAX_LEN_FILE_NAME + 1];
+    memset((void*)args_array, (int32_t)"\0", MAX_ARGS + 1);
+    memset((void*)name_array, (int32_t)"\0", MAX_LEN_FILE_NAME + 1);
     // uint32_t len; // tem len
     // Parse args
     args = parse_args((uint8_t *)command);
     // printf("%s\n", command);
     strcpy((int8_t *)name_array, (const int8_t *)command);
-    if (args != NULL)
+    if (args != NULL )
     {
-        // printf("%s\n", args);
-        strcpy((int8_t *)args_array, (const int8_t *)args);
+        printf("%s\n", args);
+        if (*args != '\0')
+        {
+            strcpy((int8_t *)args_array, (const int8_t *)args);
+        }
     }
 
+    
     // get the dentry in fs
     if (read_dentry_by_name(command, &task_dentry) == -1)
     {
@@ -234,6 +260,25 @@ int32_t system_execute(const uint8_t *command)
         return -1;
     }
 
+    
+    /* new_task->parent = current_task */
+    // curr_terminal->num_task++;
+    new_task->terminal = curr_terminal;
+    if (page_array.num_using == 1)
+    {
+        printf_sche("terminal<1>\n");
+    }
+    /* add to schedule run_queue */
+    if (new_task->parent == NULL)
+    {
+        add_task_to_run_queue(new_task); 
+    }
+    else
+    {
+        remove_task_from_run_queue(new_task->parent);
+        add_task_to_run_queue(new_task);
+    }
+    
     // Losd file into memory
     file_load(&task_dentry, (uint8_t *)TASK_VIR_ADDR + TASK_VIR_OFFSET);
     // todo: Context Switch
@@ -248,6 +293,9 @@ int32_t system_execute(const uint8_t *command)
     // set tss
     tss.ss0 = KERNEL_DS;
     tss.esp0 = new_task->kernel_ebp;
+
+
+
     // prepare for iret
     asm volatile("            \n\
         movw    %%ax, %%ds  /* set ds to user ds */     \n\
@@ -350,8 +398,9 @@ int32_t restore_task_page(int32_t page_id)
  */
 int32_t system_halt(uint8_t status)
 {
+    cli();
     PCB_t *parent;
-    if (page_array.num_using == 0)
+    if (page_array.num_using == 0||(curr_terminal->num_task == 0))
     {
         printf("[INFO] nothing to halt\n");
         // system_execute((uint8_t *)"shell");
@@ -361,17 +410,29 @@ int32_t system_halt(uint8_t status)
         PDE_4KB_t *user_vid_pde = (PDE_4KB_t *)(&page_directory.pde[VID_PAGE_INDEX]);
         clear_PDE_4KB(user_vid_pde);
     }
+
+    /* remove current task from run_queue */
+    remove_task_from_run_queue(curr_task());
+    curr_task()->terminal->num_task--;
     // try to deactivate task, get parent task
     parent = deactivate_task(curr_task());
     if (parent == NULL)
     {
+        /* system_execute has contained add to queue */        
         system_execute((uint8_t *)"shell");
     }
+    else
+    {
+        add_task_to_run_queue(parent);
+    }
+
     // Restore parent paging
     restore_task_page(parent->pid);
     // Write Parent process’ info back to TSS
     tss.esp0 = curr_task()->saved_esp;
-    // restore stack and return value
+    user_program_mem_map(parent);
+    // restore stack and return valueo
+    // sti();
     asm volatile("         \n\
             movl %%edx, %%esp   \n\
             movl %%ecx, %%ebp   \n\
@@ -412,3 +473,177 @@ int32_t system_getargs(uint8_t *buf, int32_t nbytes)
     strncpy((int8_t *)buf, (int8_t *)args, nbytes);
     return 0;
 }
+
+/*############################### SCHEDULE for CP5 ##########################*/
+/*
+ * int32_t sche_init()
+ * reads the program’s command line arguments into a user-level buffer.
+ * Inputs:  buf -- user-level buffer
+ *          nbytes -- length to copy
+ * Outputs: None
+ * Side Effects:
+ * return value: 0 for succ, -1 for failure
+ */
+int32_t sche_init()
+{
+    /* init run_queue */
+    run_queue_head = NULL;
+    // pit_init();
+    return 0;
+        
+}
+
+/*
+ * int32_t system_getargs(uint8_t *buf, int32_t nbytes)
+ * reads the program’s command line arguments into a user-level buffer.
+ * Inputs:  buf -- user-level buffer
+ *          nbytes -- length to copy
+ * Outputs: None
+ * Side Effects:
+ * return value: 0 for succ, -1 for failure
+ */
+
+int32_t add_task_to_run_queue(PCB_t *new_task)
+{
+    if (run_queue_head == NULL)
+    {
+        run_queue_head = &(new_task->run_list_node);
+        new_task->run_list_node.next = &(new_task->run_list_node);
+        new_task->run_list_node.pre = &(new_task->run_list_node);
+
+    }
+    else
+    {        
+        /* add to the head of running list */          
+        run_queue_t* last_node = run_queue_head->pre;
+        run_queue_head->pre =  &(new_task->run_list_node);
+        last_node->next = &(new_task->run_list_node);
+        new_task->run_list_node.next = run_queue_head;
+        new_task->run_list_node.pre = last_node;
+        run_queue_head = &(new_task->run_list_node);          
+    }
+    num_task_in_queue++; 
+    return 0;
+}
+
+int32_t remove_task_from_run_queue(PCB_t *new_task)
+{
+    if (run_queue_head == NULL)
+    {
+        printf("[INFO]ERROR: NO task can be removed \n");
+    }
+    else if (num_task_in_queue == 1)     //only 1 in list
+    {
+        run_queue_head = NULL;        
+    }
+    else
+    {    
+        (new_task->run_list_node.pre)->next = new_task->run_list_node.next;
+        (new_task->run_list_node.next)->pre = new_task->run_list_node.pre;
+        /* if old_task is the first */
+        if (run_queue_head == &(new_task->run_list_node))
+        {
+            run_queue_head = new_task->run_list_node.next;
+        }
+    }
+    num_task_in_queue--;
+    return 0;
+
+}
+
+void start_task()
+{
+    sche_init();
+    terminal_init();
+    pit_init();  
+    /* execute first task */
+    
+    system_execute((uint8_t *)"shell"); 
+    
+}
+/*
+ * int32_t task_switch(uint8_t status)
+ * switch to next program, used for scheduling
+ * Inputs:  status -- status returned to execute
+ * Outputs: None
+ * Side Effects:
+ * return value: returning the specified value to its parent process
+ */
+
+int32_t task_switch()
+{
+
+    /* if there is no task running */
+    if (page_array.num_using == 0)
+    {
+        return 0;
+    }
+    /* switch terminal and check if task has running */
+    
+    PCB_t *next_task = (PCB_t*)((uint32_t)(curr_task()->run_list_node.next)&(0xFFFFE000));
+
+    // save esp ebp(in kernel)
+    asm volatile("          \n\
+        movl %%ebp, %%eax   \n\
+        movl %%esp, %%ebx   \n\
+        "
+                 : "=a"(curr_task()->ebp), "=b"(curr_task()->esp));
+                 
+    /* everytime switch task then remap */
+    user_program_mem_map(next_task);
+
+    set_vidmap();
+    if (curr_terminal->num_task == 0)
+    {
+            /* change output video memory */
+        video_mem = curr_terminal->page_addr;
+        printf_sche("terminal<%d>\n",cur_terminal_id);
+        system_execute((uint8_t *)"shell");
+    }
+    
+    /* if only one task running */
+    if ((curr_task()->run_list_node.next == &(curr_task()->run_list_node))||(num_task_in_queue == 1))
+    {
+        return 0;
+    }
+  
+    /* set target location*/
+    // print_pcb(curr_task());
+    uint32_t next_esp = next_task->esp;
+    uint32_t next_ebp = next_task->ebp; 
+    tss.esp0 = next_task->kernel_ebp;
+    asm volatile(
+            "               \n\
+            movl %%eax, %%esp  \n\
+            movl %%ebx, %%ebp  \n\
+            "
+                :
+                 : "a"(next_esp), "b"(next_ebp)
+                 : "memory");
+                 
+    tss.ss0 = KERNEL_DS;      
+
+    return 0;
+}
+/* video_mem_map()
+ * description: used for schedule, called in switch terminal
+ * map the virtual video Memory to correct video page
+ * Inputs: terminal_t * terminal_next -- next terminal information
+ * Outputs: 0 success, -1 failure
+ * Side Effects: 
+ * if now scheduled running terminal is in current terminal -- direct mapping
+ * if now scheduled running terminal is not in current terminal -- remapping
+ *
+ */
+int32_t user_program_mem_map(PCB_t *next_task)
+{  
+    /* change output video memory */
+    video_mem = next_task->terminal->page_addr;
+    uint32_t base_addr = KERNEL_UPPER_ADDR + next_task->pid * SIZE_4MB;
+    page_directory.pde[TASK_VIR_IDX] = base_addr | TASK_PAGE_INFO;
+    
+    
+    flush_TLB();
+    return 0;
+}
+

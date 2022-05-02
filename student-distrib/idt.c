@@ -8,8 +8,11 @@
 #include "file_system.h"
 #include "task.h"
 #include "vidmem.h"
+#include "paging.h"
 
 extern PCB_t *curr_task(); // defined in boot.S
+extern uint32_t cur_terminal_id;
+extern terminal_t *curr_terminal;
 /*** functions ***/
 
 /*
@@ -120,10 +123,14 @@ void idt_init()
     }
 
     /*** set up interupt and enable ***/
+    SET_IDT_ENTRY(idt[IDT_BY_PIT], IDT_INTERUPT_21);
+    idt[IDT_BY_PIT].present = 1;
     SET_IDT_ENTRY(idt[IDT_BY_KEYBOARD], IDT_INTERUPT_33);
     idt[IDT_BY_KEYBOARD].present = 1;
     SET_IDT_ENTRY(idt[IDT_BY_RTC], IDT_INTERUPT_40);
     idt[IDT_BY_RTC].present = 1;
+    SET_IDT_ENTRY(idt[IDT_BY_MOUSE], IDT_INTERUPT_2C);
+    idt[IDT_BY_MOUSE].present = 1;
 
     /*** set up syscall and enable ***/
     SET_IDT_ENTRY(idt[IDT_BY_SYSCALL_START], IDT_SYSCALL);
@@ -152,17 +159,29 @@ void print_exception(uint32_t exception_num)
     {
         printf("Detect exception %x in user program\n", exception_num);
         // return 256 to execute
+        cli();
         PCB_t *parent;
-        if (page_array.num_using == 0)
+        if (page_array.num_using == 0||(curr_terminal->num_task == 0))
         {
             printf("halt nothing");
-            system_execute((uint8_t *)"shell");
+            // system_execute((uint8_t *)"shell");
         }
         // try to deactivate task, get parent task
+        if(curr_task()->vidmap == 1) {
+        PDE_4KB_t *user_vid_pde = (PDE_4KB_t *)(&page_directory.pde[VID_PAGE_INDEX]);
+        clear_PDE_4KB(user_vid_pde);
+        }
+            /* remove current task from run_queue */
+        remove_task_from_run_queue(curr_task());
+
         parent = deactivate_task(curr_task());
         if (parent == NULL)
         {
             system_execute((uint8_t *)"shell");
+        }
+        else
+        {
+            add_task_to_run_queue(parent);
         }
         // Restore parent paging
         restore_task_page(parent->pid);
@@ -170,6 +189,8 @@ void print_exception(uint32_t exception_num)
         // todo
         // Write Parent process’ info back to TSS
         tss.esp0 = curr_task()->saved_esp;
+        user_program_mem_map(parent);
+        sti();
         // print_pcb(curr_task());
         // print_pcb(parent);
         // restore stack

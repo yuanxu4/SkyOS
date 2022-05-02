@@ -1,4 +1,3 @@
-
 #include "lib.h"
 #include "x86_desc.h"
 #include "vidmem.h"
@@ -16,6 +15,7 @@ static PT_t user_vid_pt;
 
 extern void flush_TLB();   // defined in boot.S
 extern PCB_t *curr_task(); // defined in boot.S
+extern uint32_t cur_terminal_id;
 //***todo: put the curr_task into a *.h file which can not define it in every file
 
 /*
@@ -39,12 +39,41 @@ int32_t sys_vidmap(uint8_t **screen_start)
         return -1;
     }
     curr_task()->vidmap = 1;
-
-    // set the page directory and page table
     PDE_4KB_t *user_vid_pde = (PDE_4KB_t *)(&page_directory.pde[VID_PAGE_INDEX]);
-    set_PTE_4KB((PTE_4KB_t *)(&user_vid_pt.pte[VIDEO_MEM_INDEX]), VIDEO_MEM_INDEX * SIZE_4KB, 1, 1, 1);
-    set_PDE_4KB(user_vid_pde, (uint32_t)(&user_vid_pt), 1, 1, 1);
+    if(curr_task()->terminal->terminal_id == cur_terminal_id ) {
+        // set the page directory and page table
+        set_PTE_4KB((PTE_4KB_t *)(&user_vid_pt.pte[VIDEO_MEM_INDEX]), VIDEO_MEM_INDEX * SIZE_4KB, 1, 1, 1);
+        set_PDE_4KB(user_vid_pde, (uint32_t)(&user_vid_pt), 1, 1, 1);
+    } else {
+        // set the page directory and page table
+        set_PTE_4KB((PTE_4KB_t *)(&user_vid_pt.pte[VIDEO_MEM_INDEX]), (VIDEO_MEM_INDEX + curr_task()->terminal->terminal_id) * SIZE_4KB, 1, 1, 1);
+        set_PDE_4KB(user_vid_pde, (uint32_t)(&user_vid_pt), 1, 1, 1);
+    }
     flush_TLB();
     *screen_start = (uint8_t *)VID_USER_START_ADDR;
     return 0;
 }
+/*
+ * int32_t set_vidmap()
+ * this is the mmap swith for schedule
+ * input: none
+ * return: 0 for success
+ * side effect: mmap may change
+ */
+int32_t set_vidmap() {
+    if(curr_task()->vidmap == 1){
+        PDE_4KB_t *user_vid_pde = (PDE_4KB_t *)(&page_directory.pde[VID_PAGE_INDEX]);
+        if(curr_task()->terminal->terminal_id == cur_terminal_id ) {
+            // set the page directory and page table
+            set_PTE_4KB((PTE_4KB_t *)(&user_vid_pt.pte[VIDEO_MEM_INDEX]), VIDEO_MEM_INDEX * SIZE_4KB, 1, 1, 1);
+            set_PDE_4KB(user_vid_pde, (uint32_t)(&user_vid_pt), 1, 1, 1);
+         } else {
+            // set the page directory and page table
+            set_PTE_4KB((PTE_4KB_t *)(&user_vid_pt.pte[VIDEO_MEM_INDEX]), (VIDEO_MEM_INDEX + curr_task()->terminal->terminal_id) * SIZE_4KB, 1, 1, 1);
+            set_PDE_4KB(user_vid_pde, (uint32_t)(&user_vid_pt), 1, 1, 1);
+        }
+        flush_TLB();
+    }
+    return 0;
+}
+

@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "lib.h": "c",
+        "spng.h": "c",
+        "zlib.h": "c",
+        "draw.h": "c"
+    }
+}

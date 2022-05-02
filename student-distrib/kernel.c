@@ -21,6 +21,10 @@
 #include "rtc.h"
 #include "keyboard.h"
 #include "file_system.h"
+#include "pit.h"
+#include "svga/vga.h"
+#include "mouse.h"
+#include "GUI/gui.h"
 
 #include "task.h"
 
@@ -157,7 +161,7 @@ void entry(unsigned long magic, unsigned long addr)
 
         tss.ldt_segment_selector = KERNEL_LDT;
         tss.ss0 = KERNEL_DS;
-        tss.esp0 = 0x7FD000;
+        tss.esp0 = 0x8000000;
         ltr(KERNEL_TSS);
     }
 
@@ -166,15 +170,26 @@ void entry(unsigned long magic, unsigned long addr)
 
     /* Init the PIC */
     i8259_init();
-
+    
     /* keyboard init */
     keyboard_init();
 
-    terminal_init();
+    
     /* rtc ini*/
     rtc_init();
     enable_irq(RTC_IRQ);
     rtc_reset_R3();
+
+    /* svga init */
+    vga_init();
+    vga_set_mode(23);
+    vga_clearall();
+    //vga_accel_set_mode(BLITS_IN_BACKGROUND);
+
+    /* init mouse */
+    gui_cursor_init();
+    init_mouse();
+    enable_irq(Mouse_IRQ);
 
     if (mbi->mods_count > 0)
     {
@@ -182,11 +197,14 @@ void entry(unsigned long magic, unsigned long addr)
     }
     init_task_page_array();
 
+    init_gui();
+
     /* Enable paging */
     enable_paging();
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
+
 
     /* Enable interrupts */
     /* Do not enable the following until after you have set up your
@@ -200,7 +218,11 @@ void entry(unsigned long magic, unsigned long addr)
     launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
-    system_execute((uint8_t *)"shell");
+    
+    // printf("terminal<1>\n");
+    // system_execute((uint8_t *)"shell");
+    start_task();
+    
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile(".1: hlt; jmp .1;");
 }
