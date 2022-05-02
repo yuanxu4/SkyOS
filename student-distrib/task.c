@@ -180,8 +180,6 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
     new_task->pid = page_id;
     new_task->state = IN_USE;
     new_task->kernel_ebp = ((uint32_t)new_task) + SIZE_8KB - 4; // -4 for safty
-    uint32_t test = new_task->kernel_ebp;
-    // new_task->kernel_esp = new_task->kernel_ebp;
     new_task->args = args;
     new_task->task_name = name;
     new_task->vidmap = 0;
@@ -205,8 +203,6 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
     {
         new_task->parent = curr_task();
     }
-    // new_task->esp = ((uint32_t)new_task) + SIZE_8KB - 4;
-    // new_task->ebp = ((uint32_t)new_task) + SIZE_8KB - 4;
     return new_task;
 }
 
@@ -274,7 +270,7 @@ int32_t system_execute(const uint8_t *command)
     new_task->terminal = curr_terminal;
     if (page_array.num_using == 1)
     {
-        ONTO_DISPLAY_WRAP(printf_sche("terminal<1>\n"));
+        ONTO_TERMINAL(printf_sche("terminal<1>\n"));
     }
     /* add to schedule run_queue */
     if (new_task->parent == NULL)
@@ -503,10 +499,9 @@ int32_t sche_init()
 }
 
 /*
- * int32_t system_getargs(uint8_t *buf, int32_t nbytes)
- * reads the program’s command line arguments into a user-level buffer.
- * Inputs:  buf -- user-level buffer
- *          nbytes -- length to copy
+ * int32_t add_task_to_run_queue(PCB_t *new_task)
+ * add task to the head of queue.
+ * Inputs:  new_task -- next active task
  * Outputs: None
  * Side Effects:
  * return value: 0 for succ, -1 for failure
@@ -514,6 +509,7 @@ int32_t sche_init()
 
 int32_t add_task_to_run_queue(PCB_t *new_task)
 {
+    /* if no task in the queue */
     if (run_queue_head == NULL)
     {
         run_queue_head = &(new_task->run_list_node);
@@ -535,6 +531,14 @@ int32_t add_task_to_run_queue(PCB_t *new_task)
     return 0;
 }
 
+/*
+ * int32_t remove_task_from_run_queue(PCB_t *new_task)
+ * delete task from the queue.
+ * Inputs:  new_task -- next active task
+ * Outputs: None
+ * Side Effects:
+ * return value: 0 for succ, -1 for failure
+ */
 int32_t remove_task_from_run_queue(PCB_t *new_task)
 {
     if (run_queue_head == NULL)
@@ -560,6 +564,14 @@ int32_t remove_task_from_run_queue(PCB_t *new_task)
 
 }
 
+/*
+ * void start_task(void)
+ * called in kernel to start scheduling
+ * Inputs: None 
+ * Outputs: None
+ * Side Effects: start first shell
+ * return value: 
+ */
 void start_task()
 {
     sche_init();
@@ -570,6 +582,7 @@ void start_task()
     system_execute((uint8_t *)"shell"); 
     
 }
+
 /*
  * int32_t task_switch(uint8_t status)
  * switch to next program, used for scheduling
@@ -578,7 +591,6 @@ void start_task()
  * Side Effects:
  * return value: returning the specified value to its parent process
  */
-
 int32_t task_switch()
 {
 
@@ -604,7 +616,7 @@ int32_t task_switch()
     set_vidmap();
     if (curr_terminal->num_task == 0)
     {
-        ONTO_DISPLAY_WRAP(printf_sche("terminal<%d>\n",cur_terminal_id));
+        ONTO_TERMINAL(printf_sche("terminal<%d>\n",cur_terminal_id));
         system_execute((uint8_t *)"shell");
     }
     
@@ -635,11 +647,14 @@ int32_t task_switch()
 
     return 0;
 }
-/* video_mem_map()
- * description: used for schedule, called in switch terminal
+
+
+/* video_mem_map_task(PCB_t *next_task)
+ * description: used for schedule, called in switching task
  * map the virtual video Memory to correct video page
- * Inputs: terminal_t * terminal_next -- next terminal information
- * Outputs: 0 success, -1 failure
+ * map next program ptr 
+ * Inputs: PCB_t * next_task -- next task
+ * Outputs: 0 success
  * Side Effects: 
  * if now scheduled running terminal is in current terminal -- direct mapping
  * if now scheduled running terminal is not in current terminal -- remapping

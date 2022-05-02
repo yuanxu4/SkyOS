@@ -37,6 +37,24 @@ void clear(void)
     update_cursor(0, 0);
 }
 
+/* void clear_sche(void);
+ * Inputs: void
+ * Return Value: none
+ * Function: Clears video memory */
+void clear_sche(void)
+{
+    int32_t i;
+    int index = curr_terminal->terminal_id - 1;
+    for (i = 0; i < NUM_ROWS * NUM_COLS; i++)
+    {
+        *(uint8_t *)(video_mem + (i << 1)) = ' ';
+        *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
+    }
+    _terminal_dp[index].cursor_x = 0;
+    _terminal_dp[index].cursor_y = 0;
+    update_cursor(0, 0);
+}
+
 void align_space(int32_t size)
 {
     int index = curr_task()->terminal->terminal_id - 1;
@@ -182,7 +200,7 @@ int32_t printf(int8_t *format, ...)
     return (buf - format);
 }
 
-/* Standard printf().
+/* Standard printf_sche().
  * Only supports the following format strings:
  * %%  - print a literal '%' character
  * %x  - print a number in hexadecimal
@@ -224,7 +242,7 @@ int32_t printf_sche(int8_t *format, ...)
             {
             /* Print a literal '%' character */
             case '%':
-                putc('%');
+                putc_sche('%');
                 break;
 
             /* Use alternate formatting */
@@ -332,7 +350,7 @@ int32_t puts(int8_t *s)
     return index;
 }
 
-/* int32_t puts(int8_t* s);
+/* int32_t puts_sche(int8_t* s);
  *   Inputs: int_8* s = pointer to a string of characters
  *   Return Value: Number of bytes written
  *    Function: Output a string to the console */
@@ -423,7 +441,7 @@ void char_to_mem(c)
     _terminal_dp[index].cursor_x %= NUM_COLS;
 }
 
-/* void char_to_mem;
+/* void char_to_mem_sche;
  * Inputs: c -- show char on the screen
  *          screen_x --
  * Return Value: void
@@ -546,7 +564,7 @@ void putc(uint8_t c)
     
 }
 
-/* void putc(uint8_t c);
+/* void putc_sche(uint8_t c);
  * Inputs: uint_8* c = character to print
  * Return Value: void
  *  Function: Output a character to the console */

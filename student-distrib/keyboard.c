@@ -27,6 +27,7 @@ terminal_t *curr_terminal;
 
 extern void flush_TLB();   // defined in boot.S
 extern PCB_t *curr_task(); // defined in boot.
+extern void start();
 /* no shift no capson character and numbers */
 const char scancode_simple_lowcase[keynum] = {
     0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
@@ -152,6 +153,9 @@ void set_flag(uint8_t scancode)
     case ALT_RELEASE:
         alt_on_flag = 0;
         break;
+    case ENTER_RELEASE:
+        curr_terminal->enter_flag = 0;
+        break;
     default:
         break;
     }
@@ -236,8 +240,8 @@ void scancode_output(uint8_t scancode)
         /* press ctrl+ l */
         if (ctrl_on_flag && (scancode == L))
         {
-            clear();
-            printf("%s", kb_buf);     // print buffer value after clear screen
+            ONTO_TERMINAL(clear_sche());
+            ONTO_TERMINAL(printf_sche("%s", kb_buf));     // print buffer value after clear screen
         }
         else if (alt_on_flag)
         {
@@ -252,6 +256,9 @@ void scancode_output(uint8_t scancode)
                 case F3:
                     terminal_switch(&(_terminal_dp[2]));
                     break;
+                // case R:
+                //     start();
+                //     break;
                 default:break;
             }
         }
@@ -299,39 +306,28 @@ int32_t terminal_init()
     // copy_flag = 0;
     /* 25 is the number of rows in the terminal */
     enable_cursor(0, 25);
-    /* clear all the keyboard buffer*/
-    // for (i = 0; i < kb_bufsize; i++)
-    // {
-    //     kb_buf[i] = 0;
-    // }
     
     for (j = 0; j < MAX_TERMINAL_NUM; j++)
     {
         _terminal_dp[j].character_num = 0;
         _terminal_dp[j].cursor_x = 0;
         _terminal_dp[j].cursor_y = 0;
-        _terminal_dp[j].terminal_id = j+1;
+        _terminal_dp[j].terminal_id = j+1;  // terminal 1,2,3
         _terminal_dp[j].character_num = 0;
         _terminal_dp[j].num_task = 0;
-        _terminal_dp[j].enter_flag = 0;
+        _terminal_dp[j].enter_flag = 0;     // every terminal has enter flag
         memset((void*)_terminal_dp[j].keyboard_buf,0,(uint32_t)kb_bufsize); 
     }
     _terminal_dp[0].page_addr = TERM1_ADDR;
     _terminal_dp[1].page_addr = TERM2_ADDR;
     _terminal_dp[2].page_addr = TERM3_ADDR;
-
+    /* set curr terminal para */
     cur_terminal_id = 1;
     curr_terminal = &_terminal_dp[0];
     memcpy((void*)kb_buf,_terminal_dp[0].keyboard_buf,kb_bufsize);
-    _terminal_dp[0].character_num = 0;
-    // screen_x = _terminal_dp[0].cursor_x;
-    // screen_y = _terminal_dp[0].cursor_y;
     char_num = _terminal_dp[0].character_num;
 
     /* MAPPING */
-    // PDE_4KB_t *physical_vid_pde = (PDE_4KB_t *)(&page_directory.pde[0]);
-    // set_PDE_4KB(physical_vid_pde, (uint32_t)(&kernel_pt), 1, 0, 1);
-    page_directory.pde[1] = 0x00400083;
     set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX-1]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
     set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
     set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX+1]),TERM1_ADDR, 1, 0, 1);  
@@ -467,11 +463,11 @@ int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes)
 /*########################## FOR CP5 #################################*/
 
 
-/* video_mem_map()
+/* video_mem_map_linear()
  * description: used for schedule, called in switch terminal
- * map the virtual video Memory to correct video page
+ * map the virtual video Memory to physical address directly
  * Inputs: terminal_t * terminal_next -- next terminal information
- * Outputs: 0 success, -1 failure
+ * Outputs: 0 success
  * Side Effects: 
  * if now scheduled running terminal is in current terminal -- direct mapping
  * if now scheduled running terminal is not in current terminal -- remapping
@@ -479,7 +475,7 @@ int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes)
  */
 int32_t video_mem_map_linear()
 {    
-
+    /* MAPPING directly*/
     set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
     set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX+1]),TERM1_ADDR, 1, 0, 1);  
     set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX+2]), TERM2_ADDR, 1, 0, 1);
@@ -488,11 +484,11 @@ int32_t video_mem_map_linear()
     return 0;
 }
 
-/* video_mem_map()
+/* video_mem_map_switch()
  * description: used for schedule, called in switch terminal
  * map the virtual video Memory to correct video page
  * Inputs: terminal_t * terminal_next -- next terminal information
- * Outputs: 0 success, -1 failure
+ * Outputs: 0 success
  * Side Effects: 
  * if now scheduled running terminal is in current terminal -- direct mapping
  * if now scheduled running terminal is not in current terminal -- remapping
@@ -500,7 +496,7 @@ int32_t video_mem_map_linear()
  */
 int32_t video_mem_map_switch()
 {    
-
+    /* if active task occurs in our curr terminal */
     if (curr_task()->terminal->terminal_id == cur_terminal_id)
     {
         set_PTE_4KB((PTE_4KB_t *)(&page_table.pte[VIDEO_MEM_INDEX]),VIDEO_MEM_INDEX*SIZE_4KB, 1, 0, 1);
@@ -519,7 +515,7 @@ int32_t video_mem_map_switch()
  * switch correct terminal content to video memory
  * Inputs: 
  * terminal_next -- next terminal shown on the screen
- * Outputs: 0 success, -1 failure
+ * Outputs: 0 success
  * Side Effects: 
  * copy current terminal content to video page buffer
  * copying next video page buffer content to video memory 
@@ -528,6 +524,7 @@ int32_t video_mem_map_switch()
 int32_t terminal_switch(terminal_t *terminal_next)
 {
     send_eoi(KEYBARD_IRQ);
+    /* if the still in curr terminal */
     if (terminal_next->terminal_id == cur_terminal_id)
     {
         ONTO_TERMINAL(printf_sche("Still in terminal <%d>",cur_terminal_id));
@@ -536,6 +533,7 @@ int32_t terminal_switch(terminal_t *terminal_next)
     
     if (page_array.num_using == MAX_NUM_TASK)
     {
+        /* if next terminal has not opened but reach maximam 6 tasks */
         if (terminal_next->num_task == 0)
         {
             ONTO_TERMINAL(printf_sche("Already have 6 tasks! Cannot open terminal!"));
@@ -550,8 +548,6 @@ int32_t terminal_switch(terminal_t *terminal_next)
     /* set current terminal structure used by task.c */
     curr_terminal = terminal_next;
     cur_terminal_id = terminal_next->terminal_id;
-    // pre_terminal->cursor_x = screen_x;
-    // pre_terminal->cursor_y = screen_y;
     pre_terminal->character_num = char_num;
 
     cli();

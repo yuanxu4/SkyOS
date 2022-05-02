@@ -28,9 +28,11 @@
 #define L                   0x26
 #define ALT                 0x38  
 #define ALT_RELEASE         0xB8 
+#define ENTER_RELEASE       0x9C	
 #define F1                  0X3B
 #define F2                  0x3C
-#define F3                  0x3D    
+#define F3                  0x3D
+#define R                   0x13	    
 #define DELETE_NUM          14
 
 

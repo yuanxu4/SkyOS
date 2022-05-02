@@ -57,6 +57,8 @@ keep_going:
     # Push the parameters that entry() expects (see kernel.c):
     # eax = multiboot magic
     # ebx = address of multiboot info struct
+    # movl    $0x2badb002, %eax
+    # movl    $0x2cc80, %ebx
     pushl   %ebx
     pushl   %eax
 

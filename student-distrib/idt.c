@@ -8,6 +8,7 @@
 #include "file_system.h"
 #include "task.h"
 #include "vidmem.h"
+#include "paging.h"
 
 extern PCB_t *curr_task(); // defined in boot.S
 extern uint32_t cur_terminal_id;
