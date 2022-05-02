@@ -482,8 +482,9 @@ int32_t system_execute(const uint8_t *command)
         pushl   %%edx   /* 5 iret eip*/         \n\
         iret   /* go to user stack*/        \n\
         EXE_RET: /* after halt*/ \n\
+        popl %%esi   \n\
         "
-                 :
+                 : 
                  : "a"(USER_DS), "b"(USER_EBP), "c"(USER_CS), "d"(eip)
                  : "memory");
     // before return, check for pipeline
@@ -493,8 +494,8 @@ int32_t system_execute(const uint8_t *command)
         tmp = args_array;
         if (*tmp == '|')
         {
-            tmp++;
-            tmp = skip_space(tmp);
+            // tmp++;
+            // tmp = skip_space(tmp);
             system_execute(tmp);
         }
     }
@@ -505,6 +506,7 @@ int32_t system_execute(const uint8_t *command)
 
     // todo
     asm volatile("            \n\
+        movl %%esi, %%eax \n\
         leave \n\
         ret \n\
         "
@@ -622,6 +624,7 @@ int32_t system_halt(uint8_t status)
             movl %%ecx, %%ebp   \n\
             andl $0, %%eax    \n\
             movb %%bl, %%al   \n\
+            pushl %%eax   \n\
             jmp EXE_RET  /* jump to exe ret*/             \n\
             "
                  : /* no output*/
