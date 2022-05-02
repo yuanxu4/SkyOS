@@ -64,6 +64,7 @@ struct terminal_t{
     // PCB_t *current_process;
     uint32_t num_task;
     volatile uint32_t enter_flag;
+    uint32_t buf_flag;
 
 };
 

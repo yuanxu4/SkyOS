@@ -19,6 +19,7 @@ static uint8_t kb_buf[kb_bufsize];
 static uint8_t char_num;
 /* keycode flag*/
 static uint8_t cap_on_flag, shift_on_flag, ctrl_on_flag, alt_on_flag;
+// uint32_t read_to_buf_flag;
 // PT_t kernel_pt ;
 /* three terminals */
 terminal_t _terminal_dp[MAX_TERMINAL_NUM];
@@ -169,37 +170,40 @@ void set_flag(uint8_t scancode)
  */
 void put_changebuf(uint8_t output_char)
 {
-    if (output_char == '\b')
-    { // if backspace
-        if (char_num != 0)
-        {
-            if (kb_buf[char_num - 1] == '\t')
-            { // delete all space if \t
-                
-                ONTO_TERMINAL(putc_sche('\b'));
-                ONTO_TERMINAL(putc_sche('\b'));
-                ONTO_TERMINAL(putc_sche('\b'));
-                ONTO_TERMINAL(putc_sche('\b'));
-                
-            }else{
-                ONTO_TERMINAL(putc_sche('\b'));             
-            } 
-            kb_buf[char_num - 1] = 0; // reset to 0
-            char_num--;               // number of characters in buffer decrement         
-        }
-    }
-    else
+    if (curr_terminal->buf_flag)
     {
-        if (char_num < kb_bufsize - 1) //maximum char = 127
-        {
-            
-            ONTO_TERMINAL(putc_sche(output_char));
-            char_num++;
-            kb_buf[char_num - 1] = output_char;
+        if (output_char == '\b')
+        { // if backspace
+            if (char_num != 0)
+            {
+                if (kb_buf[char_num - 1] == '\t')
+                { // delete all space if \t
+                    
+                    ONTO_TERMINAL(putc_sche('\b'));
+                    ONTO_TERMINAL(putc_sche('\b'));
+                    ONTO_TERMINAL(putc_sche('\b'));
+                    ONTO_TERMINAL(putc_sche('\b'));
+                    
+                }else{
+                    ONTO_TERMINAL(putc_sche('\b'));             
+                } 
+                kb_buf[char_num - 1] = 0; // reset to 0
+                char_num--;               // number of characters in buffer decrement         
+            }
         }
         else
         {
-            kb_buf[kb_bufsize - 1] = '\n';  
+            if (char_num < kb_bufsize - 1) //maximum char = 127
+            {
+                
+                ONTO_TERMINAL(putc_sche(output_char));
+                char_num++;
+                kb_buf[char_num - 1] = output_char;
+            }
+            else
+            {
+                kb_buf[kb_bufsize - 1] = '\n';  
+            }
         }
     }
 }
@@ -316,6 +320,7 @@ int32_t terminal_init()
         _terminal_dp[j].character_num = 0;
         _terminal_dp[j].num_task = 0;
         _terminal_dp[j].enter_flag = 0;     // every terminal has enter flag
+        _terminal_dp[j].buf_flag = 0;
         memset((void*)_terminal_dp[j].keyboard_buf,0,(uint32_t)kb_bufsize); 
     }
     _terminal_dp[0].page_addr = TERM1_ADDR;
@@ -379,11 +384,13 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
     int32_t copied; // number has copied
     uint8_t *to;    // copy to
     uint8_t *from;  // copy from
+    curr_task()->terminal->buf_flag = 1;
     sti();          // interrupt gate has set IF to 0, we need set 1 back
     while (curr_task()->terminal->enter_flag == 0)
     {
     } // read function waiting  
     cli();
+    
     to = buf;
     from = kb_buf;
     if ((NULL == buf) || (NULL == kb_buf)||(nbytes < 0))
@@ -409,6 +416,7 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
                 kb_buf[i] = 0;
             }
             curr_terminal->enter_flag = 0;
+            curr_terminal->buf_flag = 0;
             return nbytes;
         }
     }
@@ -423,6 +431,7 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
                 kb_buf[i] = 0;
             }
             curr_terminal->enter_flag = 0;
+            curr_terminal->buf_flag = 0;
             sti();
             return nbytes;
         }
@@ -439,6 +448,7 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
         kb_buf[i] = 0;
     }
     curr_terminal->enter_flag = 0;
+    curr_terminal->buf_flag = 0;
     sti();
     return copied;
 }
