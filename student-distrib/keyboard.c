@@ -485,7 +485,7 @@ int32_t terminal_switch(terminal_t *terminal_next)
     }
 
     /* change output video memory */
-    video_mem = terminal_next->page_addr;
+    // video_mem = terminal_next->page_addr;
     
     terminal_t *pre_terminal = &(_terminal_dp[cur_terminal_id-1]);
     
