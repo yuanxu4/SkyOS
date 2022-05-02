@@ -236,7 +236,7 @@ int32_t system_execute(const uint8_t *command)
     strcpy((int8_t *)name_array, (const int8_t *)command);
     if (args != NULL )
     {
-        printf("%s\n", args);
+        // printf("%s\n", args);
         if (*args != '\0')
         {
             strcpy((int8_t *)args_array, (const int8_t *)args);

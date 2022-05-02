@@ -91,6 +91,14 @@ void rtc_interrupt_handler() {
     //if the counter == 0 set the flag into 1 means can return from the rtc read
     /* clear the flag */
     cli();
+    if (page_array.num_using == 0)
+    {
+        rtc_reset_R3();  
+        send_eoi(RTC_IRQ);
+        sti();
+        return;
+    }
+    
     run_queue_t *temp = &(curr_task()->run_list_node);
     do{
         if(((PCB_t*)((uint32_t)(temp)&(0xFFFFE000)))->rtc_counter > 0){
@@ -102,6 +110,7 @@ void rtc_interrupt_handler() {
     rtc_reset_R3();  
     send_eoi(RTC_IRQ);
     sti();
+
  
 }
  

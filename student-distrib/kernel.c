@@ -171,11 +171,12 @@ void entry(unsigned long magic, unsigned long addr)
     /* keyboard init */
     keyboard_init();
 
-    
+    init_task_page_array();
     /* rtc ini*/
     rtc_init();
     enable_irq(RTC_IRQ);
     rtc_reset_R3();
+
 
     if (mbi->mods_count > 0)
     {

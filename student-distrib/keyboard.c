@@ -382,7 +382,7 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
     sti();          // interrupt gate has set IF to 0, we need set 1 back
     while (curr_task()->terminal->enter_flag == 0)
     {
-    } // read function waiting
+    } // read function waiting  
     cli();
     to = buf;
     from = kb_buf;
@@ -412,13 +412,27 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
             return nbytes;
         }
     }
-
-    /* add NULL to the bytes we not require */
-    while (nbytes > copied)
+    if ('\n' == *from)
     {
-        *to++ = '\0';
-        copied++;
+        *to++ = *from++;
+        if (++copied == nbytes)
+        {
+            /* clear kb_board buffer value */
+            for (i = 0; i < kb_bufsize; i++)
+            {
+                kb_buf[i] = 0;
+            }
+            curr_terminal->enter_flag = 0;
+            sti();
+            return nbytes;
+        }
     }
+    // /* add NULL to the bytes we not require */
+    // while (nbytes > copied)
+    // {
+    //     *to++ = '\0';
+    //     copied++;
+    // }
     /* clear kb_board buffer value */
     for (i = 0; i < kb_bufsize; i++)
     {
