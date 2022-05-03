@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "zlib.h": "c",
+        "zconf.h": "c",
+        "limits.h": "c",
+        "string.h": "c",
+        "stdio.h": "c",
+        "math.h": "c",
+        "stdlib.h": "c",
+        "crtdefs.h": "c",
+        "_mingw.h": "c",
+        "stdint.h": "c"
+    }
+}

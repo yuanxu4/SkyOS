@@ -2,6 +2,17 @@
     "files.associations": {
         "__config": "c",
         "x86_desc.h": "c",
-        "lib.h": "c"
+        "lib.h": "c",
+        "gui_imgs.h": "c",
+        "string": "cpp",
+        "syslimits.h": "c",
+        "zlib.h": "c",
+        "stddef.h": "c",
+        "gui_background.h": "c",
+        "gui.h": "c",
+        "gui_window.h": "c",
+        "cstdlib": "c",
+        "stdbool.h": "c",
+        "upng.h": "c"
     }
 }

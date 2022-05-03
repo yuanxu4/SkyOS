@@ -2,7 +2,51 @@
 #include "../svga/vga.h"
 #include "gui_imgs.h"
 #include "../lib.h"
+#include "../png/upng.h"
+
+static unsigned char png_data[SCREEN_HEIGHT * SCREEN_WIDTH * 4];
+static unsigned int png_buffer[SCREEN_HEIGHT * SCREEN_WIDTH];
+
 void init_background(){
+    upng_t image;
+    dentry_t png;
+    int32_t size;
+    const unsigned char *buffer;
+    image = upng_new_from_file("N000.png");
+    image.buffer = (unsigned char*) &png_data;
+    upng_decode(&image);
+
+    unsigned int idx;
+    unsigned px_size = upng_get_pixelsize(&image) / 8;
+    int i, j;
+    buffer = upng_get_buffer(&image);
+    unsigned height = upng_get_height(&image);
+    unsigned width = upng_get_width(&image);
+    for (j = 0; j < height; j++) {
+        for (i = 0; i < width; i++) {
+            idx = (j * width + i) * px_size;
+            if (px_size == 3) {
+                png_buffer[j * width + i] = (0x000000 | buffer[idx + 0] << 16 | buffer[idx + 1] << 8 | buffer[idx + 2]);
+            } else if (px_size == 4) {
+                png_buffer[j * width + i] =
+                        (buffer[idx + 3] << 24 | buffer[idx + 0] << 16 | buffer[idx + 1] << 8 | buffer[idx + 2]);
+            } else {
+               
+            }
+        }
+    }
+
+    vga_color color;
+    for(j = 0; j < SCREEN_HEIGHT; j ++){
+        for(i = 0; i < SCREEN_WIDTH; i ++){
+            color = color_convert(png_buffer[i + j * SCREEN_WIDTH]);
+            background_img[i + j * SCREEN_WIDTH] = color;
+        }
+    }
+
+    
+
+    // rpng_load_image("resources/fudesumi_rpng_save.png", &width, &height, &channels, &bits);
     // int x, y;
 
     // for(y = 0; y < SCREEN_HEIGHT; y ++){

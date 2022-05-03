@@ -11,6 +11,7 @@ static int curr_win_num = 0;
 static int mouse_target_id = -1;
 static int mouse_target_file = -1;
 static int on_title = 0;
+static int win_move_flag = 0;
 
 // static int mouse_window_offset_x = 999;
 // static int mouse_windos_offset_y = 999;
@@ -273,6 +274,7 @@ void decrease_active_window_prior(){
 }
 
 void try_to_get_new_window(mouse_location_type type){
+    terminal_t* terminal_pt;
     /* check if reach max */
     if(curr_win_num == WINDOW_MAX_NUM){
         win_init_x = 50;
@@ -289,25 +291,16 @@ void try_to_get_new_window(mouse_location_type type){
         }
     }
     window[id].prior = 0;
-    increase_active_window_prior();
 
     /* set XY and active */
     window[id].x = win_init_x;
     window[id].y = win_init_y;
-    window[id].status = 1;
-
-    win_init_x += 50;
-    win_init_y += 50;
-
-    curr_win_num ++;
-
-    terminal_t* terminal_pt;
 
     switch(type){
         case TERMINAL_ICON:
             terminal_pt = get_available_terminal();
             if(terminal_pt == NULL){
-                break;
+                return;
             }
             window[id].type = TERMINAL_ICON;
             window[id].content_pt = (uint32_t)(terminal_pt);
@@ -317,6 +310,9 @@ void try_to_get_new_window(mouse_location_type type){
             break;
 
         case FILE_ICON:
+            if(desktop_file[mouse_target_file].file->file_type != 1){
+                return;
+            }
             window[id].content_pt = (uint32_t)(&desktop_file[1]);
             window[id].type = FILE_ICON;
             break;
@@ -324,7 +320,15 @@ void try_to_get_new_window(mouse_location_type type){
         default:
             break;
     }
+
+    win_init_x += 50;
+    win_init_y += 50;
+
+    window[id].status = 1;
+
+    increase_active_window_prior();
     
+    curr_win_num ++;
 }
 
 void draw_window(gui_window* window){
@@ -365,16 +369,30 @@ int check_mouse_gui(int x, int y){
         return WINDOW_CANCEL;
     }
 
+    int prior;
     int id;
-    for(id = 0; id < WINDOW_MAX_NUM; id ++){
-        if(window[id].status == 1){
+    for(prior = 0; prior < curr_win_num; prior ++){
+        for(id = 0; id < WINDOW_MAX_NUM; id ++){
+            if(window[id].prior == prior){
             if(x > window[id].x && x < window[id].x + WINDOW_TITLE_WIDTH 
             && y > window[id].y && y < window[id].y + WINDOW_TITLE_HEIGHT){
                 mouse_target_id = id;
                 return WINDOW_TITLE;
             }
         }
+        }
     }
+
+    // int id;
+    // for(id = 0; id < WINDOW_MAX_NUM; id ++){
+    //     if(window[id].status == 1){
+    //         if(x > window[id].x && x < window[id].x + WINDOW_TITLE_WIDTH 
+    //         && y > window[id].y && y < window[id].y + WINDOW_TITLE_HEIGHT){
+    //             mouse_target_id = id;
+    //             return WINDOW_TITLE;
+    //         }
+    //     }
+    // }
 
     for(id = 0; id < curr_file; id ++){
         if(x > desktop_file[id].x && x < desktop_file[id].x + DESKTOP_GRID_X
@@ -424,6 +442,7 @@ void mouse_windows_release_interact_handler(int x, int y){
     window_cancel(mouse_target_id);
     mouse_target_id = -1;
     mouse_target_file = -1;
+    win_move_flag = 0;
 }
 
 void window_move(int x, int y){
@@ -432,6 +451,8 @@ void window_move(int x, int y){
     }
     window[mouse_target_id].x += x;
     window[mouse_target_id].y += y;
+    win_move_flag = 1;
+    
 }
 
 void mouse_windows_press_interact_handler(){
@@ -439,7 +460,10 @@ void mouse_windows_press_interact_handler(){
         return;
     }
     /* check if is in title */
-    wake_window();
+    if(win_move_flag == 0){
+        wake_window();
+    }
+
     if(window[mouse_target_id].type == TERMINAL_ICON){
         window[mouse_target_id].enable_cursor = 1;
         terminal_t* terminal_pt = (terminal_t*)(window[mouse_target_id].content_pt);

@@ -13,21 +13,6 @@
 #define FOLDER_ICON_SIZE   DESKTOP_ICON_IMG_HEIGHT * DESKTOP_ICON_IMG_WIDTH * 2
 #define FOLDER_ICON_MASK_SIZE DESKTOP_ICON_IMG_HEIGHT * DESKTOP_ICON_IMG_WIDTH * 2
 
-// unsigned short* background_img;
-
-// unsigned int* win_up_img;
-
-// unsigned int* win_side_img;
-
-// unsigned int* win_down_img;
-
-// unsigned int* file_icon;
-
-// unsigned int* file_icon_mask;
-
-// unsigned int* folder_icon;
-
-// unsigned int* folder_icon_mask;
 extern unsigned short background_img[SCREEN_HEIGHT * SCREEN_WIDTH];
 
 extern unsigned int win_up_img[WINDOW_TITLE_WIDTH * WINDOW_TITLE_HEIGHT];
@@ -45,5 +30,7 @@ extern unsigned int folder_icon[DESKTOP_ICON_IMG_HEIGHT * DESKTOP_ICON_IMG_WIDTH
 extern unsigned int folder_icon_mask[DESKTOP_ICON_IMG_HEIGHT * DESKTOP_ICON_IMG_WIDTH];
 
 extern unsigned int terminal_icon_img[TERMINAL_ICON_WIDTH * TERMINAL_ICON_HEIGHT];
+
+extern unsigned int terminal_icon_mask[TERMINAL_ICON_WIDTH * TERMINAL_ICON_HEIGHT];
 
 #endif

@@ -226,6 +226,7 @@ void gui_cursor_init( void )
     // CHANGE COLOR OF 64 X 64 HARDWARE CURSOR
     // INITIALIZE AND DISPLAY 32 X 32 HARDWARE CURSOR
     _32x32_Patterns_Load( _32x32_planes_0_1 );
+    Cursor_Set_Color(0x0, 0x0);
     _32x32_Cursor_Enable();
     // CHANGE LOCATION OF 32 X 32 HARDWARE CURSOR
 }; // main()

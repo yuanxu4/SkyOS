@@ -138,15 +138,15 @@ page_directory:
     .long   0x00000003  # init base addr(will be set when enable), set bit 0&1, present and R/W, bit7=0 for 4KB
     # 4-8MB, for 4MB kernel page, virtual = physical
     .long   0x00400083  # set base addr, set bit 0&1&7 set, present, R/W and PS for 4MB
-    # .long   0x00800083
-    # .long   0x00C00083
-    # .long   0x01000083
-    # .long   0x01400083
-    # .long   0x01800083
-    # .long   0x01C00083
-    .rept   8 - 2
-    .long   0
-    .endr
+    .long   0x00800083
+    .long   0x00C00083
+    .long   0x01000083
+    .long   0x01400083
+    .long   0x01800083
+    .long   0x01C00083
+    # .rept   8 - 2
+    # .long   0
+    # .endr
     # 32- 36MB for terminal
     .long   0x02000083
     # 8MB-4GB, not presented

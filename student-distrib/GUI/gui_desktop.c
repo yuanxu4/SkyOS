@@ -2,6 +2,7 @@
 #include "../file_system.h"
 #include "../svga/vga.h"
 #include "gui_imgs.h"
+#include "../lib.h"
 
 void init_desktop(){
     //uint8_t* file_name_pt = get_all_file_name();
@@ -26,15 +27,15 @@ void init_desktop(){
     }
 
 
-    int x, y;
-    rgb color;
-    for(y = WINDOW_DOWN_HEIGHT + WINDOW_TITLE_HEIGHT + STORE_Y; y <WINDOW_DOWN_HEIGHT + WINDOW_TITLE_HEIGHT + STORE_Y + TERMINAL_ICON_HEIGHT; y ++){
-        for(x = WINDOW_SIDE_WIDTH; x < WINDOW_SIDE_WIDTH + TERMINAL_ICON_WIDTH; x ++){
-            color = terminal_icon_img[x - WINDOW_SIDE_WIDTH + (y - WINDOW_DOWN_HEIGHT - WINDOW_TITLE_HEIGHT - STORE_Y) * TERMINAL_ICON_WIDTH];
-            vga_setcolor(color);
-            vga_drawpixel(x, y);
-        }
-    }
+    // int x, y;
+    // rgb color;
+    // for(y = WINDOW_DOWN_HEIGHT + WINDOW_TITLE_HEIGHT + STORE_Y; y <WINDOW_DOWN_HEIGHT + WINDOW_TITLE_HEIGHT + STORE_Y + TERMINAL_ICON_HEIGHT; y ++){
+    //     for(x = WINDOW_SIDE_WIDTH; x < WINDOW_SIDE_WIDTH + TERMINAL_ICON_WIDTH; x ++){
+    //         color = terminal_icon_img[x - WINDOW_SIDE_WIDTH + (y - WINDOW_DOWN_HEIGHT - WINDOW_TITLE_HEIGHT - STORE_Y) * TERMINAL_ICON_WIDTH];
+    //         vga_setcolor(color);
+    //         vga_drawpixel(x, y);
+    //     }
+    // }
 
 }
 
@@ -64,7 +65,7 @@ void draw_file_icon(gui_file* file){
                     vga_drawpixel(i + x, j + y + offset);
                 }
             }
-        }
+        } 
     }
     else{
         for(j = 0; j < DESKTOP_ICON_IMG_HEIGHT; j ++){
@@ -85,13 +86,34 @@ void draw_file_icon(gui_file* file){
     }
 
     
+    int name_len = strlen(file->file->file_name);
 
     int char_start_y = y + DESKTOP_ICON_IMG_HEIGHT + 2;
-    int char_start_x = x + 1;
+    int char_start_x;
+    if(name_len <= 6){
+        char_start_x = x + (DESKTOP_ICON_IMG_WIDTH - name_len * FONT_WIDTH) / 2;
+    }
+    else{
+        char_start_x = x + 1;
+    }
     for(i = 0; i < 6; i ++){
-        gui_putchar(*(file->file->file_name + i), char_start_x, char_start_y);
+        gui_putchar_transparent(*(file->file->file_name + i), char_start_x, char_start_y);
         char_start_x += FONT_WIDTH;
-    } 
+    }
+
+    if(name_len > 6){
+        if(name_len - 6 > 6){
+            char_start_x = x + 1;
+        }
+        else{
+            char_start_x = x + (DESKTOP_ICON_IMG_WIDTH - (name_len - 6) * FONT_WIDTH) / 2;
+        }
+
+        for(i = 0; i < 6; i ++){
+            gui_putchar_transparent(*(file->file->file_name + i + 6), char_start_x, char_start_y + FONT_HEIGHT);
+            char_start_x += FONT_WIDTH;
+        } 
+    }
 
 }
 
@@ -100,10 +122,22 @@ void update_desktop(){
     if(current_buffer){
         y_off = SCREEN_HEIGHT;
     }
+
+    int j, i;
+    rgb color;
+    for(j = 0; j < DESKTOP_ICON_IMG_HEIGHT; j ++){
+        for(i = 0; i < DESKTOP_ICON_IMG_WIDTH; i ++ ){
+            if(terminal_icon_mask[i + j * DESKTOP_ICON_IMG_WIDTH] == 0){
+                color = terminal_icon_img[i + j * DESKTOP_ICON_IMG_WIDTH] | 0xFF000000;
+                vga_setcolor(color);
+                vga_drawpixel(i + TERMINAL_ICON_X, j + TERMINAL_ICON_Y + y_off);
+            }
+        }
+    }
     //uint8_t* file_name_pt = get_all_file_name();
     draw_file_icon(&desktop_file[0]);
     //draw_file_icon(DESKTOP_GRID_X_START + 5 + x_offset * DESKTOP_GRID_X, DESKTOP_GRID_Y_START + y_offset * DESKTOP_GRID_Y, (uint8_t *)(file_name_pt + i * MAX_LEN_FILE_NAME));
-    __svgalib_cirrusaccel_mmio_ScreenCopy(WINDOW_SIDE_WIDTH, WINDOW_DOWN_HEIGHT + WINDOW_TITLE_HEIGHT + STORE_Y, TERMINAL_ICON_X, TERMINAL_ICON_Y + y_off, TERMINAL_ICON_WIDTH, TERMINAL_ICON_HEIGHT);
+    //__svgalib_cirrusaccel_mmio_ScreenCopy(WINDOW_SIDE_WIDTH, WINDOW_DOWN_HEIGHT + WINDOW_TITLE_HEIGHT + STORE_Y, TERMINAL_ICON_X, TERMINAL_ICON_Y + y_off, TERMINAL_ICON_WIDTH, TERMINAL_ICON_HEIGHT);
 }
 
 void draw_directory(gui_window* window){

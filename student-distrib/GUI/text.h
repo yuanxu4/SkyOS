@@ -51,5 +51,7 @@ void init_gui_font();
 
 void gui_putchar(char ch, int x, int y);
 
+void gui_putchar_transparent(char ch, int x, int y);
+
 #endif /* TEXT_H */
 

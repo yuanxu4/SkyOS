@@ -648,3 +648,26 @@ void gui_putchar(char ch, int x, int y){
     }
     __svgalib_cirrusaccel_mmio_ScreenCopy(ch_x, ch_y, start_x, start_y + offset, ch_width, ch_height);
 }
+
+void gui_putchar_transparent(char ch, int x, int y){
+    int offset = 0;
+    if(current_buffer){
+        offset = SCREEN_HEIGHT;
+    }
+
+    int i, j;
+    vga_setcolor(0xFFFFFFFF);
+    for(j = 0; j < FONT_HEIGHT; j ++){
+        for(i = 0; i < FONT_WIDTH; i ++){
+            if((font_data[ch][j]>>(7 - i)) & 0x1){
+                if(x + i >= SCREEN_WIDTH || y + j >= SCREEN_HEIGHT || x + i <= 0){
+                    continue;
+                }
+                vga_drawpixel(x + i, y + j + offset);
+            }
+            else{
+                continue;
+            }
+        }
+    }
+}

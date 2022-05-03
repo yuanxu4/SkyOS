@@ -186,11 +186,6 @@ void entry(unsigned long magic, unsigned long addr)
     vga_clearall();
     //vga_accel_set_mode(BLITS_IN_BACKGROUND);
 
-    /* init mouse */
-    gui_cursor_init();
-    init_mouse();
-    enable_irq(Mouse_IRQ);
-
     if (mbi->mods_count > 0)
     {
         file_sys_init((module_t *)mbi->mods_addr);
@@ -198,6 +193,11 @@ void entry(unsigned long magic, unsigned long addr)
     init_task_page_array();
 
     init_gui();
+
+    /* init mouse */
+    gui_cursor_init();
+    init_mouse();
+    enable_irq(Mouse_IRQ);
 
     /* Enable paging */
     enable_paging();
