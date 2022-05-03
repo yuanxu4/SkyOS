@@ -3,9 +3,6 @@
 #include "ece391support.h"
 #include "ece391syscall.h"
 
-#define BUFSIZE 1024
-#define FILE_NAME_LEN 32
-
 int main()
 {
 	int32_t cnt, rval;

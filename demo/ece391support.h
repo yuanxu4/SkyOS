@@ -4,6 +4,8 @@
 #include <stdint.h>
 
 #define NULL 0
+#define BUFSIZE 1024
+#define FILE_NAME_LEN 32
 
 extern uint32_t ece391_strlen(const uint8_t *s);
 extern void ece391_strcpy(uint8_t *dst, const uint8_t *src);
@@ -17,5 +19,6 @@ extern uint32_t ece391_atoi(uint8_t *buf, int32_t radix);
 extern uint8_t *ece391_strrev(uint8_t *s);
 extern uint8_t *parse_args(uint8_t *command);
 extern uint8_t *parse_dir(uint8_t *path);
+extern void *ece391_memcpy(void *dest, const void *src, uint32_t n);
 
 #endif /* ECE391SUPPORT_H */
