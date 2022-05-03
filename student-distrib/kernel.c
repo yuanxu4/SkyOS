@@ -22,6 +22,7 @@
 #include "keyboard.h"
 #include "file_system.h"
 #include "pit.h"
+#include "sb16.h"
 
 #include "task.h"
 
@@ -176,6 +177,8 @@ void entry(unsigned long magic, unsigned long addr)
     rtc_init();
     enable_irq(RTC_IRQ);
     rtc_reset_R3();
+
+    
 
 
     if (mbi->mods_count > 0)

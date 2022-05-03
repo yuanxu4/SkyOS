@@ -13,6 +13,7 @@
 #include "keyboard.h"
 #include "rtc.h"
 #include "idt.h"
+#include "sb16.h"
 
 #define PASS 1
 #define FAIL 0
@@ -638,6 +639,17 @@ int sys_call_err_test()
 	}
 	return result;
 }
+int music_test()
+{
+	
+	TEST_HEADER;
+	int result = PASS;
+	if (2==play_music((uint8_t*)"wav_40_16_2_pcm.wav")) {
+		result = FAIL;
+	}
+	while(1){};
+	return result;
+}
 
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
@@ -656,8 +668,8 @@ void launch_tests()
 
 	//TEST_OUTPUT("file_sys_test", file_sys_test());
 	//TEST_OUTPUT("exe garbage input test", exe_halt_err_test());
-	//TEST_OUTPUT("syscall garbage input test", sys_call_err_test());
-	//continue_test();
+	TEST_OUTPUT("music test", music_test());
+	continue_test();
 
 	clear();
 }

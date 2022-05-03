@@ -9,6 +9,7 @@
 #include "task.h"
 #include "vidmem.h"
 #include "paging.h"
+#include "sb16.h"
 
 extern PCB_t *curr_task(); // defined in boot.S
 extern uint32_t cur_terminal_id;
@@ -125,6 +126,8 @@ void idt_init()
     /*** set up interupt and enable ***/
     SET_IDT_ENTRY(idt[IDT_BY_PIT], IDT_INTERUPT_21);
     idt[IDT_BY_PIT].present = 1;
+    SET_IDT_ENTRY(idt[IDT_BY_SB16], IDT_INTERUPT_26);
+    idt[IDT_BY_SB16].present = 1;
     SET_IDT_ENTRY(idt[IDT_BY_KEYBOARD], IDT_INTERUPT_33);
     idt[IDT_BY_KEYBOARD].present = 1;
     SET_IDT_ENTRY(idt[IDT_BY_RTC], IDT_INTERUPT_40);

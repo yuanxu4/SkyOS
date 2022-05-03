@@ -1061,6 +1061,42 @@ IDT_INTERUPT_21:
     popf
     iret
 
+    /*
+ * IDT_INTERUPT_33
+ * description: interupt handler used to handle diferent exception
+ * input: none
+ * output: the interupt reaction
+ * return: none
+ */
+.globl IDT_INTERUPT_26
+IDT_INTERUPT_26:
+    # save_pre_reg
+    pushf
+    pushl %eax
+    pushl %ebx
+    pushl %ecx
+    pushl %edx
+    pushl %ebp
+    pushl %esi
+    pushl %edi
+    push %fs
+    push %es
+    push %ds
+    call sb16_interrupt_handler
+    # restore_pre_reg
+    pop %ds
+    pop %es
+    pop %fs
+    popl %edi
+    popl %esi
+    popl %ebp
+    popl %edx
+    popl %ecx
+    popl %ebx
+    popl %eax
+    popf
+    iret
+
 
 /*
  * IDT_INTERUPT_33
