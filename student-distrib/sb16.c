@@ -13,6 +13,8 @@
 volatile int ack_flag = 1;
 //64kb
 int8_t DMA_buff[BUFF_DIM][BUFF_SIZE];
+int32_t fd;
+uint8_t* temp[2];
 /**************************** help function **********************************/
 uint8_t dsp_read() {
     // check the status bit bit
@@ -57,8 +59,11 @@ void sb16_set_mode(uint16_t buff, uint8_t page, uint16_t frequency,
         dsp_write(LOBYTE(frequency));
         dsp_write(bcommand);
         dsp_write(bmode);
-        dsp_write(LOBYTE(BLOCK_SIZE-1));
-        dsp_write(HIBYTE(BLOCK_SIZE-1));
+        dsp_write(LOBYTE(BLOC_SIZE-1));
+        dsp_write(HIBYTE(BLOC_SIZE-1));
+    } else if(bmode == WAV_8_2_MODE) {
+        printf("not support yet");
+        return;
     }
 }
 
@@ -97,6 +102,7 @@ int32_t sb16_init(uint8_t* file_info) {
 void sb16_stop() {
     ack_flag = 1;
     dsp_reset();
+    disable_irq(SB16_IRQ_NUM);
 }
 
 void sb16_interrupt_handler() {
@@ -106,6 +112,9 @@ void sb16_interrupt_handler() {
     }else {
         ack_flag = 1;
     }
+    if (!read(fd, temp[ack_flag], BUFF_SIZE)) {
+                sb16_stop();
+            }
     //acknowlege the transfer by read port
     inb(SB16_ACK);
     send_eoi(SB16_IRQ_NUM);
@@ -115,24 +124,14 @@ void sb16_interrupt_handler() {
 /****************************** play music function *****************************/
 int play_music(uint8_t* fname) {
 
-    uint8_t* temp[2];
     uint8_t f_info[44];
-    volatile int prev = 0;
-    int32_t fd = open (fname);
+
+    fd = open (fname);
     read(fd, f_info, 44);
     sb16_init(f_info);
     temp[0] = (uint8_t*)DMA_buff;
     temp[1] = (uint8_t*)((int32_t)DMA_buff + BUFF_SIZE);
     read(fd, temp[0], BUFF_SIZE);
     read(fd, temp[1], BUFF_SIZE);
-    while(1) {
-        if (prev != ack_flag) {
-            prev = ack_flag;
-            if (!read(fd, temp[ack_flag], BUFF_SIZE)) {
-                sb16_stop();
-                return 0;
-            }
-        }
-    }
-    return -1;
+    return 0;
 }

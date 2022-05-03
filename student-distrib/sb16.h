@@ -11,6 +11,7 @@
 
 #include "types.h"
 #include "lib.h"
+#include "i8259.h"
 
 #define SB16_IRQ_NUM        0x05
 #define SB16_READY          0x80 
@@ -29,10 +30,11 @@
 
 #define BUFF_SIZE           65536/2
 #define BUFF_DIM            2
-#define BLOCK_SIZE          BUFF_SIZE/BUFF_DIM
+#define BLOC_SIZE          BUFF_SIZE/BUFF_DIM
 #define WAVINFO_SIZE        44
 
 #define WAV_16_2_MODE       0x30
+#define WAV_8_2_MODE        0x00
 
 #define DMA_ABLE_PORT_16    0xD4           
 #define DMA_ABLE_PORT_8     0x0A           
