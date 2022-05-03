@@ -13,5 +13,6 @@
 #define SYS_SIGRETURN 10
 #define SYS_ALLOC 11
 #define SYS_FREE 12
+#define SYS_FS 13
 
 #endif /* ECE391SYSNUM_H */

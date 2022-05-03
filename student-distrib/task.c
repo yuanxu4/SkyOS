@@ -484,7 +484,7 @@ int32_t system_execute(const uint8_t *command)
         EXE_RET: /* after halt*/ \n\
         popl %%esi   \n\
         "
-                 : 
+                 :
                  : "a"(USER_DS), "b"(USER_EBP), "c"(USER_CS), "d"(eip)
                  : "memory");
     // before return, check for pipeline

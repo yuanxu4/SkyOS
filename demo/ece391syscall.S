@@ -29,6 +29,7 @@ DO_CALL(ece391_set_handler,SYS_SET_HANDLER)
 DO_CALL(ece391_sigreturn,SYS_SIGRETURN)
 DO_CALL(ece391_alloc, SYS_ALLOC)
 DO_CALL(ece391_free, SYS_FREE)
+DO_CALL(ece391_fs, SYS_FS)
 
 
 /* Call the main() function, then halt with its return value. */

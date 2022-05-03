@@ -6,7 +6,6 @@
 #include "ece391support.h"
 #include "ece391syscall.h"
 
-#define NULL 0
 #define MAX_ORDER_PAGE 6                       // max order of pages in the buddy system
 #define MAX_NUM_PAGE (1 << MAX_ORDER_PAGE)     // max num of pages in the buddy system
 #define MAX_NUM_NODE ((MAX_NUM_PAGE << 1) - 1) // 2047, max num of nodes in the buddy system
@@ -284,31 +283,6 @@ int32_t bd_display(buddy_system_t *buddy_sys)
     }
     ece391_fdputc(1, (uint8_t *)"\n");
     return 0;
-}
-
-/*
- * int32_t parse_args(uint8_t *command)
- * split executable name and arguments
- * Inputs:  command - the input command
- * Outputs: None
- * Side Effects: change command
- * return value: the pointer to arguments
- */
-uint8_t *parse_args(uint8_t *command)
-{
-    // printf("%s\n", command);
-    uint8_t *args = NULL;
-    while (*command != '\0')
-    {
-        if (*command == ' ')
-        {
-            *command = '\0';    // terminate cmd, only store the exe file name
-            args = command + 1; // output args string
-            break;
-        }
-        command++;
-    }
-    return args;
 }
 
 #endif /* ECE391BUDDY_H */

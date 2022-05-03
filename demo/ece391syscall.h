@@ -23,6 +23,7 @@ extern int32_t ece391_set_handler(int32_t signum, void *handler);
 extern int32_t ece391_sigreturn(void);
 extern void *ece391_alloc(int32_t size);
 extern int32_t ece391_free(void *addr);
+extern int32_t ece391_fs(int32_t type, void *fname, void *dir_name);
 
 enum signums
 {

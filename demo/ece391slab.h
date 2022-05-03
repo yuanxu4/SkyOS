@@ -6,7 +6,6 @@
 #include "ece391support.h"
 #include "ece391syscall.h"
 
-#define NULL 0
 #define MAX_ORDER_PAGE 5                   // max order of pages in the buddy system
 #define MAX_NUM_PAGE (1 << MAX_ORDER_PAGE) // max num of pages in the buddy system
 #define SIZE_2KB 0x800

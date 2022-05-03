@@ -31,6 +31,29 @@ void ece391_fdputc(int32_t fd, const uint8_t *s)
     (void)ece391_write(fd, s, 1);
 }
 
+uint8_t *parse_args(uint8_t *command)
+{
+    // printf("%s\n", command);
+    uint8_t *args = NULL;
+    while (*command != '\0')
+    {
+        if (*command == ' ')
+        {
+            *command = '\0';    // terminate cmd, only store the exe file name
+            args = command + 1; // output args string
+            break;
+        }
+        command++;
+    }
+    return args;
+}
+
+uint8_t *parse_dir(uint8_t *path)
+{
+
+    return NULL;
+}
+
 /* Standard printf().
  * Only supports the following format strings:
  * %%  - print a literal '%' character

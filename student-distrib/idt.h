@@ -79,6 +79,8 @@ asmlinkage void *system_alloc(int32_t size);
 
 asmlinkage int32_t system_free(void *addr);
 
+asmlinkage int32_t system_new(int32_t type, void *fname, void *dir_name);
+
 #endif
 
 #endif

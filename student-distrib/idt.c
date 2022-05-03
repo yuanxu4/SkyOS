@@ -357,6 +357,40 @@ asmlinkage int32_t system_free(void *addr)
     return k_free(addr);
 }
 
+asmlinkage int32_t system_new(int32_t type, void *fname, void *dir_name)
+{
+    dentry_t dir_dentry;
+    if (fname == NULL && dir_name == NULL)
+    {
+        return -1;
+    }
+    if (0 != read_dentry_by_name((uint8_t *)dir_name, &dir_dentry))
+    {
+        return -1; // no such dir
+    }
+    if (type == 1 || type == 2)
+    {
+        return fs_create(type, fname, &dir_dentry);
+    }
+    else if (type == 3 || type == 4)
+    {
+        return fs_delete(type, fname, &dir_dentry);
+    }
+    else if (type == 5)
+    {
+        return fs_read(type, fname, &dir_dentry); // ls
+    }
+    else if (type == 6)
+    {
+        return fs_getparent(type, fname, &dir_dentry);
+    }
+    if (dir_dentry.file_type == 1)
+    {
+        return -2;
+    }
+    return -3;
+}
+
 /*
  * system_open
  * description: it classify the file type and call the corresponing handler

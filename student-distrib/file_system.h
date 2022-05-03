@@ -40,13 +40,17 @@
 /* structures of File System Utilities in 8.1 */
 
 // 64B directory entry
-typedef struct dentry
+
+typedef struct dentry dentry_t;
+struct dentry
 {
     uint8_t file_name[MAX_LEN_FILE_NAME]; // file name
     uint32_t file_type;                   // file type, 0 RTC; 1 directory; 2 regular file
     uint32_t inode_num;                   // inode number, for regular file
-    uint8_t reserved[24];                 // reserve 24B
-} dentry_t;
+    uint8_t *parent_fname;                // parent dir dentry id
+    dentry_t *dentry_addr;                // dentry_addr
+    uint8_t reserved[16];                 // reserve 8B
+};
 
 // 4KB boot block
 typedef struct boot_block
@@ -176,5 +180,11 @@ int32_t get_file_num();
 int32_t del_file(uint8_t *fname);
 
 file_array_t *get_file_array();
+
+int32_t check_parent(uint8_t *dir_name, dentry_t *file_dentry);
+int32_t fs_create(int32_t type, uint8_t *fname, dentry_t *dir_dentry);
+int32_t fs_delete(int32_t type, uint8_t *fname, dentry_t *dir_dentry);
+int32_t fs_read(int32_t type, uint8_t *buf, dentry_t *dir_dentry);
+int32_t fs_getparent(int32_t type, uint8_t *buf, dentry_t *file_dentry);
 
 #endif // _FILE_SYSTEM_H

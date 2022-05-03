@@ -189,7 +189,14 @@ int32_t file_sys_init(module_t *fs)
     boot_block = (boot_block_t *)fs->mod_start;
     inodes = (inode_t *)(boot_block + 1);
     data_blocks = (data_block_t *)(inodes + boot_block->inode_count);
-
+    int32_t i;
+    boot_block->dentries[0].parent_fname = NULL;
+    boot_block->dentries[0].dentry_addr = &boot_block->dentries[0];
+    for (i = 0; i < boot_block->dir_count; i++)
+    {
+        boot_block->dentries[i].parent_fname = boot_block->dentries[0].file_name;
+        boot_block->dentries[i].dentry_addr = &boot_block->dentries[i];
+    }
     // init operation jump tables
     op_table_total[0].open = rtc_user_open;
     op_table_total[0].read = rtc_user_read;
@@ -926,19 +933,66 @@ int32_t dir_close(int32_t fd)
 int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
 {
     file_array_entry_t *dir = &curr_task()->fd_array.entries[fd];
-    // uint32_t pst = dir->file_position;                  // position in directory
+    dentry_t dir_dentry;
     int32_t copy_size = MIN(nbytes, MAX_LEN_FILE_NAME); // size to copy
+    // int32_t fd;
+    // actually need not check but need to get dentry
+    if (read_dentry_by_name(dir->fname, &dir_dentry))
+    {
+        return -1;
+    }
     if (dir->file_position >= boot_block->dir_count)
     {
         // dir->file_position = 0;
         // PRINT("\nread nothing in directory. reach to the end\n");
         return 0;
     }
-    // copy
-    buf = strncpy((int8_t *)buf, (const int8_t *)(boot_block->dentries[dir->file_position].file_name), copy_size);
-    copy_size = MIN(copy_size, strlen(buf));
-    curr_task()->fd_array.entries[fd].file_position++;
+    // root
+    if (dir_dentry.parent_fname == NULL)
+    {
+        // copy
+        buf = strncpy((int8_t *)buf, (const int8_t *)(boot_block->dentries[dir->file_position].file_name), copy_size);
+        copy_size = MIN(copy_size, strlen(buf));
+        dir->file_position++;
+    }
+    else
+    {
+        int32_t i = 0;
+        int32_t curr_pst = 0;
+        dentry_t *file_dentry;
+        for (i = 0; i < boot_block->dir_count; i++)
+        {
+            file_dentry = &boot_block->dentries[i];
+            if (0 == check_parent(dir_dentry.file_name, file_dentry))
+            {
+                if (curr_pst == dir->file_position)
+                {
+                    buf = strncpy((int8_t *)buf, (const int8_t *)(file_dentry->file_name), copy_size);
+                    copy_size = MIN(copy_size, strlen(buf));
+                    dir->file_position++;
+                }
+                curr_pst++;
+            }
+        }
+    }
     return copy_size;
+}
+
+// return -1 if no such dir, 0 if dir is the parent of file, 1 else
+int32_t check_parent(uint8_t *dir_name, dentry_t *file_dentry)
+{
+    dentry_t dir_dentry;
+    // int32_t fd;
+    // actually need not check but need to get dentry
+    if (read_dentry_by_name(dir_name, &dir_dentry))
+    {
+        return -1;
+    }
+    if (0 == strncmp((const int8_t *)dir_name, (const int8_t *)file_dentry->parent_fname, MAX_LEN_FILE_NAME))
+    {
+        return 0;
+    }
+    return 1;
 }
 
 /*
@@ -971,8 +1025,86 @@ int32_t dir_write(int32_t fd, const void *buf, int32_t nbytes)
     strncpy((int8_t *)(boot_block->dentries[index].file_name), (const int8_t *)buf, copy_size);
     boot_block->dentries[index].file_type = 2;
     boot_block->dentries[index].inode_num = index;
+    boot_block->dentries[index].dentry_addr = &boot_block->dentries[index];
     memset((uint8_t *)&inodes[index], -1, SIZE_4KB);
     inodes[index].length = -1;
+    PRINT("create new file at %d\n", index);
+    return copy_size;
+}
+
+int32_t fs_read(int32_t type, uint8_t *buf, dentry_t *dir_dentry)
+{
+    int32_t i = 0;
+    int32_t curr_pst = 0;
+    dentry_t *file_dentry_tmp;
+    for (i = 0; i < boot_block->dir_count; i++)
+    {
+        file_dentry_tmp = &boot_block->dentries[i];
+        if (0 == strncmp((const int8_t *)dir_dentry->file_name, (const int8_t *)file_dentry_tmp->parent_fname, MAX_LEN_FILE_NAME))
+        {
+            strncpy((int8_t *)buf, (const int8_t *)(file_dentry_tmp->file_name), MAX_LEN_FILE_NAME);
+            buf += MAX_LEN_FILE_NAME;
+            *buf = '\n';
+            buf++;
+        }
+    }
+    return 0;
+}
+
+int32_t fs_getparent(int32_t type, uint8_t *buf, dentry_t *file_dentry)
+{
+    if (file_dentry->parent_fname == NULL)
+    {
+        strncpy((int8_t *)buf, (const int8_t *)".", MAX_LEN_FILE_NAME);
+        return 0;
+    }
+    strncpy((int8_t *)buf, (const int8_t *)(file_dentry->parent_fname), MAX_LEN_FILE_NAME);
+    return 0;
+}
+
+int32_t fs_create(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
+{
+    dentry_t file_dentry;
+    int32_t copy_size = MIN(strlen((int8_t *)fname), MAX_LEN_FILE_NAME); // size to copy
+    int32_t index = boot_block->dir_count;
+    // need not to create to new file
+    if (0 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
+    {
+        return 0;
+    }
+    if (boot_block->dir_count >= NUM_DIR_ENTRY)
+    {
+        PRINT("fail to write . reach max num of file\n");
+        return -1;
+    }
+    switch (type)
+    {
+    case 2: // new file
+    {
+        boot_block->dir_count++;
+        strncpy((int8_t *)(boot_block->dentries[index].file_name), (const int8_t *)fname, copy_size);
+        boot_block->dentries[index].file_type = 2;
+        boot_block->dentries[index].inode_num = index;
+        boot_block->dentries[index].parent_fname = dir_dentry->file_name;
+        boot_block->dentries[index].dentry_addr = &boot_block->dentries[index];
+
+        memset((uint8_t *)&inodes[index], -1, SIZE_4KB);
+        inodes[index].length = -1;
+        // return copy_size;
+        break;
+    }
+    case 1: // new dir
+    {
+        boot_block->dir_count++;
+        strncpy((int8_t *)(boot_block->dentries[index].file_name), (const int8_t *)fname, copy_size);
+        boot_block->dentries[index].file_type = 1;
+        boot_block->dentries[index].inode_num = -1;
+        boot_block->dentries[index].parent_fname = dir_dentry->file_name;
+        break;
+    }
+    default:
+        break;
+    }
     PRINT("create new file at %d\n", index);
     return copy_size;
 }
@@ -1013,13 +1145,65 @@ int32_t del_file(uint8_t *fname)
     {
         return -1;
     }
-    if (file_dentry.inode_num < 0)
-    {
-        return -1;
-    }
+    // if (file_dentry.inode_num < 0)
+    // {
+    //     return -1;
+    // }
     boot_block->dir_count--;
+    file_dentry.dentry_addr->file_type = -1;
+    file_dentry.dentry_addr->inode_num = -1;
+    file_dentry.dentry_addr->parent_fname = boot_block->dentries[0].file_name;
+    memset(file_dentry.dentry_addr->file_name, 0, MAX_LEN_FILE_NAME);
     file_reset(file_dentry.inode_num);
     return 0;
+}
+
+int32_t fs_delete(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
+{
+    dentry_t file_dentry;
+    int32_t copy_size = MIN(strlen((int8_t *)fname), MAX_LEN_FILE_NAME); // size to copy
+    int32_t index = boot_block->dir_count;
+    // need not to delete
+    if (0 != read_dentry_by_name((uint8_t *)fname, &file_dentry))
+    {
+        return 0;
+    }
+    switch (type)
+    {
+    case 4: // delete file
+    {
+        if (file_dentry.file_type == 2)
+        {
+            del_file(file_dentry.file_name);
+            PRINT("del file %s\n", file_dentry.file_name);
+            return 0;
+        }
+        break;
+    }
+    case 3: // delete dir
+    {
+        if (file_dentry.file_type == 1)
+        {
+            int32_t i = 0;
+            int32_t curr_pst = 0;
+            dentry_t *file_dentry_tmp;
+            for (i = 0; i < boot_block->dir_count; i++)
+            {
+                file_dentry_tmp = &boot_block->dentries[i];
+                if (0 == check_parent(file_dentry_tmp->file_name, &file_dentry))
+                {
+                    del_file(file_dentry_tmp->file_name);
+                }
+            }
+            del_file(file_dentry.file_name);
+            PRINT("del dir %s\n", file_dentry.file_name);
+            return 0;
+        }
+    }
+    default:
+        break;
+    }
+    return -1;
 }
 
 // do not implement for now
