@@ -13,7 +13,7 @@ int main()
 	uint8_t buf1[(BUFSIZE << 1) + 64];
 	uint8_t currdir[FILE_NAME_LEN + 1];
 	uint8_t tmpdir[FILE_NAME_LEN + 1];
-	uint32_t dir_path[5][FILE_NAME_LEN + 1];
+	// uint32_t dir_path[5][FILE_NAME_LEN + 1];
 	ece391_fdputs(1, (uint8_t *)"Starting 391 Shell\n");
 	ece391_strcpy(currdir, (const uint8_t *)".");
 	while (1)

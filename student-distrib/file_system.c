@@ -1041,7 +1041,7 @@ int32_t dir_write(int32_t fd, const void *buf, int32_t nbytes)
 int32_t fs_read(int32_t type, uint8_t *buf, dentry_t *dir_dentry)
 {
     int32_t i = 0;
-    int32_t curr_pst = 0;
+    // int32_t curr_pst = 0;
     dentry_t *file_dentry_tmp;
     for (i = 1; i < boot_block->dir_count; i++)
     {
@@ -1050,7 +1050,7 @@ int32_t fs_read(int32_t type, uint8_t *buf, dentry_t *dir_dentry)
         {
             // printf("fs_read:%s, %s\n",file_dentry_tmp->file_name,file_dentry_tmp->parent_fname);
             strncpy((int8_t *)buf, (const int8_t *)(file_dentry_tmp->file_name), MAX_LEN_FILE_NAME);
-            buf += strlen(buf);
+            buf += strlen((const int8_t*)buf);
             *buf = '\n';
             buf++;
         }
@@ -1075,7 +1075,7 @@ int32_t fs_ifkid(int32_t type, uint8_t *fname, dentry_t *dir_dentry){
     {
         return -1;
     }
-    return file_dentry.file_type+strncmp(file_dentry.dentry_addr->parent_fname, dir_dentry->dentry_addr->file_name, MAX_LEN_FILE_NAME)-1;
+    return file_dentry.file_type+strncmp((const int8_t*)file_dentry.dentry_addr->parent_fname, (const int8_t*)dir_dentry->dentry_addr->file_name, MAX_LEN_FILE_NAME)-1;
 }
 
 // int32_t disp_dentry(dentry_t *file_dentry){
@@ -1137,14 +1137,14 @@ int32_t file_reset(uint32_t inode)
     uint32_t file_size_align = ((file_size + BLOCK_SIZE - 1) >> 12) << 12;
     uint32_t size_unreset = file_size_align;
     uint32_t dt_blk_idx_in_inode = 0;
-    uint32_t size_single_reset;
+    // uint32_t size_single_reset;
     uint32_t data_block;
     while (size_unreset >= BLOCK_SIZE)
     {
         data_block = inodes[inode].data_block_num[dt_blk_idx_in_inode];
         if ((int32_t)data_block==-1)
         {
-            return;
+            return 0;
         }
         
         if (ADDR_or_ID(data_block))
@@ -1166,7 +1166,7 @@ int32_t file_reset(uint32_t inode)
 int32_t del_file(uint8_t *fname)
 {
     dentry_t file_dentry;
-    inode_t *inode;
+    // inode_t *inode;
     // need not to create to new file
     if (-1 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
     {
@@ -1191,8 +1191,8 @@ int32_t del_file(uint8_t *fname)
 int32_t fs_delete(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
 {
     dentry_t file_dentry;
-    int32_t copy_size = MIN(strlen((int8_t *)fname), MAX_LEN_FILE_NAME); // size to copy
-    int32_t index = boot_block->dir_count;
+    // int32_t copy_size = MIN(strlen((int8_t *)fname), MAX_LEN_FILE_NAME); // size to copy
+    // int32_t index = boot_block->dir_count;
     // need not to delete
     if (0 != read_dentry_by_name((uint8_t *)fname, &file_dentry))
     {
@@ -1215,7 +1215,7 @@ int32_t fs_delete(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
         if (file_dentry.file_type == 1)
         {
             int32_t i = 0;
-            int32_t curr_pst = 0;
+            // int32_t curr_pst = 0;
             dentry_t *file_dentry_tmp;
             for (i = 0; i < boot_block->dir_count; i++)
             {

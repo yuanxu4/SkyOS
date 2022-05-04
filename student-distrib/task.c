@@ -232,7 +232,7 @@ PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t *cmd_type)
     uint8_t *tep;
     uint8_t *fname;
     dentry_t file_dentry;
-    int32_t io_type = 0;
+    // int32_t io_type = 0;
     switch (*cmd_type)
     {
     case 1: // '>'
