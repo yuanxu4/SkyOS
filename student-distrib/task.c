@@ -242,7 +242,7 @@ PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t *cmd_type)
         dir_write(0, tep, MAX_LEN_FILE_NAME);
         if (0 == read_dentry_by_name((uint8_t *)tep, &file_dentry))
         {
-            set_entry(&new_task->fd_array, STDOUT_FD, 2, file_dentry.file_name);
+            set_entry(&new_task->fd_array, STDOUT_FD, 2, file_dentry.dentry_addr->file_name);
             new_task->fd_array.entries[STDOUT_FD].inode = file_dentry.inode_num;
         }
         else
@@ -258,7 +258,7 @@ PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t *cmd_type)
         dir_write(0, tep, MAX_LEN_FILE_NAME);
         if (0 == read_dentry_by_name((uint8_t *)tep, &file_dentry))
         {
-            set_entry(&new_task->fd_array, STDOUT_FD, 2, file_dentry.file_name);
+            set_entry(&new_task->fd_array, STDOUT_FD, 2, file_dentry.dentry_addr->file_name);
             new_task->fd_array.entries[STDOUT_FD].inode = file_dentry.inode_num;
             new_task->fd_array.entries[STDOUT_FD].file_position = get_file_size(file_dentry.inode_num);
         }
@@ -290,7 +290,7 @@ PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t *cmd_type)
         dir_write(0, fname, MAX_LEN_FILE_NAME);
         if (0 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
         {
-            set_entry(&new_task->fd_array, STDOUT_FD, 2, file_dentry.file_name);
+            set_entry(&new_task->fd_array, STDOUT_FD, 2, file_dentry.dentry_addr->file_name);
             new_task->fd_array.entries[STDOUT_FD].inode = file_dentry.inode_num;
             tem_out_inode_array[0] = file_dentry.inode_num;
             new_task->fd_array.entries[STDOUT_FD].file_position = 0;
@@ -330,7 +330,7 @@ PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t *cmd_type)
         dir_write(0, fname, MAX_LEN_FILE_NAME);
         if (0 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
         {
-            set_entry(&new_task->fd_array, STDIN_FD, 2, file_dentry.file_name);
+            set_entry(&new_task->fd_array, STDIN_FD, 2, file_dentry.dentry_addr->file_name);
             new_task->fd_array.entries[STDIN_FD].inode = file_dentry.inode_num;
             tem_out_inode_array[0] = file_dentry.inode_num;
             new_task->fd_array.entries[STDIN_FD].file_position = 0;

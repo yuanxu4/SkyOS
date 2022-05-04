@@ -1,10 +1,5 @@
 #include "ece391vim.h"
 
-#define SIZE_4MB 0x400000
-#define KB_BUF_SIZE 128
-#define NUM_CHAR_PER_LINE 80
-#define NUM_128 128
-
 int main()
 {
     int32_t fd_root;

@@ -368,6 +368,7 @@ asmlinkage int32_t system_new(int32_t type, void *fname, void *dir_name)
     {
         return -1; // no such dir
     }
+    // disp_dentry(&dir_dentry);
     if (type == 1 || type == 2)
     {
         return fs_create(type, fname, &dir_dentry);
@@ -384,10 +385,11 @@ asmlinkage int32_t system_new(int32_t type, void *fname, void *dir_name)
     {
         return fs_getparent(type, fname, &dir_dentry);
     }
-    if (dir_dentry.file_type == 1)
+    else if (type == 7)
     {
-        return -2;
+        return fs_ifkid(type, fname, &dir_dentry); //-1 not , 0 yes and flie is dir, 1 yes and file is file
     }
+    
     return -3;
 }
 

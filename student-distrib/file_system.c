@@ -192,7 +192,7 @@ int32_t file_sys_init(module_t *fs)
     int32_t i;
     boot_block->dentries[0].parent_fname = NULL;
     boot_block->dentries[0].dentry_addr = &boot_block->dentries[0];
-    for (i = 0; i < boot_block->dir_count; i++)
+    for (i = 1; i < boot_block->dir_count; i++)
     {
         boot_block->dentries[i].parent_fname = boot_block->dentries[0].file_name;
         boot_block->dentries[i].dentry_addr = &boot_block->dentries[i];
@@ -327,7 +327,7 @@ int32_t file_sys_open(const uint8_t *filename)
     // }
     for (fd = 2; fd < MAX_NUM_OPEN; fd++)
     {
-        if ((curr_task()->fd_array.entries[fd].flags != NOT_IN_USE) && (strncmp((int8_t *)filename, (int8_t *)copied_dentry.file_name, MAX_LEN_FILE_NAME)))
+        if ((curr_task()->fd_array.entries[fd].flags != NOT_IN_USE) && (strncmp((int8_t *)filename, (int8_t *)copied_dentry.dentry_addr->file_name, MAX_LEN_FILE_NAME)))
         {
             PRINT("have open %s at fd %d\n", filename, fd);
             return fd;
@@ -535,6 +535,7 @@ int32_t read_dentry_by_name(const uint8_t *fname, dentry_t *dentry)
         if (!strncmp((const int8_t *)fname, (const int8_t *)boot_block->dentries[i].file_name, MAX_LEN_FILE_NAME))
         {
             // copy and return
+            // disp_dentry(&boot_block->dentries[i]);
             *dentry = boot_block->dentries[i];
             return 0;
         }
@@ -587,8 +588,8 @@ int32_t read_dentry_by_index(uint32_t index, dentry_t *dentry)
 
 int32_t read_data(uint32_t inode, uint32_t offset, uint8_t *buf, uint32_t length)
 {
-    uint32_t file_size = inodes[inode].length;
-    if (file_size == 0)
+    int32_t file_size = inodes[inode].length;
+    if (file_size <= 0)
     {
         return 0;
     }
@@ -660,7 +661,7 @@ int32_t file_open(const uint8_t *filename)
     // available fd, actually need not check
     if (fd != -1)
     {
-        set_entry(&curr_task()->fd_array, fd, 2, (file_dentry.file_name)); // type is 2 for regular file
+        set_entry(&curr_task()->fd_array, fd, 2, (file_dentry.dentry_addr->file_name)); // type is 2 for regular file
         curr_task()->fd_array.entries[fd].inode = file_dentry.inode_num;
     }
     return fd;
@@ -898,7 +899,7 @@ int32_t dir_open(const uint8_t *filename)
     // available fd, actually need not check
     if (fd != -1)
     {
-        set_entry(&curr_task()->fd_array, fd, 1, (file_dentry.file_name)); // type is 1 for directory
+        set_entry(&curr_task()->fd_array, fd, 1, (file_dentry.dentry_addr->file_name)); // type is 1 for directory
     }
 
     return fd;
@@ -934,7 +935,7 @@ int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
 {
     file_array_entry_t *dir = &curr_task()->fd_array.entries[fd];
     dentry_t dir_dentry;
-    int32_t copy_size = MIN(nbytes, MAX_LEN_FILE_NAME); // size to copy
+    int32_t copy_size = 0; // size to copy
     // int32_t fd;
     // actually need not check but need to get dentry
     if (read_dentry_by_name(dir->fname, &dir_dentry))
@@ -948,11 +949,11 @@ int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
         return 0;
     }
     // root
-    if (dir_dentry.parent_fname == NULL)
+    if (dir_dentry.dentry_addr->parent_fname == NULL)
     {
         // copy
-        buf = strncpy((int8_t *)buf, (const int8_t *)(boot_block->dentries[dir->file_position].file_name), copy_size);
-        copy_size = MIN(copy_size, strlen(buf));
+        buf = strncpy((int8_t *)buf, (const int8_t *)(boot_block->dentries[dir->file_position].file_name), nbytes);
+        copy_size = MIN(nbytes, strlen(buf));
         dir->file_position++;
     }
     else
@@ -960,15 +961,15 @@ int32_t dir_read(int32_t fd, void *buf, int32_t nbytes)
         int32_t i = 0;
         int32_t curr_pst = 0;
         dentry_t *file_dentry;
-        for (i = 0; i < boot_block->dir_count; i++)
+        for (i = 1; i < boot_block->dir_count; i++)
         {
             file_dentry = &boot_block->dentries[i];
-            if (0 == check_parent(dir_dentry.file_name, file_dentry))
+            if (0 == check_parent(dir_dentry.dentry_addr->file_name, file_dentry))
             {
                 if (curr_pst == dir->file_position)
                 {
-                    buf = strncpy((int8_t *)buf, (const int8_t *)(file_dentry->file_name), copy_size);
-                    copy_size = MIN(copy_size, strlen(buf));
+                    buf = strncpy((int8_t *)buf, (const int8_t *)(file_dentry->file_name), nbytes);
+                    copy_size = MIN(nbytes, strlen(buf));
                     dir->file_position++;
                 }
                 curr_pst++;
@@ -988,7 +989,12 @@ int32_t check_parent(uint8_t *dir_name, dentry_t *file_dentry)
     {
         return -1;
     }
-    if (0 == strncmp((const int8_t *)dir_name, (const int8_t *)file_dentry->parent_fname, MAX_LEN_FILE_NAME))
+    if (file_dentry->dentry_addr->parent_fname==NULL)
+    {
+        return -1;
+    }
+    
+    if (0 == strncmp((const int8_t *)dir_name, (const int8_t *)file_dentry->dentry_addr->parent_fname, MAX_LEN_FILE_NAME))
     {
         return 0;
     }
@@ -1037,13 +1043,14 @@ int32_t fs_read(int32_t type, uint8_t *buf, dentry_t *dir_dentry)
     int32_t i = 0;
     int32_t curr_pst = 0;
     dentry_t *file_dentry_tmp;
-    for (i = 0; i < boot_block->dir_count; i++)
+    for (i = 1; i < boot_block->dir_count; i++)
     {
         file_dentry_tmp = &boot_block->dentries[i];
-        if (0 == strncmp((const int8_t *)dir_dentry->file_name, (const int8_t *)file_dentry_tmp->parent_fname, MAX_LEN_FILE_NAME))
+        if (0 == strncmp((const int8_t *)dir_dentry->dentry_addr->file_name, (const int8_t *)file_dentry_tmp->parent_fname, MAX_LEN_FILE_NAME))
         {
+            // printf("fs_read:%s, %s\n",file_dentry_tmp->file_name,file_dentry_tmp->parent_fname);
             strncpy((int8_t *)buf, (const int8_t *)(file_dentry_tmp->file_name), MAX_LEN_FILE_NAME);
-            buf += MAX_LEN_FILE_NAME;
+            buf += strlen(buf);
             *buf = '\n';
             buf++;
         }
@@ -1058,9 +1065,22 @@ int32_t fs_getparent(int32_t type, uint8_t *buf, dentry_t *file_dentry)
         strncpy((int8_t *)buf, (const int8_t *)".", MAX_LEN_FILE_NAME);
         return 0;
     }
-    strncpy((int8_t *)buf, (const int8_t *)(file_dentry->parent_fname), MAX_LEN_FILE_NAME);
+    strncpy((int8_t *)buf, (const int8_t *)(file_dentry->dentry_addr->parent_fname), MAX_LEN_FILE_NAME);
     return 0;
 }
+
+int32_t fs_ifkid(int32_t type, uint8_t *fname, dentry_t *dir_dentry){
+    dentry_t file_dentry;
+        if (-1 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
+    {
+        return -1;
+    }
+    return file_dentry.file_type+strncmp(file_dentry.dentry_addr->parent_fname, dir_dentry->dentry_addr->file_name, MAX_LEN_FILE_NAME)-1;
+}
+
+// int32_t disp_dentry(dentry_t *file_dentry){
+//     printf("disp_dentry:%s, %s\n",file_dentry->file_name,file_dentry->parent_fname);
+// }
 
 int32_t fs_create(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
 {
@@ -1085,9 +1105,9 @@ int32_t fs_create(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
         strncpy((int8_t *)(boot_block->dentries[index].file_name), (const int8_t *)fname, copy_size);
         boot_block->dentries[index].file_type = 2;
         boot_block->dentries[index].inode_num = index;
-        boot_block->dentries[index].parent_fname = dir_dentry->file_name;
+        boot_block->dentries[index].parent_fname = dir_dentry->dentry_addr->file_name;
         boot_block->dentries[index].dentry_addr = &boot_block->dentries[index];
-
+        // disp_dentry(&boot_block->dentries[index]);
         memset((uint8_t *)&inodes[index], -1, SIZE_4KB);
         inodes[index].length = -1;
         // return copy_size;
@@ -1099,7 +1119,9 @@ int32_t fs_create(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
         strncpy((int8_t *)(boot_block->dentries[index].file_name), (const int8_t *)fname, copy_size);
         boot_block->dentries[index].file_type = 1;
         boot_block->dentries[index].inode_num = -1;
-        boot_block->dentries[index].parent_fname = dir_dentry->file_name;
+        boot_block->dentries[index].parent_fname = dir_dentry->dentry_addr->file_name;
+        boot_block->dentries[index].dentry_addr = &boot_block->dentries[index];
+        // disp_dentry(&boot_block->dentries[index]);
         break;
     }
     default:
@@ -1120,6 +1142,11 @@ int32_t file_reset(uint32_t inode)
     while (size_unreset >= BLOCK_SIZE)
     {
         data_block = inodes[inode].data_block_num[dt_blk_idx_in_inode];
+        if ((int32_t)data_block==-1)
+        {
+            return;
+        }
+        
         if (ADDR_or_ID(data_block))
         { // addr
             memset((uint8_t *)(data_block), 0, BLOCK_SIZE);
@@ -1152,9 +1179,12 @@ int32_t del_file(uint8_t *fname)
     boot_block->dir_count--;
     file_dentry.dentry_addr->file_type = -1;
     file_dentry.dentry_addr->inode_num = -1;
-    file_dentry.dentry_addr->parent_fname = boot_block->dentries[0].file_name;
+    file_dentry.dentry_addr->parent_fname = NULL;
     memset(file_dentry.dentry_addr->file_name, 0, MAX_LEN_FILE_NAME);
-    file_reset(file_dentry.inode_num);
+    if (file_dentry.file_type==2)
+    {
+        file_reset(file_dentry.inode_num);
+    }
     return 0;
 }
 
@@ -1174,8 +1204,8 @@ int32_t fs_delete(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
     {
         if (file_dentry.file_type == 2)
         {
-            del_file(file_dentry.file_name);
-            PRINT("del file %s\n", file_dentry.file_name);
+            PRINT("del file %s\n", file_dentry.dentry_addr->file_name);
+            del_file(file_dentry.dentry_addr->file_name);
             return 0;
         }
         break;
@@ -1189,14 +1219,20 @@ int32_t fs_delete(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
             dentry_t *file_dentry_tmp;
             for (i = 0; i < boot_block->dir_count; i++)
             {
-                file_dentry_tmp = &boot_block->dentries[i];
-                if (0 == check_parent(file_dentry_tmp->file_name, &file_dentry))
+                file_dentry_tmp = &boot_block->dentries[i]; //file
+                if (0 == check_parent(file_dentry.dentry_addr->file_name, file_dentry_tmp))
                 {
-                    del_file(file_dentry_tmp->file_name);
+                    if (file_dentry_tmp->file_type==2)
+                    {
+                        del_file(file_dentry_tmp->file_name);
+                    }
+                    else {
+                        fs_delete(4, file_dentry_tmp->file_name, &file_dentry);
+                    }
                 }
             }
-            del_file(file_dentry.file_name);
-            PRINT("del dir %s\n", file_dentry.file_name);
+            PRINT("del dir %s\n", file_dentry.dentry_addr->file_name);
+            del_file(file_dentry.dentry_addr->file_name);
             return 0;
         }
     }
@@ -1220,7 +1256,7 @@ int32_t rtc_user_open(const uint8_t *filename)
     // available fd, actually need not check
     if (fd != -1)
     {
-        set_entry(&curr_task()->fd_array, fd, 0, (file_dentry.file_name)); // type is 1 for directory
+        set_entry(&curr_task()->fd_array, fd, 0, (file_dentry.dentry_addr->file_name)); // type is 1 for directory
     }
     // rtc_open(filename);
     return fd;
