@@ -6,8 +6,10 @@
 
 /* magic num */
 
+
 /*function and define */
 void gui_draw_background();
 void init_background();
+void load_png2buffer(unsigned char* filename, unsigned short* tar_buffer);
 
 #endif

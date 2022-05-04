@@ -149,8 +149,20 @@ page_directory:
     # .endr
     # 32- 36MB for terminal
     .long   0x02000083
+    .long   0x02400083
+    .long   0x02800083
+    .long   0x02C00083
+    .long   0x03000083
+    .long   0x03400083
+    .long   0x03800083
+    .long   0x03C00083
+    .long   0x04000083
+    .long   0x04400083
+    .long   0x04800083
+    .long   0x04C00083
+    .long   0x05000083
     # 8MB-4GB, not presented
-    .rept PD_SIZE - 9
+    .rept PD_SIZE - 21
     .long 0 # just set 0 for not presented
     .endr
 

@@ -115,4 +115,5 @@ upng_format	upng_get_format		(const upng_t* upng);
 
 const unsigned char*	upng_get_buffer		(const upng_t* upng);
 unsigned				upng_get_size		(const upng_t* upng);
+// void load_png2buffer(char* filename, char* tar_buffer);
 #endif /*defined(UPNG_H)*/

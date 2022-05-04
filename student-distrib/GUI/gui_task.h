@@ -4,6 +4,11 @@
 /* libs */
 #include "gui.h"
 
+#define ainimation_start 0x2400000
+#define animation_interval 10000000
+
+#define ainimation_size  SCREEN_WIDTH * SCREEN_HEIGHT * 2
+
 void gui_do_task();
 void init_gui_task();
 void init_gui();

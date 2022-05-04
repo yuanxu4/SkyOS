@@ -29,30 +29,11 @@ void init_gui_window_items(){
     int i;
     int j;
 
-    for(i = 0; i < WINDOW_SIDE_WIDTH; i ++){
-        for(j = STORE_Y; j < STORE_Y + WINDOW_SIDE_HEIGHT; j ++){
-            color = win_side_img[i + (j - STORE_Y) * WINDOW_SIDE_WIDTH];
-            vga_setcolor(color);
-            vga_drawpixel(i, j);
-        }
-    }
-
     /* init window title */
-    i = 0;
-    j = 0;
 
     for(i = WINDOW_SIDE_WIDTH; i < WINDOW_TITLE_WIDTH + WINDOW_SIDE_WIDTH; i ++){
         for(j = STORE_Y; j < STORE_Y + WINDOW_TITLE_HEIGHT; j ++){
             color = win_up_img[(i - WINDOW_SIDE_WIDTH) + (j - STORE_Y) * WINDOW_TITLE_WIDTH];
-            vga_setcolor(color);
-            vga_drawpixel(i, j);
-        }
-    }
-
-    /* init window down */
-    for(i = WINDOW_SIDE_WIDTH; i < WINDOW_DOWN_WIDTH + WINDOW_SIDE_WIDTH; i ++){
-        for(j = STORE_Y + WINDOW_TITLE_HEIGHT; j < STORE_Y + WINDOW_TITLE_HEIGHT + WINDOW_DOWN_HEIGHT; j ++){
-            color = win_down_img[(i - WINDOW_SIDE_WIDTH) + (j - STORE_Y - WINDOW_TITLE_HEIGHT) * WINDOW_DOWN_WIDTH];
             vga_setcolor(color);
             vga_drawpixel(i, j);
         }
@@ -119,126 +100,6 @@ int draw_gui_window_frame(int x, int y){
     }
 
     __svgalib_cirrusaccel_mmio_ScreenCopy(frame_x, frame_y, win_x, win_y + offset, frame_w, frame_h); //title
-
-        /* check if left side out of screen */
-    int draw_flag = 1;
-    if(x < 0 && x + WINDOW_SIDE_WIDTH > 0){ //part out
-        frame_x = - x;
-        frame_w = WINDOW_SIDE_WIDTH + x;
-        win_x = 0;
-    }
-    else if(x + WINDOW_SIDE_WIDTH < 0){ //all out
-        draw_flag = 0;
-    }
-    else if(x + WINDOW_SIDE_WIDTH > SCREEN_WIDTH){
-        frame_x = 0;
-        frame_w = WINDOW_SIDE_WIDTH - (x + WINDOW_SIDE_WIDTH - SCREEN_WIDTH);
-        win_x = x;
-    }
-    else{
-        frame_x = 0;
-        frame_w = WINDOW_SIDE_WIDTH;
-        win_x = x;
-    }
-
-    if(y + WINDOW_SIDE_HEIGHT + WINDOW_TITLE_HEIGHT > SCREEN_HEIGHT && y + WINDOW_TITLE_HEIGHT < SCREEN_HEIGHT){
-        //part out
-        frame_y = STORE_Y;
-        frame_h = WINDOW_SIDE_HEIGHT - (y + WINDOW_SIDE_HEIGHT + WINDOW_TITLE_HEIGHT - SCREEN_HEIGHT);
-        win_y = y + WINDOW_TITLE_HEIGHT;
-    }
-    else if(y + WINDOW_TITLE_HEIGHT > SCREEN_HEIGHT){
-        draw_flag = 0;
-    }
-    else{
-        frame_y = STORE_Y;
-        frame_h = WINDOW_SIDE_HEIGHT;
-        win_y = y + WINDOW_TITLE_HEIGHT;
-    }
-
-    if(draw_flag == 1){
-         __svgalib_cirrusaccel_mmio_ScreenCopy(frame_x, frame_y, win_x, win_y + offset, frame_w, frame_h); //left side
-    }
-
-    /* check if right side out of screen */
-    draw_flag = 1;
-    if(x + WINDOW_TITLE_WIDTH - WINDOW_SIDE_WIDTH < 0 && x + WINDOW_TITLE_WIDTH > 0){ //part out
-        frame_x = - (x + WINDOW_TITLE_WIDTH - WINDOW_SIDE_WIDTH);
-        frame_w = WINDOW_SIDE_WIDTH + x + WINDOW_TITLE_WIDTH - WINDOW_SIDE_WIDTH;
-        win_x = 0;
-    }
-    else if(x + WINDOW_TITLE_WIDTH - WINDOW_SIDE_WIDTH > SCREEN_WIDTH){ //all out
-        draw_flag = 0;
-    }
-    else if(x + WINDOW_TITLE_WIDTH - WINDOW_SIDE_WIDTH < SCREEN_WIDTH && x + WINDOW_TITLE_WIDTH > SCREEN_WIDTH){
-        frame_x = 0;
-        frame_w = WINDOW_SIDE_WIDTH - (x + WINDOW_TITLE_WIDTH - SCREEN_WIDTH);
-        win_x = x;
-    }
-    else{
-        frame_x = 0;
-        frame_w = WINDOW_SIDE_WIDTH;
-        win_x = x + WINDOW_TITLE_WIDTH - WINDOW_SIDE_WIDTH;
-    }
-
-    if(y + WINDOW_SIDE_HEIGHT + WINDOW_TITLE_HEIGHT > SCREEN_HEIGHT && y + WINDOW_TITLE_HEIGHT < SCREEN_HEIGHT){
-        //part out
-        frame_y = STORE_Y;
-        frame_h = WINDOW_SIDE_HEIGHT - (y + WINDOW_SIDE_HEIGHT + WINDOW_TITLE_HEIGHT - SCREEN_HEIGHT);
-        win_y = y + WINDOW_TITLE_HEIGHT;
-    }
-    else if(y + WINDOW_TITLE_HEIGHT > SCREEN_HEIGHT){
-        draw_flag = 0;
-    }
-    else{
-        frame_y = STORE_Y;
-        frame_h = WINDOW_SIDE_HEIGHT;
-        win_y = y + WINDOW_TITLE_HEIGHT;
-    }
-
-    if(draw_flag == 1){
-         __svgalib_cirrusaccel_mmio_ScreenCopy(frame_x, frame_y, win_x, win_y + offset, frame_w, frame_h); //left side
-    }
-
-    /* check if down out of screen */
-    draw_flag = 1;
-    if(x < 0){
-        frame_x = WINDOW_SIDE_WIDTH - x;
-        frame_w = WINDOW_DOWN_WIDTH + x;
-        win_x = 0;
-    }
-    else if(x + WINDOW_DOWN_WIDTH > SCREEN_WIDTH){
-        frame_x = WINDOW_SIDE_WIDTH;
-        frame_w = WINDOW_DOWN_WIDTH - (x + WINDOW_DOWN_WIDTH - SCREEN_WIDTH);
-        win_x = x;
-    }
-    else{
-        frame_x = WINDOW_SIDE_WIDTH;
-        frame_w = WINDOW_DOWN_WIDTH;
-        win_x = x;
-    }
-
-    if(y + WINDOW_TITLE_HEIGHT + WINDOW_SIDE_HEIGHT < SCREEN_HEIGHT
-        && y + WINDOW_TITLE_HEIGHT + WINDOW_SIDE_HEIGHT + WINDOW_DOWN_HEIGHT > SCREEN_HEIGHT){
-        //part out
-        frame_y = STORE_Y + WINDOW_TITLE_HEIGHT;
-        frame_h = WINDOW_DOWN_HEIGHT - (y + WINDOW_TITLE_HEIGHT + WINDOW_SIDE_HEIGHT + WINDOW_DOWN_HEIGHT - SCREEN_HEIGHT);
-        win_y = y + WINDOW_TITLE_HEIGHT + WINDOW_SIDE_HEIGHT;
-    }
-    else if(y + WINDOW_TITLE_HEIGHT + WINDOW_SIDE_HEIGHT > SCREEN_HEIGHT){
-        draw_flag = 0;
-    }
-    else{
-        frame_y = STORE_Y + WINDOW_TITLE_HEIGHT;
-        frame_h = WINDOW_DOWN_HEIGHT;
-        win_y = y + WINDOW_TITLE_HEIGHT + WINDOW_SIDE_HEIGHT;
-    }
-
-    if(draw_flag == 1){
-         __svgalib_cirrusaccel_mmio_ScreenCopy(frame_x, frame_y, win_x, win_y + offset, frame_w, frame_h); //left side
-    }
-
-    /* draw window */
 
     return 0;
 }
@@ -310,8 +171,18 @@ void try_to_get_new_window(mouse_location_type type){
             break;
 
         case FILE_ICON:
-            if(desktop_file[mouse_target_file].file->file_type != 1){
+            if(desktop_file[mouse_target_file].file->file_type == 0){
                 return;
+            }
+
+            if(desktop_file[mouse_target_file].file->file_type == 2){
+                if(is_exe_file(desktop_file[mouse_target_file].file)){
+                    // run_exe(desktop_file[mouse_target_file].file->file_name, get_available_terminal());
+                }
+                else{
+                    // run_exe(desktop_file[mouse_target_file].file->file_name, get_available_terminal())
+                }
+                break;
             }
             window[id].content_pt = (uint32_t)(&desktop_file[1]);
             window[id].type = FILE_ICON;
@@ -324,9 +195,9 @@ void try_to_get_new_window(mouse_location_type type){
     win_init_x += 50;
     win_init_y += 50;
 
-    window[id].status = 1;
-
     increase_active_window_prior();
+
+    window[id].status = 1;
     
     curr_win_num ++;
 }

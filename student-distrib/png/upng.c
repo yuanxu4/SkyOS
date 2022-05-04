@@ -68,9 +68,11 @@ freely, subject to the following restrictions:
 #define upng_chunk_type(chunk) MAKE_DWORD_PTR((chunk) + 4)
 #define upng_chunk_critical(chunk) (((chunk)[4] & 32) == 0)
 
-static unsigned int png_data[SCREEN_HEIGHT * SCREEN_WIDTH];
+static unsigned int png_data_buff[SCREEN_HEIGHT * SCREEN_WIDTH];
 static char malloc_buffer_1[SCREEN_HEIGHT * SCREEN_WIDTH * 4];
 static char malloc_buffer_2[SCREEN_HEIGHT * SCREEN_WIDTH * 4];
+// static unsigned int png_buffer[SCREEN_HEIGHT * SCREEN_WIDTH];
+// static unsigned char png_data[SCREEN_HEIGHT * SCREEN_WIDTH * 4];
 
 typedef struct huffman_tree {
 	unsigned* tree2d;
@@ -1127,13 +1129,13 @@ upng_t upng_new_from_file(const char *filename)
 
 	read_dentry_by_name((const uint8_t *)filename, &png);
 
-	size = read_data(png.inode_num, 0, (unsigned char *) png_data, sizeof(png_data));
+	size = read_data(png.inode_num, 0, (unsigned char *) png_data_buff, sizeof(png_data_buff));
 
 	upng = upng_new();
 
 
 	/* set the read buffer as our source buffer, with owning flag set */
-	upng.source.buffer = png_data;
+	upng.source.buffer = png_data_buff;
 	upng.source.size = size;
 	upng.source.owning = 1;
 
@@ -1221,3 +1223,41 @@ unsigned upng_get_size(const upng_t* upng)
 {
 	return upng->size;
 }
+
+// void load_png2buffer(char* filename, char* tar_buffer){
+//     upng_t image;
+//     dentry_t png;
+//     int32_t size;
+//     const unsigned char *buffer;
+//     image = upng_new_from_file(filename);
+//     image.buffer = (unsigned char*) &png_data;
+//     upng_decode(&image);
+
+//     unsigned int idx;
+//     unsigned px_size = upng_get_pixelsize(&image) / 8;
+//     int i, j;
+//     buffer = upng_get_buffer(&image);
+//     unsigned height = upng_get_height(&image);
+//     unsigned width = upng_get_width(&image);
+//     for (j = 0; j < height; j++) {
+//         for (i = 0; i < width; i++) {
+//             idx = (j * width + i) * px_size;
+//             if (px_size == 3) {
+//                 png_buffer[j * width + i] = (0x000000 | buffer[idx + 0] << 16 | buffer[idx + 1] << 8 | buffer[idx + 2]);
+//             } else if (px_size == 4) {
+//                 png_buffer[j * width + i] =
+//                         (buffer[idx + 3] << 24 | buffer[idx + 0] << 16 | buffer[idx + 1] << 8 | buffer[idx + 2]);
+//             } else {
+               
+//             }
+//         }
+//     }
+
+//     vga_color color;
+//     for(j = 0; j < SCREEN_HEIGHT; j ++){
+//         for(i = 0; i < SCREEN_WIDTH; i ++){
+//             color = color_convert(png_buffer[i + j * SCREEN_WIDTH]);
+//             tar_buffer[i + j * SCREEN_WIDTH] = color;
+//         }
+//     }
+// }
