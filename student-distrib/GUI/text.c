@@ -580,7 +580,7 @@ void init_gui_font(){
                     vga_setcolor(0xFFFFFFFF);
                 }
                 else{
-                    vga_setcolor(0xFF000000);
+                    vga_setcolor(0xFF282828);
                 }
                 vga_drawpixel(pixel_x, pixel_y);
             }

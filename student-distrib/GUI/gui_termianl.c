@@ -16,7 +16,7 @@ void draw_terminal(gui_window* window){
 
     /* init x, y */
     int x = window->x + WINDOW_SIDE_WIDTH;
-    int y = window->y + WINDOW_TITLE_HEIGHT;
+    int y = window->y + WINDOW_TITLE_HEIGHT - 9;
     int i, j;
     int ch_x = 0;
     int ch_y = 0;

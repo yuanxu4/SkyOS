@@ -67,6 +67,8 @@ void boot_amination(){
         }
     }
 
+    memcpy((void *)background_img, ((const short*)animat_pt[31]), ainimation_size);
+
 }
 
 void init_gui(){

@@ -175,12 +175,12 @@ void draw_directory(gui_window* window){
     else if(window->y + 25 * FONT_HEIGHT + WINDOW_TITLE_HEIGHT > SCREEN_HEIGHT && window->y + WINDOW_TITLE_HEIGHT < SCREEN_HEIGHT){
         dir_height = 25 * FONT_HEIGHT - (window->y + 25 * FONT_HEIGHT + WINDOW_TITLE_HEIGHT - SCREEN_HEIGHT);
     }
-    __svgalib_cirrusaccel_mmio_FillBox(start_x, start_y + y_off, dir_width, dir_height, 0x0);
+    __svgalib_cirrusaccel_mmio_FillBox(start_x, start_y + y_off, dir_width, dir_height, color_convert(0xFF282828));
     // __svgalib_cirrusaccel_mmio_ScreenCopy(WINDOW_SIDE_WIDTH, STORE_Y + WINDOW_DOWN_HEIGHT + WINDOW_TITLE_HEIGHT, 
     //            window->x + WINDOW_SIDE_WIDTH, window->y + WINDOW_TITLE_HEIGHT + y_off, 80 * FONT_WIDTH, 25 * FONT_HEIGHT);
     for(i = 0; i < file_num - 1; i ++){
-        y_offset = i / 9;
-        x_offset = i % 9;
+        y_offset = i / 10;
+        x_offset = i % 10;
         ((gui_file*)(file_pt + i))->x = window->x + x_offset * DESKTOP_GRID_X + WINDOW_SIDE_WIDTH;
         ((gui_file*)(file_pt + i))->y = window->y + y_offset * DESKTOP_GRID_Y + WINDOW_TITLE_HEIGHT;
         draw_file_icon((gui_file*)(file_pt + i));

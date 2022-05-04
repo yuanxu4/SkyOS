@@ -94,13 +94,17 @@ void mouse_left_release_handler(){
             if(last_mouse_press_location != WINDOW_CANCEL){
                 break;
             }
-            mouse_windows_release_interact_handler(mouse_X, mouse_Y);
+            mouse_windows_release_interact_handler(mouse_X, mouse_Y, WINDOW_CANCEL);
 
         case FILE_ICON:
             if(last_mouse_press_location != FILE_ICON){
                 break;
             }
             try_to_get_new_window(FILE_ICON);
+
+        case WINDOW_TITLE:
+            mouse_windows_release_interact_handler(mouse_X, mouse_Y, WINDOW_TITLE);
+            break;
 
         default:
             break;

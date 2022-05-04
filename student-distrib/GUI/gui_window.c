@@ -9,6 +9,7 @@ static int win_init_x = 50;
 static int win_init_y = 50;
 static int curr_win_num = 0;
 static int mouse_target_id = -1;
+// static int move_id = -1;
 static int mouse_target_file = -1;
 static int on_title = 0;
 static int win_move_flag = 0;
@@ -104,6 +105,16 @@ int draw_gui_window_frame(int x, int y){
     return 0;
 }
 
+void increase_window_prior(){
+    int i;
+    for(i = 0; i < WINDOW_MAX_NUM; i ++){
+        if(window[i].status == 1){
+            window[i].prior ++;
+            window[i].enable_cursor = 0;
+        }
+    }
+}
+
 void increase_active_window_prior(){
     int i;
     int target_prior = 0;
@@ -138,8 +149,6 @@ void try_to_get_new_window(mouse_location_type type){
     terminal_t* terminal_pt;
     /* check if reach max */
     if(curr_win_num == WINDOW_MAX_NUM){
-        win_init_x = 50;
-        win_init_y = 50;
         return;
     }
 
@@ -195,14 +204,19 @@ void try_to_get_new_window(mouse_location_type type){
     win_init_x += 50;
     win_init_y += 50;
 
-    increase_active_window_prior();
+    increase_window_prior();
 
     window[id].status = 1;
     
     curr_win_num ++;
+    if(curr_win_num == WINDOW_MAX_NUM){
+        win_init_x = 50;
+        win_init_y = 50;
+    }
 }
 
 void draw_window(gui_window* window){
+    draw_gui_window_frame(window->x, window->y);   
     switch(window->type){
         case TERMINAL_ICON:
             draw_terminal(window);
@@ -211,8 +225,7 @@ void draw_window(gui_window* window){
         case FILE_ICON:
             draw_directory(window);
             break;
-    } 
-    draw_gui_window_frame(window->x, window->y);   
+    }
 }
 
 void show_windows(){
@@ -245,8 +258,8 @@ int check_mouse_gui(int x, int y){
     for(prior = 0; prior < curr_win_num; prior ++){
         for(id = 0; id < WINDOW_MAX_NUM; id ++){
             if(window[id].prior == prior){
-            if(x > window[id].x && x < window[id].x + WINDOW_TITLE_WIDTH 
-            && y > window[id].y && y < window[id].y + WINDOW_TITLE_HEIGHT){
+                if(x > window[id].x && x < window[id].x + WINDOW_TITLE_WIDTH 
+                    && y > window[id].y && y < window[id].y + WINDOW_TITLE_HEIGHT - 9){
                 mouse_target_id = id;
                 return WINDOW_TITLE;
             }
@@ -278,9 +291,8 @@ int check_mouse_gui(int x, int y){
 
 void window_cancel(int win_id){
     window[win_id].status = 0;
-    window[win_id].prior = WINDOW_MAX_NUM;
     terminal_t* terminal_pt;
-    switch(window->type){
+    switch(window[win_id].type){
         case TERMINAL_ICON:
             terminal_pt = (terminal_t* )window[win_id].content_pt;
             terminal_pt->status = 0;
@@ -296,6 +308,7 @@ void window_cancel(int win_id){
     }
     //window[win_id].content_pt = NULL;
     decrease_active_window_prior();
+    window[win_id].prior = WINDOW_MAX_NUM;
     curr_win_num --;
 }
 
@@ -304,26 +317,44 @@ void wake_window(){
     increase_active_window_prior();
 }
 
-void mouse_windows_release_interact_handler(int x, int y){
+void mouse_windows_release_interact_handler(int x, int y, mouse_location_type type){
     on_title = 0;
     if(mouse_target_id == -1){
         return;
     }
     /* check if is cancel */
-    window_cancel(mouse_target_id);
+    switch(type){
+        case WINDOW_TITLE:
+            win_move_flag = 0;
+            break;
+
+        case WINDOW_CANCEL:
+            window_cancel(mouse_target_id);
+            break;
+
+        default:
+            break;
+    }
+
     mouse_target_id = -1;
     mouse_target_file = -1;
-    win_move_flag = 0;
 }
 
 void window_move(int x, int y){
     if(mouse_target_id == -1){
         return;
     }
-    window[mouse_target_id].x += x;
-    window[mouse_target_id].y += y;
-    win_move_flag = 1;
-    
+
+    int i;
+    for(i = 0; i < curr_win_num; i ++){
+        if(window[i].prior == 0){
+            break;
+        }
+    }
+
+    window[i].x += x;
+    window[i].y += y;
+    win_move_flag = 1;    
 }
 
 void mouse_windows_press_interact_handler(){
