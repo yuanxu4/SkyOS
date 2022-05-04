@@ -30,6 +30,55 @@ void gui_do_task(){
 
 }
 
+void draw_line(int startx, int starty, int length, int height, int orgx){
+    int counter;
+    int x;
+    int offset;
+    for(x = startx + 1; x < startx + length; x ++){
+        counter = 0;
+        offset = 0;
+        current_buffer = 1 - current_buffer;
+        if(current_buffer){
+            offset = SCREEN_HEIGHT;
+        }
+        __svgalib_cirrusaccel_mmio_FillBox(orgx, starty + offset, x, height, 0xFFFFFFFF);
+        while(counter != line_interval){
+            counter ++;
+        }
+        cirrus_setdisplaystart(current_buffer * 1024 * 2 * 768);
+    }
+    offset = 0;
+    current_buffer = 1 - current_buffer;
+    if(current_buffer){
+            offset = SCREEN_HEIGHT;
+    }
+    __svgalib_cirrusaccel_mmio_FillBox(orgx, starty + offset, x, height, 0xFFFFFFFF);
+}
+
+void draw_branch(int startx, int starty, int x_len, int y_len, int width){
+    int counter = 0;
+    int x, y;
+    int offset;
+    for(y = starty + 1; y < starty + y_len; y ++){
+        counter = 0;
+        offset = 0;
+        current_buffer = 1 - current_buffer;
+        if(current_buffer){
+            offset = SCREEN_HEIGHT;
+        }
+        __svgalib_cirrusaccel_mmio_FillBox(startx, starty + offset, width, y - starty, 0xFFFFFFFF);
+        while(counter != line_interval){
+            counter ++;
+        }
+    }
+    offset = 0;
+    current_buffer = 1 - current_buffer;
+    if(current_buffer){
+            offset = SCREEN_HEIGHT;
+    }
+    // __svgalib_cirrusaccel_mmio_FillBox(startx, starty + offset, width, y - starty, 0xFFFFFFFF);
+}
+
 void boot_amination(){
     int i;
     animat_pt[0] = (int32_t)animatation;
@@ -40,10 +89,19 @@ void boot_amination(){
     unsigned char code[] = "0123456789";
 
     unsigned char filename[] = "N000.png";
+
+    int line_x = 0;
+    int line_y = 500;
+    int line_height = 10;
     for(i = 0; i < 32; i ++){
         filename[2] = code[i/10];
         filename[3] = code[i%10];
         load_png2buffer(filename, (unsigned short*)animat_pt[i]);
+        draw_line(line_x, line_y, 1024 / 32, line_height, 0);
+        line_x += 1024 / 32;
+        if(i % 8 == 0){
+            draw_branch(line_x, line_y, 50, 50, 10);
+        }
     }
 
     int offset = 0;
@@ -78,7 +136,6 @@ void init_gui(){
 	init_gui_font();
 
     boot_amination();
-
-	gui_draw_background();
+	// gui_draw_background();
 }
 
