@@ -63,16 +63,16 @@ void printf_on_curr_terminal(int8_t* string);
 
 void onto_terminal_putc(uint8_t c)
 {
-    video_mem = curr_terminal->page_addr;
+    video_mem = (char*)(curr_terminal->page_addr);
     putc_sche(c);
-    video_mem = curr_task()->terminal->page_addr;
+    video_mem = (char*)(curr_task()->terminal->page_addr);
 }
 
 void onto_terminal_printf(int8_t *c)
 {
-    video_mem = curr_terminal->page_addr;
+    video_mem = (char*)(curr_terminal->page_addr);
     printf_sche(c);
-    video_mem = curr_task()->terminal->page_addr;  
+    video_mem = (char*)(curr_task()->terminal->page_addr);  
 }
 
 

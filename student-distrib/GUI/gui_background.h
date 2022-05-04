@@ -10,6 +10,6 @@
 /*function and define */
 void gui_draw_background();
 void init_background();
-void load_png2buffer(unsigned char* filename, unsigned short* tar_buffer);
+void load_png2buffer(const char* filename, unsigned short* tar_buffer);
 
 #endif

@@ -46,7 +46,6 @@ void boot_amination(){
         load_png2buffer(filename, (unsigned short*)animat_pt[i]);
     }
 
-    int page;
     int offset = 0;
     int counter = 0;
     for(i = 0; i < 32; i ++){

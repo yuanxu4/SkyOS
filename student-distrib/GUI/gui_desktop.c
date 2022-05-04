@@ -86,7 +86,7 @@ void draw_file_icon(gui_file* file){
     }
 
     
-    int name_len = strlen(file->file->file_name);
+    int name_len = strlen((const int8_t*)file->file->file_name);
 
     int char_start_y = y + DESKTOP_ICON_IMG_HEIGHT + 2;
     int char_start_x;

@@ -25,6 +25,7 @@ int8_t *strrev(int8_t *s);
 uint32_t strlen(const int8_t *s);
 void clear(void);
 void test_interrupts(void);
+int32_t printf_sche(int8_t *format, ...);
 
 void enable_cursor(uint8_t cursor_start, uint8_t cursor_end);
 void update_cursor(int x, int y);

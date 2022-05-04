@@ -8,10 +8,8 @@ static unsigned char png_data[SCREEN_HEIGHT * SCREEN_WIDTH * 4];
 static unsigned int png_buffer[SCREEN_HEIGHT * SCREEN_WIDTH];
 
 
-void load_png2buffer(unsigned char* filename, unsigned short* tar_buffer){
+void load_png2buffer(const char* filename, unsigned short* tar_buffer){
     upng_t image;
-    dentry_t png;
-    int32_t size;
     const unsigned char *buffer;
     image = upng_new_from_file(filename);
     image.buffer = (unsigned char*) &png_data;

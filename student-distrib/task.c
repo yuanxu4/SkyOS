@@ -596,7 +596,7 @@ int32_t task_switch()
     if (curr_terminal->num_task == 0)
     {
             /* change output video memory */
-        video_mem = curr_terminal->page_addr;
+        video_mem = (char*)(curr_terminal->page_addr);
         printf_sche("terminal<%d>\n",cur_terminal_id);
         system_execute((uint8_t *)"shell");
     }
@@ -638,7 +638,7 @@ int32_t task_switch()
 int32_t user_program_mem_map(PCB_t *next_task)
 {  
     /* change output video memory */
-    video_mem = next_task->terminal->page_addr;
+    video_mem = (char*)(next_task->terminal->page_addr);
     uint32_t base_addr = KERNEL_UPPER_ADDR + next_task->pid * SIZE_4MB;
     page_directory.pde[TASK_VIR_IDX] = base_addr | TASK_PAGE_INFO;
     
