@@ -989,11 +989,11 @@ int32_t check_parent(uint8_t *dir_name, dentry_t *file_dentry)
     {
         return -1;
     }
-    if (file_dentry->dentry_addr->parent_fname==NULL)
+    if (file_dentry->dentry_addr->parent_fname == NULL)
     {
         return -1;
     }
-    
+
     if (0 == strncmp((const int8_t *)dir_name, (const int8_t *)file_dentry->dentry_addr->parent_fname, MAX_LEN_FILE_NAME))
     {
         return 0;
@@ -1050,7 +1050,7 @@ int32_t fs_read(int32_t type, uint8_t *buf, dentry_t *dir_dentry)
         {
             // printf("fs_read:%s, %s\n",file_dentry_tmp->file_name,file_dentry_tmp->parent_fname);
             strncpy((int8_t *)buf, (const int8_t *)(file_dentry_tmp->file_name), MAX_LEN_FILE_NAME);
-            buf += strlen((const int8_t*)buf);
+            buf += strlen((const int8_t *)buf);
             *buf = '\n';
             buf++;
         }
@@ -1069,13 +1069,14 @@ int32_t fs_getparent(int32_t type, uint8_t *buf, dentry_t *file_dentry)
     return 0;
 }
 
-int32_t fs_ifkid(int32_t type, uint8_t *fname, dentry_t *dir_dentry){
+int32_t fs_ifkid(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
+{
     dentry_t file_dentry;
-        if (-1 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
+    if (-1 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
     {
         return -1;
     }
-    return file_dentry.file_type+strncmp((const int8_t*)file_dentry.dentry_addr->parent_fname, (const int8_t*)dir_dentry->dentry_addr->file_name, MAX_LEN_FILE_NAME)-1;
+    return file_dentry.file_type + strncmp((const int8_t *)file_dentry.dentry_addr->parent_fname, (const int8_t *)dir_dentry->dentry_addr->file_name, MAX_LEN_FILE_NAME) - 1;
 }
 
 // int32_t disp_dentry(dentry_t *file_dentry){
@@ -1142,11 +1143,11 @@ int32_t file_reset(uint32_t inode)
     while (size_unreset >= BLOCK_SIZE)
     {
         data_block = inodes[inode].data_block_num[dt_blk_idx_in_inode];
-        if ((int32_t)data_block==-1)
+        if ((int32_t)data_block == -1)
         {
             return 0;
         }
-        
+
         if (ADDR_or_ID(data_block))
         { // addr
             memset((uint8_t *)(data_block), 0, BLOCK_SIZE);
@@ -1181,7 +1182,7 @@ int32_t del_file(uint8_t *fname)
     file_dentry.dentry_addr->inode_num = -1;
     file_dentry.dentry_addr->parent_fname = NULL;
     memset(file_dentry.dentry_addr->file_name, 0, MAX_LEN_FILE_NAME);
-    if (file_dentry.file_type==2)
+    if (file_dentry.file_type == 2)
     {
         file_reset(file_dentry.inode_num);
     }
@@ -1219,14 +1220,15 @@ int32_t fs_delete(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
             dentry_t *file_dentry_tmp;
             for (i = 0; i < boot_block->dir_count; i++)
             {
-                file_dentry_tmp = &boot_block->dentries[i]; //file
+                file_dentry_tmp = &boot_block->dentries[i]; // file
                 if (0 == check_parent(file_dentry.dentry_addr->file_name, file_dentry_tmp))
                 {
-                    if (file_dentry_tmp->file_type==2)
+                    if (file_dentry_tmp->file_type == 2)
                     {
                         del_file(file_dentry_tmp->file_name);
                     }
-                    else {
+                    else
+                    {
                         fs_delete(4, file_dentry_tmp->file_name, &file_dentry);
                     }
                 }

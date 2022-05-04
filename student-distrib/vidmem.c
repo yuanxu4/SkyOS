@@ -8,7 +8,7 @@
 #include "types.h"
 #include "paging.h"
 
-                                                  // 33*4 = 132 for the page derectory to 132-136mb
+// 33*4 = 132 for the page derectory to 132-136mb
 #define VID_USER_START_ADDR (TASK_VIR_ADDR_END + VIDEO_MEM_INDEX * SIZE_4KB) // 132MB + 0xb8 * 4K
 
 static PT_t user_vid_pt;

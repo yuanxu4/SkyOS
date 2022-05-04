@@ -11,7 +11,6 @@
 #define NUM_CHAR_PER_LINE 80
 #define NUM_128 128
 
-
 extern uint32_t ece391_strlen(const uint8_t *s);
 extern void ece391_strcpy(uint8_t *dst, const uint8_t *src);
 extern int32_t ece391_fdputs(int32_t fd, const uint8_t *s);

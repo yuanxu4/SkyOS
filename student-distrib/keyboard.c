@@ -150,16 +150,18 @@ void put_changebuf(uint8_t output_char)
                 putc('\b');
                 putc('\b');
                 putc('\b');
-            }else{
-                putc('\b');               
-            } 
+            }
+            else
+            {
+                putc('\b');
+            }
             kb_buf[char_num - 1] = 0; // reset to 0
-            char_num--;               // number of characters in buffer decrement         
+            char_num--;               // number of characters in buffer decrement
         }
     }
     else
     {
-        if (char_num < kb_bufsize - 1) //maximum char = 127
+        if (char_num < kb_bufsize - 1) // maximum char = 127
         {
             putc(output_char);
             char_num++;
@@ -167,7 +169,7 @@ void put_changebuf(uint8_t output_char)
         }
         else
         {
-            kb_buf[kb_bufsize - 1] = '\n';  
+            kb_buf[kb_bufsize - 1] = '\n';
         }
     }
 }
@@ -187,7 +189,7 @@ void scancode_output(uint8_t scancode)
     if (scancode == ENTER && (copy_flag == 0))
     {
         /* clean all the numbers we count */
-        if (char_num <= kb_bufsize-1)   //maximum char number are 127
+        if (char_num <= kb_bufsize - 1) // maximum char number are 127
         {
             kb_buf[char_num] = '\n';
         }
@@ -208,7 +210,7 @@ void scancode_output(uint8_t scancode)
         if (ctrl_on_flag && (scancode == L))
         {
             clear();
-            printf("%s", kb_buf);     // print buffer value after clear screen
+            printf("%s", kb_buf); // print buffer value after clear screen
         }
         /* shift and capslock all on */
         else if (shift_on_flag && cap_on_flag)
@@ -305,7 +307,7 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
     } // read function waiting
     to = buf;
     from = kb_buf;
-    if ((NULL == buf) || (NULL == kb_buf)||(nbytes < 0))
+    if ((NULL == buf) || (NULL == kb_buf) || (nbytes < 0))
         return -1;
     if (fd != 0)
         return -1; // if fd is not right
@@ -374,7 +376,7 @@ int32_t terminal_write(int32_t fd, const void *buf, int32_t nbytes)
 {
     int i;
     uint8_t output_char;
-    if ((NULL == buf)||(nbytes < 0))
+    if ((NULL == buf) || (nbytes < 0))
         return -1; // if buf is null
     if (fd != 1)
         return -1; // if fd is not right number

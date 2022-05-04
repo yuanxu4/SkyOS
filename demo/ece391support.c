@@ -21,7 +21,8 @@ void ece391_strcpy(uint8_t *dst, const uint8_t *src)
         ;
 }
 
-void *ece391_memset(void *s, int32_t c, uint32_t n){
+void *ece391_memset(void *s, int32_t c, uint32_t n)
+{
     c &= 0xFF;
     asm volatile("                 \n\
             .memset_top:            \n\

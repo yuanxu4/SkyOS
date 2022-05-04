@@ -655,8 +655,8 @@ void launch_tests()
 	// TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
 
 	// TEST_OUTPUT("file_sys_test", file_sys_test());
-	//TEST_OUTPUT("exe garbage input test", exe_halt_err_test());
-	//TEST_OUTPUT("syscall garbage input test", sys_call_err_test());
+	// TEST_OUTPUT("exe garbage input test", exe_halt_err_test());
+	// TEST_OUTPUT("syscall garbage input test", sys_call_err_test());
 	// continue_test();
 
 	clear();
