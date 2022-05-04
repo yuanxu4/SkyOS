@@ -52,23 +52,12 @@ int main()
                     return -1;
                 }
                 uint8_t *tmp_buf = ece391_alloc(SIZE_4MB);
-                int32_t cursor_position;
+                // int32_t cursor_position;
                 int32_t file_size;
-                int32_t prev_idx, curr_idx;
+                // int32_t prev_idx, curr_idx;
                 if ((file_size = file_disp(fd, 1, tmp_buf)) == -1)
                 {
                     ece391_free(tmp_buf);
-                    return -1;
-                }
-                if (-1 == ece391_close(fd))
-                {
-                    ece391_fdputs(1, (uint8_t *)"file close failed\n");
-                    return -1;
-                }
-                // reopen to reset position in file
-                if (-1 == (fd = ece391_open((uint8_t *)fname)))
-                {
-                    ece391_fdputs(1, (uint8_t *)"file open failed\n");
                     return -1;
                 }
                 while (1)
@@ -82,33 +71,46 @@ int main()
                     {
                         break;
                     }
-                    // todo
-                    // a function to update cursor and buf************************************
-                    int32_t i;
-                    prev_idx = 0;
-                    curr_idx = 0;
-                    cursor_position = file_size;
-                    while (buf[i] != '\n')
+                    if (-1 == ece391_close(fd))
                     {
-                        if (buf[i] >= NUM_128 && buf[i + 1] >= NUM_128)
-                        {
-                            prev_idx = curr_idx;
-                            curr_idx = i;
-                            // put buf[prev_idx, curr_idx] starting at tmp_buf[cursor_position]*****************
-
-                            file_size += (curr_idx - prev_idx);
-                            cursor_position = (buf[i] - NUM_128) * NUM_CHAR_PER_LINE + (buf[i + 1] - NUM_128);
-                            i += 2;
-                            continue;
-                        }
-                        i++;
+                        ece391_fdputs(1, (uint8_t *)"file close failed\n");
+                        return -1;
                     }
+                    // reopen to reset position in file
+                    if (-1 == (fd = ece391_open((uint8_t *)fname)))
+                    {
+                        ece391_fdputs(1, (uint8_t *)"file open failed\n");
+                        return -1;
+                    }
+                    if (-1 == ece391_write(fd, buf, cnt))
+                        return 3;
+                    // // todo
+                    // // a function to update cursor and buf************************************
+                    // int32_t i;
+                    // prev_idx = 0;
+                    // curr_idx = 0;
+                    // cursor_position = file_size;
+                    // while (buf[i] != '\n')
+                    // {
+                    //     if (buf[i] >= NUM_128 && buf[i + 1] >= NUM_128)
+                    //     {
+                    //         prev_idx = curr_idx;
+                    //         curr_idx = i;
+                    //         // put buf[prev_idx, curr_idx] starting at tmp_buf[cursor_position]*****************
+
+                    //         file_size += (curr_idx - prev_idx);
+                    //         cursor_position = (buf[i] - NUM_128) * NUM_CHAR_PER_LINE + (buf[i + 1] - NUM_128);
+                    //         i += 2;
+                    //         continue;
+                    //     }
+                    //     i++;
+                    // }
                 }
 
                 // tmp_buf;
                 // curr_position;
-                if (-1 == ece391_write(fd, tmp_buf, SIZE_4MB))
-                    return 3;
+                // if (-1 == ece391_write(fd, tmp_buf, SIZE_4MB))
+                //     return 3;
                 ece391_free(tmp_buf);
                 if (-1 == ece391_close(fd))
                 {
