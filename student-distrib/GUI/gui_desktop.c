@@ -25,18 +25,6 @@ void init_desktop(){
             desktop_file[i].y = -1;
         }        
     }
-
-
-    // int x, y;
-    // rgb color;
-    // for(y = WINDOW_DOWN_HEIGHT + WINDOW_TITLE_HEIGHT + STORE_Y; y <WINDOW_DOWN_HEIGHT + WINDOW_TITLE_HEIGHT + STORE_Y + TERMINAL_ICON_HEIGHT; y ++){
-    //     for(x = WINDOW_SIDE_WIDTH; x < WINDOW_SIDE_WIDTH + TERMINAL_ICON_WIDTH; x ++){
-    //         color = terminal_icon_img[x - WINDOW_SIDE_WIDTH + (y - WINDOW_DOWN_HEIGHT - WINDOW_TITLE_HEIGHT - STORE_Y) * TERMINAL_ICON_WIDTH];
-    //         vga_setcolor(color);
-    //         vga_drawpixel(x, y);
-    //     }
-    // }
-
 }
 
 void draw_file_icon(gui_file* file){

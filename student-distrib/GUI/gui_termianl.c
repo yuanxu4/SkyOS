@@ -34,7 +34,7 @@ void draw_terminal(gui_window* window){
     }
 
     if(window->enable_cursor){
-        if(pit_timer % 50 == 0){
+        if(pit_timer % 200 == 0){
             __svgalib_cirrusaccel_mmio_Reverse((terminal_pt->cursor_x) * FONT_WIDTH + x, (terminal_pt->cursor_y) * FONT_HEIGHT + y + offset, FONT_WIDTH, FONT_HEIGHT);
         }
     }

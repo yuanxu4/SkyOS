@@ -1135,7 +1135,7 @@ upng_t upng_new_from_file(const char *filename)
 
 
 	/* set the read buffer as our source buffer, with owning flag set */
-	upng.source.buffer = png_data_buff;
+	upng.source.buffer = (const unsigned char*)png_data_buff;
 	upng.source.size = size;
 	upng.source.owning = 1;
 

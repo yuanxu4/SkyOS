@@ -13,6 +13,7 @@
         "gui_window.h": "c",
         "cstdlib": "c",
         "stdbool.h": "c",
-        "upng.h": "c"
+        "upng.h": "c",
+        "gui_desktop.h": "c"
     }
 }
