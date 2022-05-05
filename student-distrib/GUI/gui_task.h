@@ -16,6 +16,7 @@ void init_gui_task();
 void init_gui();
 void desktop_duck(int x, int y);
 void boot_amination();
+void close_amination();
 
 #endif
 

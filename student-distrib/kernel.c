@@ -215,6 +215,7 @@ void entry(unsigned long magic, unsigned long addr)
     sti();
     play_music((uint8_t*)"openmusic.wav");
     boot_amination();
+    close_amination();
 
 #ifdef RUN_TESTS
     /* Run tests */

@@ -204,6 +204,37 @@ void boot_amination(){
     //sb16_stop();
 }
 
+void close_amination(){
+    int i;
+    animat_pt[0] = (int32_t)animatation;
+    for(i = 1; i < 32; i ++){
+        animat_pt[i] = (int32_t)(animat_pt[i - 1] + ainimation_size);
+    }
+    int offset = 0;
+    int counter = 0;
+    for(i = 31; i >= 0; i --){
+        offset = 0;
+        current_buffer = 1 - current_buffer;
+        if(current_buffer){
+            offset = SCREEN_HEIGHT / 32;
+        }
+        int page;
+        for (page = 0; page < 24; page++) {
+            cirrus_setpage_2M(page + offset);
+            memcpy((void *) VIDEO, &((const short*)animat_pt[i])[32768 * page], 0x10000);
+        }
+        cirrus_setdisplaystart(current_buffer * 1024 * 2 * 768);
+        counter = 0;
+        while(counter != animation_interval){
+            counter ++;
+        }
+    }
+    
+    char acknowledgement1[] = "GUI Art Designer: Yichi Jin(Au73)";
+    char acknowledgement1[] = "Zoom tutorial from Zikai Liu";
+    
+}
+
 void init_gui(){
 	init_gui_window_items();
 	init_desktop();
