@@ -557,7 +557,6 @@ void start_task()
     terminal_init();
     pit_init();  
     /* execute first task */
-    
     system_execute((uint8_t *)"shell"); 
     
 }

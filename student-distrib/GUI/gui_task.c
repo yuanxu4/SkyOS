@@ -229,10 +229,69 @@ void close_amination(){
             counter ++;
         }
     }
-    
-    char acknowledgement1[] = "GUI Art Designer: Yichi Jin(Au73)";
-    char acknowledgement1[] = "Zoom tutorial from Zikai Liu";
-    
+    char ack_title[] = "ACKNOWLEDGEMENT!!!";
+    char acknowledgement1[] = "Thanks professors and TAs";
+    char acknowledgement2[] = "Zoom tutorial from Zikai Liu";
+    char acknowledgement3[] = "GUI Art Designer: Yichi Jin(Au73)";
+    char* acknowledgement[4];
+    acknowledgement[0] = ack_title;
+    acknowledgement[1] = acknowledgement1;
+    acknowledgement[2] = acknowledgement2;    
+    acknowledgement[3] = acknowledgement3;
+
+    char reference_title[] = "REFERENCE:";
+    char reference1[] = "svgalib https://www.svgalib.org";
+    char reference2[] = "SVGA Technical Reference Manual of CL-GD5446";
+    char reference3[] = "Sound Blaster Series Hardware Programming Guide";
+    char reference4[] = "https://wiki.osdev.org/Sound_Blaster_16";
+    char reference5[] = "http://qzx.com/pc-gpe/sbdsp.txt;";
+    char reference6[] = "github.com/margaretbloom/sb16-wav";
+    char reference7[] = "https://github.com/cloudwu/buddy";
+    char reference8[] = "https://wiki.osdev.org/Mouse";
+    char* reference[9];
+    reference[0] = reference_title;
+    reference[1] = reference1;
+    reference[2] = reference2;
+    reference[3] = reference3;
+    reference[4] = reference4;
+    reference[5] = reference5;
+    reference[6] = reference6;
+    reference[7] = reference7;
+    reference[8] = reference8;
+
+    int length;
+    int j;
+    int startx = 400;
+    int starty = 200;
+
+    current_buffer = 1 - current_buffer;
+    cirrus_setdisplaystart(current_buffer * 1024 * 2 * 768);
+
+    for(i = 0; i < 4; i ++){
+        length = strlen((int8_t*)acknowledgement[i]);
+        for(j = 0; j < length; j ++){
+            counter = 0;
+            gui_putchar(acknowledgement[i][j], startx + j * FONT_WIDTH, starty);
+            while(counter != line_interval * 5){
+                counter ++;
+            }
+        }
+        starty += FONT_HEIGHT; 
+    }
+
+    starty += FONT_HEIGHT; 
+    for(i = 0; i < 9; i ++){
+        length = strlen((int8_t*)reference[i]);
+        for(j = 0; j < length; j ++){
+            counter = 0;
+            gui_putchar(reference[i][j], startx + j * FONT_WIDTH, starty);
+            while(counter != line_interval * 5){
+                counter ++;
+            }
+        }
+        starty += FONT_HEIGHT; 
+    }
+
 }
 
 void init_gui(){

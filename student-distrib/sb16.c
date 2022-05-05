@@ -15,7 +15,7 @@ volatile int ack_flag = 1;
 int8_t DMA_buff[BUFF_DIM][BUFF_SIZE] __attribute__((aligned(32768))) = {};
 int32_t fd;
 uint8_t* temp[2];
-volatile int end_flag;
+volatile static int end_flag;
 /**************************** help function **********************************/
 uint8_t dsp_read() {
     // check the status bit bit
@@ -101,6 +101,7 @@ int32_t sb16_init(uint8_t* file_info) {
 }
 
 void sb16_stop() {
+    end_flag = 1;
     ack_flag = 1;
     dsp_reset();
     disable_irq(SB16_IRQ_NUM);
