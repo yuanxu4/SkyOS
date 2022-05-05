@@ -44,7 +44,7 @@ continue:
 
 keep_going:
     # Set up ESP so we can have an initial stack
-    movl    $0xC00000, %esp
+    movl    $0x1000000, %esp
 
     # Set up the rest of the segment selector registers
     movw    $KERNEL_DS, %cx
@@ -98,6 +98,10 @@ enable_paging:
     movl    page_directory+8, %eax # the 2nd entry in PD, 0x00400082
     movb    $0x83, %al # 0x00800083
     movl    %eax, page_directory+8
+
+    movl    page_directory+12, %eax # the 2nd entry in PD, 0x00400082
+    movb    $0x83, %al # 0x00C00083
+    movl    %eax, page_directory+12
 
     movl    page_table + VIDEO_MEM_OFFSET, %ecx # the entry of video memory in PT, 0x000B8002
     movb    $0x03, %cl # 0x000B8003

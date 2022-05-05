@@ -62,6 +62,8 @@ struct terminal_t
     volatile uint32_t enter_flag;
 };
 
+terminal_t *curr_terminal;
+
 void keyboard_init(void);
 int32_t terminal_init();
 int32_t terminal_open(const uint8_t *filename);
@@ -75,6 +77,8 @@ int32_t terminal_switch(terminal_t *terminal_next);
 terminal_t _terminal_dp[MAX_TERMINAL_NUM];
 
 int32_t terminal_switch(terminal_t *terminal_next);
+
+uint8_t* get_key_buff();
 
 #endif
 

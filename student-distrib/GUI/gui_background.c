@@ -57,7 +57,7 @@ void gui_draw_background(){
 
     for (page = 0; page < 24; page++) {
         cirrus_setpage_2M(page + offset);
-        memcpy((void *) VIDEO, &(background_img[32768 * page]), 0x10000);
+        memcpy((void *) VIDEO, &((short*)(ainimation_start + ainimation_size * animation_num))[32768 * page], 0x10000);
     }
 
     // int x, y;

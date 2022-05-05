@@ -12,6 +12,7 @@
 #include "types.h"
 #include "x86_desc.h"
 #include "vidmem.h"
+#include "GUI/gui.h"
 
 /* keyboard buffer */
 static uint8_t kb_buf[kb_bufsize];
@@ -23,7 +24,6 @@ static uint8_t cap_on_flag, shift_on_flag, ctrl_on_flag;
 // PT_t kernel_pt ;
 /* three terminals */
 uint32_t cur_terminal_id;
-terminal_t *curr_terminal;
 
 extern void disable_paging();
 extern void start();
@@ -252,6 +252,7 @@ void scancode_output(uint8_t scancode)
         else if (ctrl_on_flag && (scancode == R))
         {
             send_eoi(KEYBARD_IRQ);
+            __svgalib_cirrusaccel_mmio_FillBox(0, 0, 1024, 768 * 2, 0);
             disable_paging();
             start();
         }
@@ -552,4 +553,8 @@ terminal_t *get_available_terminal()
     }
 
     return NULL;
+}
+
+uint8_t* get_key_buff(){
+    return kb_buf;
 }

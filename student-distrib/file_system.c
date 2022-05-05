@@ -416,7 +416,7 @@ int32_t file_sys_read(int32_t fd, void *buf, int32_t nbytes)
     if (curr_task()->fd_array.entries[fd].flags == NOT_IN_USE)
     {
         // PRINT("%x, %d, %d", curr_task(), fd, nbytes);
-        PRINT("fail to read: file is not open\n");
+        // PRINT("fail to read: file %s is not open\n", curr_task()->fd_array.entries[fd].fname );
         return -1;
     }
     // update position field included in specfic read functions
@@ -521,6 +521,7 @@ uint32_t get_eip(dentry_t *exe_dentry)
 int32_t read_dentry_by_name(const uint8_t *fname, dentry_t *dentry)
 {
     int i; // just for loop
+    int j;
 
     // length of the file name > 32
     if (strlen((const int8_t *)fname) > MAX_LEN_FILE_NAME + 1)
@@ -531,8 +532,9 @@ int32_t read_dentry_by_name(const uint8_t *fname, dentry_t *dentry)
     // traverse dentries
     for (i = 0; i < boot_block->dir_count; i++)
     {
+        j = !strncmp((const int8_t *)fname, (const int8_t *)boot_block->dentries[i].file_name, strlen((int8_t *)boot_block->dentries[i].file_name));
         // check names, 0 means the same, i.e. find
-        if (!strncmp((const int8_t *)fname, (const int8_t *)boot_block->dentries[i].file_name, MAX_LEN_FILE_NAME))
+        if (!strncmp((const int8_t *)fname, (const int8_t *)boot_block->dentries[i].file_name, strlen((int8_t *)boot_block->dentries[i].file_name)))
         {
             // copy and return
             // printf("%s\n",fname);

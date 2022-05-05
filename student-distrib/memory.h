@@ -10,7 +10,7 @@
 #define MAX_NUM_PAGE (1 << MAX_ORDER_PAGE) // max num of pages in the buddy system
 #define SIZE_2KB 0x800
 #define MAX_NUM_NODE ((MAX_NUM_PAGE << 1) - 1)    // 2047, max num of nodes in the buddy system
-#define BASE_ADDR_BD_SYS 0x08000000               // 1GB, base addr of buddy system
+#define BASE_ADDR_BD_SYS 0x06000000               // 1GB, base addr of buddy system
 #define BASE_PD_INDEX BASE_ADDR_BD_SYS / SIZE_4MB // 1GB/4MB-1, pde index of base addr
 #define MAX_NUM_OBJ 255                           // 4K/16, max num of obj in one slab
 #define MIN_ORDER_OBJ 4                           // <=> 16 bytes, min size of obj

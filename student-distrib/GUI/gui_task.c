@@ -12,10 +12,10 @@ int32_t animat_pt[animation_num];
 int duck_frame = 0;
 volatile int gui_close_flag = 0;
 
-// void init_duck(){
-//     // cirrus_setpage_2M(SCREEN_HEIGHT / 32 * 2 + 2);
-//     // memcpy((void *) VIDEO, &background_img[0], 0x10000);
-// }
+void init_duck(){
+    cirrus_setpage_2M(SCREEN_HEIGHT / 32 * 2 + 2);
+    memcpy((void *) VIDEO, &duck_img[0], 0x10000);
+}
 
 void desktop_duck(int x, int y)
 {
@@ -24,7 +24,20 @@ void desktop_duck(int x, int y)
     {
         offset = SCREEN_HEIGHT;
     }
-    __svgalib_cirrusaccel_mmio_ScreenCopy(duck_frame * DUCK_WIDTH, STORE_Y + WINDOW_TITLE_HEIGHT, x, y + offset, DUCK_WIDTH, DUCK_HEIGHT);
+    int i, j;
+    rgb color;
+    for(j = 0; j < 32; j ++){
+        for(i = 0; i < 40; i ++){
+            if(duck_img[i + duck_frame * DUCK_WIDTH + j * SCREEN_WIDTH] == 0){
+                continue;
+            }
+            else{
+                color = (duck_img[i + duck_frame * DUCK_WIDTH + j * SCREEN_WIDTH] & 0x1F) << 3 | (duck_img[i + duck_frame * DUCK_WIDTH + j * SCREEN_WIDTH] & 0x3E0) << 6 | (duck_img[i + duck_frame * DUCK_WIDTH + j * SCREEN_WIDTH] & 0x7C00) << 9; 
+                vga_setcolor(color);
+                vga_drawpixel(i + x, y + j + offset);
+            }
+        }
+    }
 }
 
 void init_gui_task()
@@ -34,29 +47,29 @@ void init_gui_task()
 
 void gui_do_task()
 {
-    /* change buffer */
-    current_buffer = 1 - current_buffer;
+    if(gui_close_flag != 1){
+        /* change buffer */
+        current_buffer = 1 - current_buffer;
 
-    /* first darw background */
-    gui_draw_background();
+        /* first darw background */
+        gui_draw_background();
 
-    draw_timer();
+        draw_timer();
 
-    update_desktop();
+        update_desktop();
 
-    /* draw windows*/
-    show_windows();
+        /* draw windows*/
+        show_windows();
 
-    desktop_duck(900, 600);
+        desktop_duck(900, 600);
 
-    cirrus_setdisplaystart(current_buffer * 1024 * 2 * 768);
-    duck_frame++;
-    if (duck_frame > 23)
-    {
-        duck_frame = 0;
+        cirrus_setdisplaystart(current_buffer * 1024 * 2 * 768);
+        duck_frame++;
+        if (duck_frame > 23)
+        {
+            duck_frame = 0;
+        }
     }
-
-    while(gui_close_flag){}
 }
 
 // void draw_line(int startx, int starty, int length, int height, int orgx){
@@ -160,9 +173,8 @@ void draw_duck(int x, int y)
 }
 
 void boot_amination()
-{
-    cirrus_setpage_2M(SCREEN_HEIGHT / 32 * 2 + 2);
-    memcpy((void *)VIDEO, &background_img[0], 0x10000);
+{   
+    load_png2buffer("bkg.png", (unsigned short*)(animatation + ainimation_size * animation_num));
     int i;
     animat_pt[0] = (int32_t)animatation;
     for (i = 1; i < animation_num; i++)
@@ -227,7 +239,12 @@ void boot_amination()
         }
     }
 
-    memcpy((void *)background_img, ((const short *)animat_pt[31]), ainimation_size);
+    while (counter != line_interval * 60)
+    {
+        counter++;
+    }
+
+    // memcpy((void *)background_img, ((const short *)animat_pt[31]), ainimation_size);
     // sb16_stop();
 }
 
@@ -336,6 +353,9 @@ void close_amination()
 
 void init_gui()
 {
+    gui_close_flag = 0;
+    load_png2buffer("bkg.png", (unsigned short*)(animatation + ainimation_size * animation_num));
+    init_duck();
     init_gui_window_items();
     init_desktop();
     init_gui_task();

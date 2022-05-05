@@ -223,7 +223,7 @@ void entry(unsigned long magic, unsigned long addr)
     {
         page_table.pte[i] |= 0x1;
     }
-    for (i = 1; i < 21; i++)
+    for (i = 1; i < 23; i++)
     {
         page_directory.pde[i] |= 0x1;
     }

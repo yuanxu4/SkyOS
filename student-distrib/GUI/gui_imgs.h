@@ -36,4 +36,6 @@ extern unsigned int rtc_icon[DESKTOP_ICON_IMG_HEIGHT * DESKTOP_ICON_IMG_WIDTH];
 
 extern unsigned int rtc_icon_mask[DESKTOP_ICON_IMG_HEIGHT * DESKTOP_ICON_IMG_WIDTH];
 
+extern unsigned short duck_img[DUCK_HEIGHT * SCREEN_WIDTH];
+
 #endif

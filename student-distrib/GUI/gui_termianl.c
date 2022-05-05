@@ -6,6 +6,15 @@
 int cursor_counter = 0;
 
 void draw_terminal(gui_window* window){
+    char terminal_id[] = "Terminal <N>";
+    char code[] = "0123";
+    terminal_id[10] = code[((terminal_t*)(window->content_pt))->terminal_id];
+
+    int n;
+    for(n = 0; n < 12; n ++){
+        gui_putchar_transparent(terminal_id[n], window->x + 5 + n * FONT_WIDTH, window->y + 3);
+    }
+
     int offset = 0;
     if(current_buffer){
         offset = SCREEN_HEIGHT;
@@ -26,9 +35,11 @@ void draw_terminal(gui_window* window){
     for(j = 0; j < GUI_TERMINAL_HEIGHT; j ++){
         ch_x = 0;
         for(i = 0; i < GUI_TERMINAL_WIDTH; i ++){
-            // if(*(char *)(terminal_pt->page_addr + i + j * GUI_TERMINAL_WIDTH * 2) == 0x7){
-            //     continue;
-            // }
+            if(*(char *)(terminal_pt->page_addr + i * 2 + j * GUI_TERMINAL_WIDTH * 2) == 0x7){
+                gui_putchar(" ", x + ch_x * FONT_WIDTH, y + ch_y * FONT_HEIGHT);
+                ch_x ++;
+                continue;
+            }
             gui_putchar(*(char *)(terminal_pt->page_addr + i * 2 + j * GUI_TERMINAL_WIDTH * 2), x + ch_x * FONT_WIDTH, y + ch_y * FONT_HEIGHT);//*(window->content + i + j * GUI_TERMINAL_WIDTH)
             ch_x ++;
         }
