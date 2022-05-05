@@ -10,6 +10,7 @@
 uint8_t *animatation = (uint8_t *)ainimation_start;
 int32_t animat_pt[animation_num];
 int duck_frame = 0;
+volatile int gui_close_flag = 0;
 
 // void init_duck(){
 //     // cirrus_setpage_2M(SCREEN_HEIGHT / 32 * 2 + 2);
@@ -54,6 +55,8 @@ void gui_do_task()
     {
         duck_frame = 0;
     }
+
+    while(gui_close_flag){}
 }
 
 // void draw_line(int startx, int starty, int length, int height, int orgx){

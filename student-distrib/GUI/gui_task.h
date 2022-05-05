@@ -11,6 +11,8 @@
 #define animation_num 32
 #define line_interval 5000000
 
+extern volatile int gui_close_flag;
+
 void gui_do_task();
 void init_gui_task();
 void init_gui();
