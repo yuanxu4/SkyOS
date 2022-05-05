@@ -18,6 +18,7 @@
 #include "types.h"
 #include "rtc.h"
 #include "memory.h"
+//#include "GUI/gui_desktop.h"
 
 #define MAX_LEN_FILE_NAME 32                                      // 32B, the max length of file name
 #define BLOCK_SIZE 0x1000                                         // 4KB, size of block in this file system

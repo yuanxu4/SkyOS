@@ -1129,6 +1129,7 @@ int32_t fs_create(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
         break;
     }
     PRINT("create new file at %d\n", index);
+    init_desktop();
     return copy_size;
 }
 
@@ -1207,6 +1208,7 @@ int32_t fs_delete(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
         {
             PRINT("del file %s\n", file_dentry.dentry_addr->file_name);
             del_file(file_dentry.dentry_addr->file_name);
+            init_desktop();
             return 0;
         }
         break;
@@ -1235,6 +1237,7 @@ int32_t fs_delete(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
             }
             PRINT("del dir %s\n", file_dentry.dentry_addr->file_name);
             del_file(file_dentry.dentry_addr->file_name);
+            init_desktop();
             return 0;
         }
     }

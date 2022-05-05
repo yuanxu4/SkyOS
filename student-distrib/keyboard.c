@@ -414,7 +414,7 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
             {
                 kb_buf[i] = 0;
             }
-            copy_flag = 0;
+            curr_terminal->enter_flag = 0;
             return nbytes;
         }
     }

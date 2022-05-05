@@ -141,6 +141,7 @@ void update_desktop(){
 }
 
 void draw_directory(gui_window* window){
+    init_desktop();
     int y_off = 0;
     if(current_buffer){
         y_off = SCREEN_HEIGHT;
