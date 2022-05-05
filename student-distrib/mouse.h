@@ -24,6 +24,7 @@ typedef enum{
     WINDOW_TITLE = 2,
     WINDOW_CANCEL = 3,
     FILE_ICON = 4,
+    DUCK = 5,
 } mouse_location_type;
 
 /* function defines */

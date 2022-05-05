@@ -62,7 +62,7 @@ void pit_init()
     send_eoi(PIT_IRQNUM);
     gui_timer ++;
     pit_timer ++;
-    if(gui_timer == 4){
+    if(gui_timer == 3){
         gui_timer = 0;
         gui_do_task();
     }

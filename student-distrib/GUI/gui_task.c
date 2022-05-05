@@ -4,14 +4,24 @@
 #include "gui_timer.h"
 #include "../png/upng.h"
 #include "gui_imgs.h"
-
+#include "../keyboard.h"
+#include "../pit.h"
 uint8_t* animatation = (uint8_t*)ainimation_start;
 int32_t animat_pt[32];
+int duck_frame = 0;
 
 // void init_duck(){
 //     // cirrus_setpage_2M(SCREEN_HEIGHT / 32 * 2 + 2);
 //     // memcpy((void *) VIDEO, &background_img[0], 0x10000);
 // }
+
+void desktop_duck(int x, int y){
+    int offset = 0;
+    if(current_buffer){
+        offset = SCREEN_HEIGHT;
+    }
+    __svgalib_cirrusaccel_mmio_ScreenCopy(duck_frame * DUCK_WIDTH, STORE_Y + WINDOW_TITLE_HEIGHT, x, y + offset, DUCK_WIDTH, DUCK_HEIGHT);
+}
 
 void init_gui_task(){
     current_buffer = 0;
@@ -31,8 +41,13 @@ void gui_do_task(){
     /* draw windows*/
     show_windows();
 
-    cirrus_setdisplaystart(current_buffer * 1024 * 2 * 768);
+    desktop_duck(900, 600);
 
+    cirrus_setdisplaystart(current_buffer * 1024 * 2 * 768);
+    duck_frame ++;
+    if(duck_frame > 23){
+        duck_frame = 0;
+    }
 }
 
 // void draw_line(int startx, int starty, int length, int height, int orgx){

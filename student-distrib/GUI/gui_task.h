@@ -14,6 +14,7 @@
 void gui_do_task();
 void init_gui_task();
 void init_gui();
+void desktop_duck(int x, int y);
 
 #endif
 

@@ -3,6 +3,8 @@
 #include "../pit.h"
 #include "../svga/vga.h"
 
+int cursor_counter = 0;
+
 void draw_terminal(gui_window* window){
     int offset = 0;
     if(current_buffer){
@@ -34,8 +36,12 @@ void draw_terminal(gui_window* window){
     }
 
     if(window->enable_cursor){
-        if(pit_timer % 200 == 0){
+        cursor_counter ++;
+        if(cursor_counter % 30 > 15){
             __svgalib_cirrusaccel_mmio_Reverse((terminal_pt->cursor_x) * FONT_WIDTH + x, (terminal_pt->cursor_y) * FONT_HEIGHT + y + offset, FONT_WIDTH, FONT_HEIGHT);
+        }
+        if(cursor_counter == 30){
+            cursor_counter = 0;
         }
     }
 }
