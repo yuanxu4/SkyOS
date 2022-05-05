@@ -25,7 +25,7 @@ static uint8_t cap_on_flag, shift_on_flag, ctrl_on_flag;
 uint32_t cur_terminal_id;
 terminal_t *curr_terminal;
 
-extern void disable_paging();
+//extern void disable_paging();
 extern void start();
 extern void flush_TLB();   // defined in boot.S
 extern PCB_t *curr_task(); // defined in boot.
@@ -90,7 +90,6 @@ void keyboard_init(void)
     cap_on_flag = 0;
     shift_on_flag = 0;
     ctrl_on_flag = 0;
-    alt_on_flag = 0;
     enable_irq(KEYBARD_IRQ);
 }
 
@@ -161,15 +160,6 @@ void set_flag(uint8_t scancode)
         break;
     case control_release:
         ctrl_on_flag = 0;
-        break;
-    case ALT:
-        alt_on_flag = 1;
-        break;
-    case ALT_RELEASE:
-        alt_on_flag = 0;
-        break;
-    case ENTER_RELEASE:
-        curr_terminal->enter_flag = 0;
         break;
     default:
         break;
@@ -261,7 +251,7 @@ void scancode_output(uint8_t scancode)
         }
         else if (ctrl_on_flag && (scancode == R))
         {
-            disable_paging();
+            //disable_paging();
             start();
         }
 
@@ -390,7 +380,6 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
     int32_t copied; // number has copied
     uint8_t *to;    // copy to
     uint8_t *from;  // copy from
-    curr_task()->terminal->buf_flag = 1;
     sti(); // interrupt gate has set IF to 0, we need set 1 back
     while (curr_task()->terminal->enter_flag == 0)
     {
