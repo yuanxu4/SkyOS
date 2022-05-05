@@ -124,9 +124,9 @@ int32_t rtc_open(const uint8_t *filename)
 {
     /* start the rtc and set the frequency to 2hz*/
     cli();
-    curr_task()->rtc_active = 1;
-    curr_task()->rtc_counter = 512;
-    curr_task()->rtc_frequency = 512;
+    ((PCB_t*)curr_task())->rtc_active = 1;
+    ((PCB_t*)curr_task())->rtc_counter = 512;
+    ((PCB_t*)curr_task())->rtc_frequency = 512;
     sti();
     return 0;
 }
