@@ -44,7 +44,7 @@ continue:
 
 keep_going:
     # Set up ESP so we can have an initial stack
-    movl    $0x800000, %esp
+    movl    $0xC00000, %esp
 
     # Set up the rest of the segment selector registers
     movw    $KERNEL_DS, %cx
@@ -57,8 +57,8 @@ keep_going:
     # Push the parameters that entry() expects (see kernel.c):
     # eax = multiboot magic
     # ebx = address of multiboot info struct
-    # movl    $0x2badb002, %eax
-    # movl    $0x2cc80, %ebx
+    movl    $0x2badb002, %eax
+    movl    $0x2cc80, %ebx
     pushl   %ebx
     pushl   %eax
 
@@ -94,6 +94,10 @@ enable_paging:
     movl    page_directory+4, %eax # the 2nd entry in PD, 0x00400082
     movb    $0x83, %al # 0x00400083
     movl    %eax, page_directory+4
+
+    movl    page_directory+8, %eax # the 2nd entry in PD, 0x00400082
+    movb    $0x83, %al # 0x00800083
+    movl    %eax, page_directory+8
 
     movl    page_table + VIDEO_MEM_OFFSET, %ecx # the entry of video memory in PT, 0x000B8002
     movb    $0x03, %cl # 0x000B8003
@@ -152,3 +156,12 @@ curr_task:
     movl    %esp, %eax
     andl    $0xFFFFE000, %eax
     ret
+
+.globl disable_paging
+disable_paging:
+    pushl %ebp
+    movl %esp, %ebp
+    movl $0x00000087, page_directory
+    leave 
+    ret
+

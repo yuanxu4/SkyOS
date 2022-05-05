@@ -163,7 +163,7 @@ void entry(unsigned long magic, unsigned long addr)
 
         tss.ldt_segment_selector = KERNEL_LDT;
         tss.ss0 = KERNEL_DS;
-        tss.esp0 = 0x8000000;
+        tss.esp0 = 0xc00000;
         ltr(KERNEL_TSS);
     }
 
@@ -199,7 +199,7 @@ void entry(unsigned long magic, unsigned long addr)
     uint8_t filename[] = "N000.png";
     uint8_t num[] = "0123456789";
     int32_t i;
-    for ( i = 0; i < 32; i++)
+    for ( i = 0; i <= animation_num; i++)
     {
         filename[2] = num[i/10];
         filename[3] = num[i%10];
@@ -238,7 +238,7 @@ void entry(unsigned long magic, unsigned long addr)
      * without showing you any output */
     printf("Enabling Interrupts\n");
     sti();
-
+    clear();
 #ifdef RUN_TESTS
     /* Run tests */
     // launch_tests();

@@ -25,7 +25,7 @@ static uint8_t cap_on_flag, shift_on_flag, ctrl_on_flag;
 uint32_t cur_terminal_id;
 terminal_t *curr_terminal;
 
-//extern void disable_paging();
+extern void disable_paging();
 extern void start();
 extern void flush_TLB();   // defined in boot.S
 extern PCB_t *curr_task(); // defined in boot.
@@ -251,7 +251,7 @@ void scancode_output(uint8_t scancode)
         }
         else if (ctrl_on_flag && (scancode == R))
         {
-            //disable_paging();
+            disable_paging();
             start();
         }
 
