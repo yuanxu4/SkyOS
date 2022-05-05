@@ -136,6 +136,6 @@ void init_gui(){
 	init_gui_font();
 
     // boot_amination();
-	// gui_draw_background();
+	gui_draw_background();
 }
 

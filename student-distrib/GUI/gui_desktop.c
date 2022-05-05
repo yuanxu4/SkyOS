@@ -241,7 +241,7 @@ void draw_directory(gui_window *window)
     // __svgalib_cirrusaccel_mmio_ScreenCopy(WINDOW_SIDE_WIDTH, STORE_Y + WINDOW_DOWN_HEIGHT + WINDOW_TITLE_HEIGHT,
     //            window->x + WINDOW_SIDE_WIDTH, window->y + WINDOW_TITLE_HEIGHT + y_off, 80 * FONT_WIDTH, 25 * FONT_HEIGHT);
     j = 0;
-    for (i = 0; i < file_num - 1; i++)
+    for (i = 1; i < file_num ; i++)
     {
         if (0 == if_belong_dir(desktop_file[i].file, file_pt->file))
         {

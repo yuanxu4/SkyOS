@@ -535,6 +535,7 @@ int32_t read_dentry_by_name(const uint8_t *fname, dentry_t *dentry)
         if (!strncmp((const int8_t *)fname, (const int8_t *)boot_block->dentries[i].file_name, MAX_LEN_FILE_NAME))
         {
             // copy and return
+            // printf("%s\n",fname);
             // disp_dentry(&boot_block->dentries[i]);
             *dentry = boot_block->dentries[i];
             return 0;
@@ -1129,7 +1130,6 @@ int32_t fs_create(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
         break;
     }
     PRINT("create new file at %d\n", index);
-    init_desktop();
     return copy_size;
 }
 
@@ -1208,7 +1208,7 @@ int32_t fs_delete(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
         {
             PRINT("del file %s\n", file_dentry.dentry_addr->file_name);
             del_file(file_dentry.dentry_addr->file_name);
-            init_desktop();
+            // init_desktop();
             return 0;
         }
         break;
@@ -1237,7 +1237,7 @@ int32_t fs_delete(int32_t type, uint8_t *fname, dentry_t *dir_dentry)
             }
             PRINT("del dir %s\n", file_dentry.dentry_addr->file_name);
             del_file(file_dentry.dentry_addr->file_name);
-            init_desktop();
+            // init_desktop();
             return 0;
         }
     }

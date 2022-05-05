@@ -192,7 +192,23 @@ void entry(unsigned long magic, unsigned long addr)
         file_sys_init((module_t *)mbi->mods_addr);
     }
     init_task_page_array();
-
+    fs_create(1,(uint8_t*)"picture", get_dentry(0));
+    dentry_t pic_dentry;
+    read_dentry_by_name((const uint8_t*)"picture", &pic_dentry);
+    dentry_t file_dentry;
+    uint8_t filename[] = "N000.png";
+    uint8_t num[] = "0123456789";
+    int32_t i;
+    for ( i = 0; i < 32; i++)
+    {
+        filename[2] = num[i/10];
+        filename[3] = num[i%10];
+        if (0==read_dentry_by_name((const uint8_t*)filename, &file_dentry))
+        {
+            // printf("%d\n",i);
+            file_dentry.dentry_addr->parent_fname=pic_dentry.dentry_addr->file_name;
+        }
+    }
     init_gui();
 
     /* init mouse */
@@ -202,7 +218,7 @@ void entry(unsigned long magic, unsigned long addr)
 
     /* Enable paging */
     enable_paging();
-    int32_t i;
+    
     for (i = 0xA0; i < 0xC1; i++)
     {
         page_table.pte[i] |= 0x1;
@@ -225,7 +241,7 @@ void entry(unsigned long magic, unsigned long addr)
 
 #ifdef RUN_TESTS
     /* Run tests */
-    launch_tests();
+    // launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
 

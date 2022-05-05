@@ -21,7 +21,7 @@
 #include "lib.h"
 #include "file_system.h"
 #include "task.h"
-
+extern PCB_t *curr_task(); // defined in boot.
 /*
  * Port 0x70 is used to specify an index or "register number", and to disable NMI.
  * Port 0x71 is used to read or write from/to that byte of CMOS configuration space.
