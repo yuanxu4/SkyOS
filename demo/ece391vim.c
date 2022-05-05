@@ -57,12 +57,14 @@ int main()
                 }
                 while (1)
                 {
-                    if (-1 == (cnt = ece391_read(0, buf, BUFSIZE - 1)))
+                    if (-1 == (cnt = ece391_read(0, tmp_buf, BUFSIZE << 1)))
                     {
                         ece391_fdputs(1, (uint8_t *)"read from keyboard failed\n");
                         return 3;
                     }
-                    if (0 == ece391_strcmp(buf, (uint8_t *)":wq"))
+                    if (cnt > 0 && '\n' == tmp_buf[cnt - 1])
+                        tmp_buf[cnt] = '\0';
+                    if (0 == ece391_strcmp(tmp_buf, (uint8_t *)":wq\n"))
                     {
                         break;
                     }
@@ -77,13 +79,7 @@ int main()
                         ece391_fdputs(1, (uint8_t *)"file open failed\n");
                         return -1;
                     }
-                    if (cnt > 0 && '\n' == buf[cnt - 1])
-                        buf[cnt] = '\0';
-                    if (0 == ece391_strcmp(buf, (uint8_t *)":wq\n"))
-                    {
-                        break;
-                    }
-                    if (-1 == ece391_write(fd, buf, cnt))
+                    if (-1 == ece391_write(fd, tmp_buf, cnt))
                         return 3;
                     // // todo
                     // // a function to update cursor and buf************************************
