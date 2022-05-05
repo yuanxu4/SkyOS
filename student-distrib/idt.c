@@ -291,7 +291,8 @@ asmlinkage int32_t system_sigreturn(void)
  * output: none
  * return 0 for fail other for success
  */
-asmlinkage int32_t system_open(uint8_t* filename){
+asmlinkage int32_t system_open(uint8_t *filename)
+{
     return file_sys_open(filename);
     // /*** check file valid or not ***/
     // if(filename == NULL){
@@ -322,7 +323,7 @@ asmlinkage int32_t system_open(uint8_t* filename){
     // case 2:
     //     return file_sys_open(filename);
     //     break;
-    
+
     // default:
     //     printf("invalid file type, check again!!!\n");
     //     break;
@@ -338,7 +339,8 @@ asmlinkage int32_t system_open(uint8_t* filename){
  * output: none
  * return 0 for fail other for success
  */
-asmlinkage int32_t system_close(int32_t fd){
+asmlinkage int32_t system_close(int32_t fd)
+{
     return file_sys_close(fd);
 }
 
@@ -349,7 +351,8 @@ asmlinkage int32_t system_close(int32_t fd){
  * output: none
  * return 0 for fail other for success
  */
-asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes){
+asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes)
+{
     return file_sys_write(fd, buf, nbytes);
 }
 
@@ -360,8 +363,55 @@ asmlinkage int32_t system_write(int32_t fd, const void *buf, int32_t nbytes){
  * output: none
  * return 0 for fail other for success
  */
-asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes){
+asmlinkage int32_t system_read(int32_t fd, void *buf, int32_t nbytes)
+{
     return file_sys_read(fd, buf, nbytes);
+}
+
+asmlinkage void *system_alloc(int32_t size)
+{
+    return k_alloc(size, 1); // 1 for user level
+}
+
+asmlinkage int32_t system_free(void *addr)
+{
+    return k_free(addr);
+}
+
+asmlinkage int32_t system_new(int32_t type, void *fname, void *dir_name)
+{
+    dentry_t dir_dentry;
+    if (fname == NULL && dir_name == NULL)
+    {
+        return -1;
+    }
+    if (0 != read_dentry_by_name((uint8_t *)dir_name, &dir_dentry))
+    {
+        return -1; // no such dir
+    }
+    // disp_dentry(&dir_dentry);
+    if (type == 1 || type == 2)
+    {
+        return fs_create(type, fname, &dir_dentry);
+    }
+    else if (type == 3 || type == 4)
+    {
+        return fs_delete(type, fname, &dir_dentry);
+    }
+    else if (type == 5)
+    {
+        return fs_read(type, fname, &dir_dentry); // ls
+    }
+    else if (type == 6)
+    {
+        return fs_getparent(type, fname, &dir_dentry);
+    }
+    else if (type == 7)
+    {
+        return fs_ifkid(type, fname, &dir_dentry); //-1 not , 0 yes and flie is dir, 1 yes and file is file
+    }
+    
+    return -3;
 }
 
 /*

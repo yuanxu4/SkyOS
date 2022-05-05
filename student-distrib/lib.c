@@ -1008,13 +1008,14 @@ int32_t open(const uint8_t *filename)
  * Inputs: int32_t fd, const void *buffer, int32_t nbytes
  * Return Value: -1 for fail other for success
  * Function: link to system call */
-int32_t write(int32_t fd, const void *buffer, int32_t nbytes) {
+int32_t write(int32_t fd, const void *buffer, int32_t nbytes)
+{
     long result;
 
-    asm volatile ("INT $0x80"
-    : "=a" (result)
-    : "a" (0x04), "b" (fd), "c" (buffer), "d" (nbytes)  //oxo4 is the syscall number for write
-    : "memory", "cc");
+    asm volatile("INT $0x80"
+                 : "=a"(result)
+                 : "a"(0x04), "b"(fd), "c"(buffer), "d"(nbytes) // oxo4 is the syscall number for write
+                 : "memory", "cc");
 
     return result;
 }
@@ -1023,13 +1024,14 @@ int32_t write(int32_t fd, const void *buffer, int32_t nbytes) {
  * Inputs: int32_t fd, const void *buffer, int32_t nbytes
  * Return Value: -1 for fail other for success
  * Function: link to system call */
-int32_t read(int32_t fd, void *buffer, int32_t nbytes) {
+int32_t read(int32_t fd, void *buffer, int32_t nbytes)
+{
     long result;
 
-    asm volatile ("INT $0x80"
-    : "=a" (result)
-    : "a" (0x03), "b" (fd), "c" (buffer), "d" (nbytes)  //oxo3 is the syscall number for read
-    : "memory", "cc");
+    asm volatile("INT $0x80"
+                 : "=a"(result)
+                 : "a"(0x03), "b"(fd), "c"(buffer), "d"(nbytes) // oxo3 is the syscall number for read
+                 : "memory", "cc");
 
     return result;
 }
@@ -1038,13 +1040,14 @@ int32_t read(int32_t fd, void *buffer, int32_t nbytes) {
  * Inputs: int32_t fd
  * Return Value: -1 for fail other for success
  * Function: link to system call */
-int32_t close(int32_t fd) {
+int32_t close(int32_t fd)
+{
     long result;
 
-    asm volatile ("INT $0x80"
-    : "=a" (result)
-    : "a" (0x06), "b" (fd)  //oxo6 is the syscall number for close
-    : "memory", "cc");
+    asm volatile("INT $0x80"
+                 : "=a"(result)
+                 : "a"(0x06), "b"(fd) // oxo6 is the syscall number for close
+                 : "memory", "cc");
 
     return result;
 }

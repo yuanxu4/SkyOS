@@ -16,9 +16,9 @@ void ece391_strcpy(uint8_t* dst, const uint8_t* src)
     while ('\0' != (*dst++ = *src++));
 }
 
-void ece391_fdputs(int32_t fd, const uint8_t* s)
+int32_t ece391_fdputs(int32_t fd, const uint8_t* s)
 {
-    (void)ece391_write (fd, s, ece391_strlen(s));
+    return ece391_write (fd, s, ece391_strlen(s));
 }
 
 int32_t ece391_strcmp(const uint8_t* s1, const uint8_t* s2)

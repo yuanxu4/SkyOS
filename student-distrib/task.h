@@ -20,7 +20,7 @@
 #define MAX_ARGS 128                            // pending
 #define MAX_NUM_TASK 6                          // max num of running tasks
 #define TASK_VIR_ADDR 0x08000000                // base virtual addr for task
-#define TASK_VIR_ADDR_END 0x08400000                // base virtual addr for task
+#define TASK_VIR_ADDR_END 0x08400000            // base virtual addr for task
 #define TASK_VIR_IDX (TASK_VIR_ADDR / SIZE_4MB) // the index of the pde of TASK_VIR_ADDR in pd
 #define TASK_VIR_OFFSET 0x00048000              // offset within page of task
 #define TASK_PAGE_INFO 0x87                     // flag info of pde for task set PS, U/S, R/W, P flags
@@ -50,9 +50,9 @@ struct PCB
     uint32_t esp;
     uint32_t ebp;
     uint32_t eip;
-    uint32_t vidmap;     // to check whether the vidmap is create
-    //uint32_t kernel_esp; // esp of this task in kernel
-    // uint32_t flags;
+    uint32_t vidmap; // to check whether the vidmap is create
+    // uint32_t kernel_esp; // esp of this task in kernel
+    //  uint32_t flags;
     uint8_t *task_name; // process executable name
     uint8_t *args;      // arguments of process
     /* used for schedule */
@@ -72,8 +72,8 @@ extern page_usage_array_t page_array; // manage pages
 
 int32_t init_task_page_array();
 int32_t set_task_page();
-uint8_t *parse_args(uint8_t *command);
-PCB_t *create_task(uint8_t *name, uint8_t *args);
+uint8_t *parse_args(uint8_t *command, int32_t *type);
+PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t *cmd_type);
 PCB_t *get_task_ptr(int32_t id);
 PCB_t *deactivate_task(PCB_t *task);
 int32_t deactivate_task_page(int32_t page_id);

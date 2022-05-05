@@ -36,7 +36,9 @@
 #define SIZE_4KB 0x1000
 #define SIZE_4MB 0x400000
 // index of video memory in PT, from lib.c
-#define VIDEO_MEM_INDEX 0x2000//0xA0// 0xB8
+// #define VIDEO_MEM_INDEX 0x2000 // 0xA0// 0xB8
+#define VIDEO_MEM_INDEX 0xB8
+#define VIDEO_MEM_OFFSET 0x2E0 // offset(bytes) of video memory in PT, B8*4
 // about the size of the video memory:
 // 1B*80*25*2=4KB
 

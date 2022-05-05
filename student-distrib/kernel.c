@@ -26,6 +26,7 @@
 #include "mouse.h"
 #include "GUI/gui.h"
 
+#include "memory.h"
 #include "task.h"
 
 #define RUN_TESTS
@@ -170,11 +171,10 @@ void entry(unsigned long magic, unsigned long addr)
 
     /* Init the PIC */
     i8259_init();
-    
+
     /* keyboard init */
     keyboard_init();
 
-    
     /* rtc ini*/
     rtc_init();
     enable_irq(RTC_IRQ);
@@ -184,7 +184,7 @@ void entry(unsigned long magic, unsigned long addr)
     vga_init();
     vga_set_mode(23);
     vga_clearall();
-    //vga_accel_set_mode(BLITS_IN_BACKGROUND);
+    // vga_accel_set_mode(BLITS_IN_BACKGROUND);
 
     if (mbi->mods_count > 0)
     {
@@ -201,10 +201,19 @@ void entry(unsigned long magic, unsigned long addr)
 
     /* Enable paging */
     enable_paging();
+    int32_t i;
+    for (i = 0xA0; i < 0xC1; i++)
+    {
+        page_table.pte[i] |= 0x1;
+    }
+    for (i = 1; i < 21; i++)
+    {
+        page_directory.pde[i] |= 0x1;
+    }
+    memory_init();
 
     /* Initialize devices, memory, filesystem, enable device interrupts on the
      * PIC, any other initialization stuff... */
-
 
     /* Enable interrupts */
     /* Do not enable the following until after you have set up your
@@ -215,14 +224,14 @@ void entry(unsigned long magic, unsigned long addr)
 
 #ifdef RUN_TESTS
     /* Run tests */
-    launch_tests();
+    // launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
-    
+
     // printf("terminal<1>\n");
     // system_execute((uint8_t *)"shell");
     start_task();
-    
+
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile(".1: hlt; jmp .1;");
 }

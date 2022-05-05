@@ -17,8 +17,16 @@
 #include "keyboard.h"
 
 page_usage_array_t page_array; // manage pages
-static run_queue_t* run_queue_head;
+static run_queue_t *run_queue_head;
 static uint32_t num_task_in_queue;
+
+// inode array for pipeline
+// char *tem_in_array[3] = {"in1.txt", "in2.txt", "in3.txt"};
+char *tem_out_array[3] = {"out1.txt", "out2.txt", "out3.txt"};
+// uint32_t tem_in_inode_array[3] = {-1, -1, -1};
+uint32_t tem_out_inode_array[3] = {-1, -1, -1};
+uint32_t exist_inode_array[3] = {-1, -1, -1};
+uint8_t *exist_fname_array[3];
 
 extern void flush_TLB();   // defined in boot.S
 extern PCB_t *curr_task(); // defined in boot.
@@ -117,16 +125,48 @@ int32_t set_task_page()
  * Side Effects: change command
  * return value: the pointer to arguments
  */
-uint8_t *parse_args(uint8_t *command)
+uint8_t *parse_args(uint8_t *command, int32_t *type)
 {
     // printf("%s\n", command);
     uint8_t *args = NULL;
+    *type = 0;
     while (*command != '\0')
     {
+        if (*command == '|')
+        {
+            *type = 5;
+            args = command;
+            return args;
+        }
         if (*command == ' ')
         {
             *command = '\0';    // terminate cmd, only store the exe file name
             args = command + 1; // output args string
+            while (*args != '\0')
+            {
+                if (*args == ' ')
+                {
+                    args++;
+                }
+                else if (*args == '>')
+                {
+                    *type = 1;
+                    if (*(args + 1) == '>')
+                    {
+                        *type = 2;
+                    }
+                    break;
+                }
+                else if (*args == '|')
+                {
+                    *type = 3;
+                    break;
+                }
+                else
+                {
+                    break;
+                }
+            }
             break;
         }
         command++;
@@ -151,6 +191,22 @@ PCB_t *get_task_ptr(int32_t id)
     return NULL;
 }
 
+uint8_t *skip_space(uint8_t *tep)
+{
+    while (*tep != '\0')
+    {
+        if (*tep == ' ')
+        {
+            tep++;
+        }
+        else
+        {
+            break;
+        }
+    }
+    return tep;
+}
+
 /*
  * PCB_t *create_task(uint8_t *name, uint8_t *args)
  * create a new task
@@ -160,7 +216,7 @@ PCB_t *get_task_ptr(int32_t id)
  * Side Effects:
  * return value: the pointer to the new task, NULL for failure
  */
-PCB_t *create_task(uint8_t *name, uint8_t *args)
+PCB_t *create_task(uint8_t *name, uint8_t *args, int32_t *cmd_type)
 {
     int32_t page_id; // new page id
     PCB_t *new_task; // new task
@@ -187,9 +243,121 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
     new_task->vidmap = 0;
 
     init_file_array(&new_task->fd_array);
-    
+
+    uint8_t *tep;
+    uint8_t *fname;
+    dentry_t file_dentry;
+    // int32_t io_type = 0;
+    switch (*cmd_type)
+    {
+    case 1: // '>'
+    {
+        tep = args + 1;
+        tep = skip_space(tep);
+        dir_write(0, tep, MAX_LEN_FILE_NAME);
+        if (0 == read_dentry_by_name((uint8_t *)tep, &file_dentry))
+        {
+            set_entry(&new_task->fd_array, STDOUT_FD, 2, file_dentry.dentry_addr->file_name);
+            new_task->fd_array.entries[STDOUT_FD].inode = file_dentry.inode_num;
+        }
+        else
+        {
+            printf("redirect fail\n");
+        }
+        break;
+    }
+    case 2: // '>>'
+    {
+        tep = args + 2;
+        tep = skip_space(tep);
+        dir_write(0, tep, MAX_LEN_FILE_NAME);
+        if (0 == read_dentry_by_name((uint8_t *)tep, &file_dentry))
+        {
+            set_entry(&new_task->fd_array, STDOUT_FD, 2, file_dentry.dentry_addr->file_name);
+            new_task->fd_array.entries[STDOUT_FD].inode = file_dentry.inode_num;
+            new_task->fd_array.entries[STDOUT_FD].file_position = get_file_size(file_dentry.inode_num);
+        }
+        else
+        {
+            printf("redirect fail\n");
+        }
+        break;
+    }
+    case 3: // exe '|'
+    {
+        // tep = args;
+        // if (*tep == '|')
+        // {
+        //     io_type = 1;
+        // }
+        // tep = skip_space(tep);
+        // fname = (uint8_t *)tem_in_array[0];
+        // dir_write(0, fname, MAX_LEN_FILE_NAME);
+        // if (0 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
+        // {
+        //     set_entry(&new_task->fd_array, STDIN_FD, 2, file_dentry.file_name);
+        //     new_task->fd_array.entries[STDIN_FD].inode = file_dentry.inode_num;
+        //     tem_in_inode_array[0] = file_dentry.inode_num;
+        //     new_task->fd_array.entries[STDIN_FD].file_position = 0;
+        // }
+
+        fname = (uint8_t *)tem_out_array[0];
+        dir_write(0, fname, MAX_LEN_FILE_NAME);
+        if (0 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
+        {
+            set_entry(&new_task->fd_array, STDOUT_FD, 2, file_dentry.dentry_addr->file_name);
+            new_task->fd_array.entries[STDOUT_FD].inode = file_dentry.inode_num;
+            tem_out_inode_array[0] = file_dentry.inode_num;
+            new_task->fd_array.entries[STDOUT_FD].file_position = 0;
+        }
+        break;
+    }
+    case 4: // file '|'
+    {
+        // tep = args;
+        // if (*tep == '|')
+        // {
+        //     io_type = 1;
+        //     tep++;
+        // }
+        // tep = skip_space(tep);
+        set_entry(&new_task->fd_array, STDIN_FD, 2, exist_fname_array[0]);
+        new_task->fd_array.entries[STDIN_FD].inode = exist_inode_array[0];
+        new_task->fd_array.entries[STDIN_FD].file_position = 0;
+        // if (io_type == 1)
+        // {
+        //     fname = (uint8_t *)tem_out_array[0];
+        //     dir_write(0, fname, MAX_LEN_FILE_NAME);
+        //     if (0 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
+        //     {
+        //         set_entry(&new_task->fd_array, STDOUT_FD, 2, file_dentry.file_name);
+        //         new_task->fd_array.entries[STDOUT_FD].inode = file_dentry.inode_num;
+        //         tem_out_inode_array[0] = file_dentry.inode_num;
+        //         new_task->fd_array.entries[STDOUT_FD].file_position = 0;
+        //     }
+        // }
+        /* code */
+        break;
+    }
+    case 5: // exe '|' out
+    {
+        fname = (uint8_t *)tem_out_array[0];
+        dir_write(0, fname, MAX_LEN_FILE_NAME);
+        if (0 == read_dentry_by_name((uint8_t *)fname, &file_dentry))
+        {
+            set_entry(&new_task->fd_array, STDIN_FD, 2, file_dentry.dentry_addr->file_name);
+            new_task->fd_array.entries[STDIN_FD].inode = file_dentry.inode_num;
+            tem_out_inode_array[0] = file_dentry.inode_num;
+            new_task->fd_array.entries[STDIN_FD].file_position = 0;
+        }
+        break;
+    }
+    default:
+        break;
+    }
     curr_terminal->num_task++;
     if (curr_terminal->num_task == 1)
+    // if the only one task(shell)
     {
         new_task->parent = NULL;
     }
@@ -213,24 +381,42 @@ PCB_t *create_task(uint8_t *name, uint8_t *args)
  */
 int32_t system_execute(const uint8_t *command)
 {
-    
+
     cli();
-    
+
     dentry_t task_dentry; // copied task dentry
     uint8_t *args;        // arguments
+    int32_t cmd_type = 0;
+    int32_t cmd_type1 = 0;
+    uint8_t *args1;
     // int32_t page_id;      // new page id
     PCB_t *new_task; // new task
     uint32_t eip;
     uint8_t args_array[MAX_ARGS + 1];
     uint8_t name_array[MAX_LEN_FILE_NAME + 1];
-    memset((void*)args_array, (int32_t)"\0", MAX_ARGS + 1);
-    memset((void*)name_array, (int32_t)"\0", MAX_LEN_FILE_NAME + 1);
-    // uint32_t len; // tem len
+    uint8_t name_array1[MAX_LEN_FILE_NAME + 1];
+    memset((void *)args_array, (int32_t) "\0", MAX_ARGS + 1);
+    memset((void *)name_array, (int32_t) "\0", MAX_LEN_FILE_NAME + 1);
+    memset((void *)name_array1, (int32_t) "\0", MAX_LEN_FILE_NAME + 1);
     // Parse args
-    args = parse_args((uint8_t *)command);
+    args = parse_args((uint8_t *)command, &cmd_type);
+    if (cmd_type == 5)
+    {
+        command++;
+        command = skip_space((uint8_t *)command);
+        args = parse_args((uint8_t *)command, &cmd_type1);
+    }
+
+    // if (args == command)
+    // {
+    //     strcpy((int8_t *)name_array, (const int8_t *)command);
+    //     strcpy((int8_t *)args_array, (const int8_t *)args);
+    // }
+    // else
+    // {
     // printf("%s\n", command);
     strcpy((int8_t *)name_array, (const int8_t *)command);
-    if (args != NULL )
+    if (args != NULL)
     {
         printf("%s\n", args);
         if (*args != '\0')
@@ -238,8 +424,8 @@ int32_t system_execute(const uint8_t *command)
             strcpy((int8_t *)args_array, (const int8_t *)args);
         }
     }
+    // }
 
-    
     // get the dentry in fs
     if (read_dentry_by_name(command, &task_dentry) == -1)
     {
@@ -249,18 +435,49 @@ int32_t system_execute(const uint8_t *command)
     // Check for executable
     if (!is_exe_file(&task_dentry))
     {
-        printf("[INFO] Cannot execute unexecutable file\n");
-        return -1;
+        if (cmd_type == 3)
+        {
+            exist_inode_array[0] = task_dentry.inode_num;
+            strcpy((int8_t *)name_array1, (const int8_t *)command);
+            exist_fname_array[0] = name_array1;
+            cmd_type = 4;
+
+            if (*args == '|')
+            {
+                args++;
+            }
+            args = skip_space(args);
+            args1 = parse_args((uint8_t *)args, &cmd_type1); // args :exe, args1:args
+            if (read_dentry_by_name(args, &task_dentry) == -1 || !is_exe_file(&task_dentry))
+            {
+                printf("[INFO] Cannot execute non-exist/unexecutable file\n");
+                return -1;
+            }
+            strcpy((int8_t *)name_array, (const int8_t *)args);
+            if (args1 != NULL)
+            {
+                // printf("%s\n", args);
+                strcpy((int8_t *)args_array, (const int8_t *)args1);
+            }
+            new_task = create_task(name_array, args_array, &cmd_type);
+        }
+        else
+        {
+            printf("[INFO] Cannot execute unexecutable file\n");
+            return -1;
+        }
     }
-    // Create PCB, Set up paging
-    new_task = create_task(name_array, args_array);
+    else
+    {
+        // Create PCB, Set up paging
+        new_task = create_task(name_array, args_array, &cmd_type);
+    }
     if (new_task == NULL)
     {
         printf("[INFO] Cannot execute more than %d programs!\n", MAX_NUM_TASK);
         return -1;
     }
 
-    
     /* new_task->parent = current_task */
     // curr_terminal->num_task++;
     new_task->terminal = curr_terminal;
@@ -271,14 +488,14 @@ int32_t system_execute(const uint8_t *command)
     /* add to schedule run_queue */
     if (new_task->parent == NULL)
     {
-        add_task_to_run_queue(new_task); 
+        add_task_to_run_queue(new_task);
     }
     else
     {
         remove_task_from_run_queue(new_task->parent);
         add_task_to_run_queue(new_task);
     }
-    
+
     // Losd file into memory
     file_load(&task_dentry, (uint8_t *)TASK_VIR_ADDR + TASK_VIR_OFFSET);
     // todo: Context Switch
@@ -294,8 +511,6 @@ int32_t system_execute(const uint8_t *command)
     tss.ss0 = KERNEL_DS;
     tss.esp0 = new_task->kernel_ebp;
 
-
-
     // prepare for iret
     asm volatile("            \n\
         movw    %%ax, %%ds  /* set ds to user ds */     \n\
@@ -309,11 +524,36 @@ int32_t system_execute(const uint8_t *command)
         pushl   %%edx   /* 5 iret eip*/         \n\
         iret   /* go to user stack*/        \n\
         EXE_RET: /* after halt*/ \n\
+        popl %%esi   \n\
+        "
+                 :
+                 : "a"(USER_DS), "b"(USER_EBP), "c"(USER_CS), "d"(eip)
+                 : "memory");
+    // before return, check for pipeline
+    uint8_t *tmp;
+    if (cmd_type == 3)
+    {
+        tmp = args_array;
+        if (*tmp == '|')
+        {
+            // tmp++;
+            // tmp = skip_space(tmp);
+            system_execute(tmp);
+        }
+    }
+    else if (cmd_type == 5)
+    {
+        del_file((uint8_t *)tem_out_array[0]);
+    }
+
+    // todo
+    asm volatile("            \n\
+        movl %%esi, %%eax \n\
         leave \n\
         ret \n\
         "
                  :
-                 : "a"(USER_DS), "b"(USER_EBP), "c"(USER_CS), "d"(eip)
+                 :
                  : "memory");
     return 0;
 }
@@ -400,13 +640,14 @@ int32_t system_halt(uint8_t status)
 {
     cli();
     PCB_t *parent;
-    if (page_array.num_using == 0||(curr_terminal->num_task == 0))
+    if (page_array.num_using == 0 || (curr_terminal->num_task == 0))
     {
         printf("[INFO] nothing to halt\n");
         // system_execute((uint8_t *)"shell");
         return -1;
     }
-    if(curr_task()->vidmap == 1) {
+    if (curr_task()->vidmap == 1)
+    {
         PDE_4KB_t *user_vid_pde = (PDE_4KB_t *)(&page_directory.pde[VID_PAGE_INDEX]);
         clear_PDE_4KB(user_vid_pde);
     }
@@ -418,7 +659,7 @@ int32_t system_halt(uint8_t status)
     parent = deactivate_task(curr_task());
     if (parent == NULL)
     {
-        /* system_execute has contained add to queue */        
+        /* system_execute has contained add to queue */
         system_execute((uint8_t *)"shell");
     }
     else
@@ -438,6 +679,7 @@ int32_t system_halt(uint8_t status)
             movl %%ecx, %%ebp   \n\
             andl $0, %%eax    \n\
             movb %%bl, %%al   \n\
+            pushl %%eax   \n\
             jmp EXE_RET  /* jump to exe ret*/             \n\
             "
                  : /* no output*/
@@ -490,7 +732,6 @@ int32_t sche_init()
     run_queue_head = NULL;
     // pit_init();
     return 0;
-        
 }
 
 /*
@@ -510,19 +751,18 @@ int32_t add_task_to_run_queue(PCB_t *new_task)
         run_queue_head = &(new_task->run_list_node);
         new_task->run_list_node.next = &(new_task->run_list_node);
         new_task->run_list_node.pre = &(new_task->run_list_node);
-
     }
     else
-    {        
-        /* add to the head of running list */          
-        run_queue_t* last_node = run_queue_head->pre;
-        run_queue_head->pre =  &(new_task->run_list_node);
+    {
+        /* add to the head of running list */
+        run_queue_t *last_node = run_queue_head->pre;
+        run_queue_head->pre = &(new_task->run_list_node);
         last_node->next = &(new_task->run_list_node);
         new_task->run_list_node.next = run_queue_head;
         new_task->run_list_node.pre = last_node;
-        run_queue_head = &(new_task->run_list_node);          
+        run_queue_head = &(new_task->run_list_node);
     }
-    num_task_in_queue++; 
+    num_task_in_queue++;
     return 0;
 }
 
@@ -532,12 +772,12 @@ int32_t remove_task_from_run_queue(PCB_t *new_task)
     {
         printf("[INFO]ERROR: NO task can be removed \n");
     }
-    else if (num_task_in_queue == 1)     //only 1 in list
+    else if (num_task_in_queue == 1) // only 1 in list
     {
-        run_queue_head = NULL;        
+        run_queue_head = NULL;
     }
     else
-    {    
+    {
         (new_task->run_list_node.pre)->next = new_task->run_list_node.next;
         (new_task->run_list_node.next)->pre = new_task->run_list_node.pre;
         /* if old_task is the first */
@@ -548,18 +788,16 @@ int32_t remove_task_from_run_queue(PCB_t *new_task)
     }
     num_task_in_queue--;
     return 0;
-
 }
 
 void start_task()
 {
     sche_init();
     terminal_init();
-    pit_init();  
+    pit_init();
     /* execute first task */
-    
-    system_execute((uint8_t *)"shell"); 
-    
+
+    system_execute((uint8_t *)"shell");
 }
 /*
  * int32_t task_switch(uint8_t status)
@@ -579,8 +817,8 @@ int32_t task_switch()
         return 0;
     }
     /* switch terminal and check if task has running */
-    
-    PCB_t *next_task = (PCB_t*)((uint32_t)(curr_task()->run_list_node.next)&(0xFFFFE000));
+
+    PCB_t *next_task = (PCB_t *)((uint32_t)(curr_task()->run_list_node.next) & (0xFFFFE000));
 
     // save esp ebp(in kernel)
     asm volatile("          \n\
@@ -588,40 +826,40 @@ int32_t task_switch()
         movl %%esp, %%ebx   \n\
         "
                  : "=a"(curr_task()->ebp), "=b"(curr_task()->esp));
-                 
+
     /* everytime switch task then remap */
     user_program_mem_map(next_task);
 
     set_vidmap();
     if (curr_terminal->num_task == 0)
     {
-            /* change output video memory */
-        video_mem = (char*)(curr_terminal->page_addr);
-        printf_sche("terminal<%d>\n",cur_terminal_id);
+        /* change output video memory */
+        video_mem = (char *)(curr_terminal->page_addr);
+        printf_sche("terminal<%d>\n", cur_terminal_id);
         system_execute((uint8_t *)"shell");
     }
-    
+
     /* if only one task running */
-    if ((curr_task()->run_list_node.next == &(curr_task()->run_list_node))||(num_task_in_queue == 1))
+    if ((curr_task()->run_list_node.next == &(curr_task()->run_list_node)) || (num_task_in_queue == 1))
     {
         return 0;
     }
-  
+
     /* set target location*/
     // print_pcb(curr_task());
     uint32_t next_esp = next_task->esp;
-    uint32_t next_ebp = next_task->ebp; 
+    uint32_t next_ebp = next_task->ebp;
     tss.esp0 = next_task->kernel_ebp;
     asm volatile(
-            "               \n\
+        "               \n\
             movl %%eax, %%esp  \n\
             movl %%ebx, %%ebp  \n\
             "
-                :
-                 : "a"(next_esp), "b"(next_ebp)
-                 : "memory");
-                 
-    tss.ss0 = KERNEL_DS;      
+        :
+        : "a"(next_esp), "b"(next_ebp)
+        : "memory");
+
+    tss.ss0 = KERNEL_DS;
 
     return 0;
 }
@@ -630,20 +868,18 @@ int32_t task_switch()
  * map the virtual video Memory to correct video page
  * Inputs: terminal_t * terminal_next -- next terminal information
  * Outputs: 0 success, -1 failure
- * Side Effects: 
+ * Side Effects:
  * if now scheduled running terminal is in current terminal -- direct mapping
  * if now scheduled running terminal is not in current terminal -- remapping
  *
  */
 int32_t user_program_mem_map(PCB_t *next_task)
-{  
+{
     /* change output video memory */
-    video_mem = (char*)(next_task->terminal->page_addr);
+    video_mem = (char *)(next_task->terminal->page_addr);
     uint32_t base_addr = KERNEL_UPPER_ADDR + next_task->pid * SIZE_4MB;
     page_directory.pde[TASK_VIR_IDX] = base_addr | TASK_PAGE_INFO;
-    
-    
+
     flush_TLB();
     return 0;
 }
-

@@ -644,27 +644,31 @@ int sys_call_err_test()
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
 
-void gui_windows_test(){
+void gui_windows_test()
+{
 	init_gui_window_items();
 	draw_gui_window_frame(0, 0);
 }
 
-void font_test(){
+void font_test()
+{
 
 	// char test[] = "Hello World!";
 	// int i;
 	// for(i = 0; i < 12; i ++){
 	// 	gui_putchar(test[i], i * FONT_WIDTH, 0);
 	// }
-    int c = 0;
-    char ch = 0;
-	for(c = 0; c < 128; c ++){
+	int c = 0;
+	char ch = 0;
+	for (c = 0; c < 128; c++)
+	{
 		gui_putchar(ch, c * FONT_WIDTH, current_buffer * SCREEN_HEIGHT);
-        ch ++;
+		ch++;
 	}
 }
 
-void IRQ_TEST(){
+void IRQ_TEST()
+{
 	printf("keyboard IDT: %x%x\n", idt[0x21].offset_31_16, idt[0x21].offset_15_00);
 }
 
@@ -688,11 +692,13 @@ void IRQ_TEST(){
 // 	}
 // }
 
-void filename_test(){
-	uint8_t* file_name_pt = get_all_file_name();
+void filename_test()
+{
+	uint8_t *file_name_pt = get_all_file_name();
 	int i;
 	int count = get_file_num();
-	for(i = 0; i < count; i ++){
+	for (i = 0; i < count; i++)
+	{
 		printf("file name: %s\n", (file_name_pt + i * MAX_LEN_FILE_NAME));
 	}
 }
@@ -707,10 +713,10 @@ void launch_tests()
 	// TEST_OUTPUT("Keyboard_test", keyboard_test());
 	// TEST_OUTPUT("pic_garbage_test", pic_garbage_test());
 
-	//TEST_OUTPUT("file_sys_test", file_sys_test());
-	//TEST_OUTPUT("exe garbage input test", exe_halt_err_test());
-	//TEST_OUTPUT("syscall garbage input test", sys_call_err_test());
-	//continue_test();
+	// TEST_OUTPUT("file_sys_test", file_sys_test());
+	// TEST_OUTPUT("exe garbage input test", exe_halt_err_test());
+	// TEST_OUTPUT("syscall garbage input test", sys_call_err_test());
+	// continue_test();
 
 	clear();
 }
