@@ -192,4 +192,5 @@ int32_t fs_delete(int32_t type, uint8_t *fname, dentry_t *dir_dentry);
 int32_t fs_read(int32_t type, uint8_t *buf, dentry_t *dir_dentry);
 int32_t fs_getparent(int32_t type, uint8_t *buf, dentry_t *file_dentry);
 int32_t fs_ifkid(int32_t type, uint8_t *fname, dentry_t *dir_dentry);
+int32_t if_belong_dir(dentry_t *file_dentry, dentry_t *dir_dentry);
 #endif // _FILE_SYSTEM_H
