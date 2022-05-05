@@ -292,6 +292,8 @@ void close_amination(){
         starty += FONT_HEIGHT; 
     }
 
+    __svgalib_cirrusaccel_mmio_FillBox(0, 0, 1024, 768 * 2, 0);
+
 }
 
 void init_gui(){
