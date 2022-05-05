@@ -56,6 +56,30 @@ void draw_file_icon(gui_file *file)
     int color;
     if (file->file->file_type == 2)
     {
+        if (1==is_exe_file(file->file))
+        {
+        for (j = 0; j < DESKTOP_ICON_IMG_HEIGHT; j++)
+        {
+            if (j + y >= SCREEN_HEIGHT)
+            {
+                continue;
+            }
+            for (i = 0; i < DESKTOP_ICON_IMG_WIDTH; i++)
+            {
+                if (i + x >= SCREEN_WIDTH || i + x <= 0)
+                {
+                    continue;
+                }
+                if (terminal_icon_mask[i + j * DESKTOP_ICON_IMG_WIDTH] == 0)
+                {
+                    color = terminal_icon_img[i + j * DESKTOP_ICON_IMG_WIDTH] | 0xFF000000;
+                    vga_setcolor(color);
+                    vga_drawpixel(i + x, j + y + offset);
+                }
+            }
+        }
+        }
+        else{
         for (j = 0; j < DESKTOP_ICON_IMG_HEIGHT; j++)
         {
             if (j + y >= SCREEN_HEIGHT)
@@ -76,6 +100,8 @@ void draw_file_icon(gui_file *file)
                 }
             }
         }
+        }
+
     }
     else
     {

@@ -193,7 +193,7 @@ void try_to_get_new_window(mouse_location_type type){
                 }
                 break;
             }
-            window[id].content_pt = (uint32_t)(&desktop_file[1]);
+            window[id].content_pt = (uint32_t)(&desktop_file[mouse_target_file]);
             window[id].type = FILE_ICON;
             break;
 
