@@ -26,6 +26,7 @@
 #define control 0x1D
 #define control_release 0x9D
 #define L 0x26
+#define R 0x13
 #define ALT 0x38
 #define ALT_RELEASE 0xB8
 #define F1 0X3B

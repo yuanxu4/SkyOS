@@ -24,6 +24,8 @@ static uint8_t cap_on_flag, shift_on_flag, ctrl_on_flag;
 uint32_t cur_terminal_id;
 terminal_t *curr_terminal;
 
+extern void disable_paging();
+extern void start();
 extern void flush_TLB();   // defined in boot.S
 extern PCB_t *curr_task(); // defined in boot.
 /* no shift no capson character and numbers */
@@ -246,6 +248,12 @@ void scancode_output(uint8_t scancode)
             clear();
             printf("%s", kb_buf); // print buffer value after clear screen
         }
+        else if (ctrl_on_flag && (scancode == R))
+        {
+            disable_paging();
+            start();
+        }
+
         else if (scancode_simple_lowcase[scancode] == '\f')
         {
             /* do nothing */
