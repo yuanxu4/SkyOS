@@ -6,6 +6,7 @@
 #include "gui_imgs.h"
 #include "../keyboard.h"
 #include "../pit.h"
+#include "../sb16.h"
 uint8_t* animatation = (uint8_t*)ainimation_start;
 int32_t animat_pt[32];
 int duck_frame = 0;
@@ -179,6 +180,7 @@ void boot_amination(){
         duck_x += 24;
     }
 
+    play_music((uint8_t*)"Apple.wav");
     int counter = 0;
     for(i = 0; i < 32; i ++){
         offset = 0;
@@ -199,7 +201,7 @@ void boot_amination(){
     }
 
     memcpy((void *)background_img, ((const short*)animat_pt[31]), ainimation_size);
-
+    //sb16_stop();
 }
 
 void init_gui(){
@@ -208,7 +210,6 @@ void init_gui(){
 	init_gui_task();
 	init_gui_font();
     //cirrus_setdisplaystart(2 * 1024 * 2 * 768);
-    boot_amination();
 	// gui_draw_background();
 }
 

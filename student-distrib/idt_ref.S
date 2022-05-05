@@ -1098,6 +1098,35 @@ IDT_INTERUPT_2C:
     popf
     iret
 
+.globl IDT_INTERUPT_26
+IDT_INTERUPT_26:
+    # save_pre_reg
+    pushf
+    pushl %eax
+    pushl %ebx
+    pushl %ecx
+    pushl %edx
+    pushl %ebp
+    pushl %esi
+    pushl %edi
+    push %fs
+    push %es
+    push %ds
+    call sb16_interrupt_handler
+    # restore_pre_reg
+    pop %ds
+    pop %es
+    pop %fs
+    popl %edi
+    popl %esi
+    popl %ebp
+    popl %edx
+    popl %ecx
+    popl %ebx
+    popl %eax
+    popf
+    iret
+
 /*
  * IDT_INTERUPT_33
  * description: interupt handler used to handle diferent exception
@@ -1194,8 +1223,8 @@ IDT_SYSCALL:
     pushl %ecx
     pushl %ebx
     # check if the call is valid
-    cmpl $10, %eax  # 10 is the max of syscall number
-    jae invalid_syscall
+    cmpl $13, %eax  # 10 is the max of syscall number
+    ja invalid_syscall
     cmpl $0, %eax
     je invalid_syscall
     # call handler according to eax
@@ -1239,5 +1268,4 @@ syscall_table:
 .long system_vidmap # system_vidmap
 .long system_set_handler # system_set_handler
 .long system_sigreturn # system_sigreturn
-
 

@@ -25,6 +25,7 @@
 #include "svga/vga.h"
 #include "mouse.h"
 #include "GUI/gui.h"
+#include "sb16.h"
 
 #include "task.h"
 
@@ -212,15 +213,18 @@ void entry(unsigned long magic, unsigned long addr)
      * without showing you any output */
     printf("Enabling Interrupts\n");
     sti();
+    play_music((uint8_t*)"openmusic.wav");
+    boot_amination();
 
 #ifdef RUN_TESTS
     /* Run tests */
-    launch_tests();
+    //launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
     
     // printf("terminal<1>\n");
     // system_execute((uint8_t *)"shell");
+    sb16_wait();
     start_task();
     
     /* Spin (nicely, so we don't chew up cycles) */
