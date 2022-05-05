@@ -258,6 +258,7 @@ void scancode_output(uint8_t scancode)
         else if (ctrl_on_flag && (scancode == Q))
         {
             sti();
+            gui_close_flag = 1;
             close_amination();
             send_eoi(KEYBARD_IRQ);
             _32x32_Cursor_Disable();
