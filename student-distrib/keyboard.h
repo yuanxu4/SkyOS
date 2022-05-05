@@ -10,6 +10,7 @@
 
 #include "types.h"
 #include "task.h"
+#include "GUI/gui_cursor.h"
 #define KEYBOARD_PORT 0x60
 #define KEYBARD_IRQ 0x01
 #define keynum 0x3E
@@ -27,6 +28,7 @@
 #define control_release 0x9D
 #define L 0x26
 #define R 0x13
+#define Q 0x10
 #define ALT 0x38
 #define ALT_RELEASE 0xB8
 #define F1 0X3B

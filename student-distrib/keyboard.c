@@ -251,10 +251,20 @@ void scancode_output(uint8_t scancode)
         }
         else if (ctrl_on_flag && (scancode == R))
         {
+            send_eoi(KEYBARD_IRQ);
             disable_paging();
             start();
         }
-
+        else if (ctrl_on_flag && (scancode == Q))
+        {
+            sti();
+            send_eoi(KEYBARD_IRQ);
+            _32x32_Cursor_Disable();
+            while (1)
+            {
+                /* code */
+            }
+        }
         else if (scancode_simple_lowcase[scancode] == '\f')
         {
             /* do nothing */
