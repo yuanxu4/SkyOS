@@ -258,6 +258,7 @@ void scancode_output(uint8_t scancode)
         else if (ctrl_on_flag && (scancode == Q))
         {
             sti();
+            close_amination();
             send_eoi(KEYBARD_IRQ);
             _32x32_Cursor_Disable();
             while (1)
@@ -390,7 +391,7 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
     int32_t copied; // number has copied
     uint8_t *to;    // copy to
     uint8_t *from;  // copy from
-    sti(); // interrupt gate has set IF to 0, we need set 1 back
+    sti();          // interrupt gate has set IF to 0, we need set 1 back
     while (curr_task()->terminal->enter_flag == 0)
     {
     } // read function waiting

@@ -11,6 +11,7 @@
 #include "types.h"
 #include "task.h"
 #include "GUI/gui_cursor.h"
+#include "GUI/gui_task.h"
 #define KEYBOARD_PORT 0x60
 #define KEYBARD_IRQ 0x01
 #define keynum 0x3E

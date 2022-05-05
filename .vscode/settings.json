@@ -14,11 +14,16 @@
         "gui_window.h": "c",
         "cstdlib": "c",
         "stdbool.h": "c",
+<<<<<<< HEAD
         "upng.h": "c"
 =======
         "i8259.h": "c",
         "pit.h": "c",
         "vidmem.h": "c"
 >>>>>>> xy-sb16_2
+=======
+        "upng.h": "c",
+        "gui_desktop.h": "c"
+>>>>>>> gui_test
     }
 }

@@ -23,7 +23,7 @@
 
 #include "types.h"
 /* set pit frequency to 100 hz */
-#define PIT_FREQUENCY 1000
+#define PIT_FREQUENCY 100
 #define PIT_IRQNUM 0
 
 int32_t pit_timer;
