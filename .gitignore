@@ -113,7 +113,7 @@ dkms.conf
 source/
 
 # added
-#*.img
+*.img
 student-distrib/bootimg
 student-distrib/Makefile.dep
 .vscode

@@ -1263,7 +1263,7 @@ int32_t rtc_user_open(const uint8_t *filename)
     {
         set_entry(&curr_task()->fd_array, fd, 0, (file_dentry.dentry_addr->file_name)); // type is 1 for directory
     }
-    // rtc_open(filename);
+    rtc_open(filename);
     return fd;
 }
 int32_t rtc_user_close(int32_t fd)

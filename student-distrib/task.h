@@ -31,9 +31,9 @@
 typedef struct run_queue run_queue_t;
 struct run_queue
 {
-    run_queue_t* pre;
-    run_queue_t* next;
-} ;
+    run_queue_t *pre;
+    run_queue_t *next;
+};
 
 typedef struct PCB PCB_t;
 struct PCB
@@ -59,7 +59,6 @@ struct PCB
     run_queue_t run_list_node;
     struct terminal_t *terminal;
 };
-
 
 typedef struct page_usage_array
 {

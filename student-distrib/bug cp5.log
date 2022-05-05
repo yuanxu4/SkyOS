@@ -1,0 +1,78 @@
+<--------------------------------------------------------->
+                          BUG 0                          
+<--------------------------------------------------------->
+Time:
+    	2022.4.26
+Creator:
+   	Haina Lou
+Description:
+    After context switch in task_switch(change esp, ebp), the local parameter 
+    next_task no longer the same value as before and as a ptr, page fault occurs.
+Reason:
+ 	after changing esp ebp, the local parameter which stores on the kernel stack has 
+    changed due to different kernel stack, therefore should not be used again.
+Solution:
+    put next_task before doing context switch.
+
+
+<--------------------------------------------------------->
+                          BUG 1                          
+<--------------------------------------------------------->
+Time:
+    	2022.4.28
+Creator:
+   	Haina Lou
+Description:
+    After open 5 shells and open terminal 2 and start shell, the first shell is frozen.
+Reason:
+ 	The first shell task is removed from the queue because of wrong double linked list links wrongly,
+    and because of first task removed, task is not being runned by processor.
+Solution:
+    separate replace and remove queue function to add and remove.
+
+<--------------------------------------------------------->
+                          BUG 2                          
+<--------------------------------------------------------->
+Time:
+    	2022.4.28
+Creator:
+   	Haina Lou
+Description:
+    page fault after openning second terminal.
+Reason:
+ 	We call system_execute in terminal_switch, which is in keyboard handler, therefore the stack is 
+    pushed up because we did not return from keyboard handler.
+Solution:
+    We start new terminal and call system_execute in pit handler, which work correctly switching between 
+    top of pit handler.
+
+<--------------------------------------------------------->
+                          BUG 3                          
+<--------------------------------------------------------->
+Time:
+    	2022.4.29
+Creator:
+   	Haina Lou
+Description:
+    After open three fish program and back to terminal 1, when three programs all terminated, 
+    the first terminal is restarted two times.
+Reason:
+ 	In system_halt, the number of tasks for each terminal should be decremented according to which task is running
+    not which terminal is currently on .
+Solution:
+    We change curr_terminal->num_task-- to curr_task()->terminal->num_task--.
+
+
+<--------------------------------------------------------->
+                          BUG 4                          
+<--------------------------------------------------------->
+Time:
+    	2022.5.1
+Creator:
+   	Haina Lou
+Description:
+    When I play pingpong or fish counter and press enter, I cannot press any other keys.
+Reason:
+ 	After pressing enter, the enter flag becomes 1 and thus cannot enter code block which used to handle scancode.
+Solution:
+    After receiving release interrupt of enter, reset enter flag to 0.

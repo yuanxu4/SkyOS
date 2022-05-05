@@ -15,15 +15,18 @@
 
 extern int screen_x;
 extern int screen_y;
-extern char* video_mem;
+extern char *video_mem;
 int32_t printf(int8_t *format, ...);
+int32_t printf_sche(int8_t *format, ...);
 void putc(uint8_t c);
 void putc_sche(uint8_t c);
 int32_t puts(int8_t *s);
+int32_t puts_sche(int8_t *s);
 int8_t *itoa(uint32_t value, int8_t *buf, int32_t radix);
 int8_t *strrev(int8_t *s);
 uint32_t strlen(const int8_t *s);
 void clear(void);
+void clear_sche(void);
 void test_interrupts(void);
 int32_t printf_sche(int8_t *format, ...);
 
@@ -54,9 +57,9 @@ int32_t halt(uint8_t status);
 int32_t execute(const uint8_t *command);
 int32_t getargs(uint8_t *buf, int32_t nbytes);
 void outportb(int port, int data);
-uint8_t inportb (int port);
+uint8_t inportb(int port);
 void outport(int port, int data);
-char* get_video_men();
+char *get_video_men();
 int32_t puts_sche(int8_t *s);
 
 /* Port read functions */

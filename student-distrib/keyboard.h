@@ -71,6 +71,8 @@ int32_t terminal_switch(terminal_t *terminal_next);
 
 terminal_t _terminal_dp[MAX_TERMINAL_NUM];
 
+int32_t terminal_switch(terminal_t *terminal_next);
+
 #endif
 
 #endif

@@ -3,6 +3,7 @@
         "__config": "c",
         "x86_desc.h": "c",
         "lib.h": "c",
+<<<<<<< HEAD
         "gui_imgs.h": "c",
         "string": "cpp",
         "syslimits.h": "c",
@@ -14,5 +15,10 @@
         "cstdlib": "c",
         "stdbool.h": "c",
         "upng.h": "c"
+=======
+        "i8259.h": "c",
+        "pit.h": "c",
+        "vidmem.h": "c"
+>>>>>>> xy-sb16_2
     }
 }

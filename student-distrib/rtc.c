@@ -19,6 +19,8 @@
 #include "i8259.h"
 #include "rtc.h"
 #include "lib.h"
+#include "file_system.h"
+#include "task.h"
 
 /*
  * Port 0x70 is used to specify an index or "register number", and to disable NMI.
@@ -121,7 +123,11 @@ void rtc_reset_R3()
 int32_t rtc_open(const uint8_t *filename)
 {
     /* start the rtc and set the frequency to 2hz*/
-    rtc_init();
+    cli();
+    curr_task()->rtc_active = 1;
+    curr_task()->rtc_counter = 512;
+    curr_task()->rtc_frequency = 512;
+    sti();
     return 0;
 }
 

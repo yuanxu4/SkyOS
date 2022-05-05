@@ -9,6 +9,7 @@
 #include "task.h"
 #include "vidmem.h"
 #include "paging.h"
+#include "sb16.h"
 
 extern PCB_t *curr_task(); // defined in boot.S
 extern uint32_t cur_terminal_id;
@@ -125,6 +126,8 @@ void idt_init()
     /*** set up interupt and enable ***/
     SET_IDT_ENTRY(idt[IDT_BY_PIT], IDT_INTERUPT_21);
     idt[IDT_BY_PIT].present = 1;
+    SET_IDT_ENTRY(idt[IDT_BY_SB16], IDT_INTERUPT_26);
+    idt[IDT_BY_SB16].present = 1;
     SET_IDT_ENTRY(idt[IDT_BY_KEYBOARD], IDT_INTERUPT_33);
     idt[IDT_BY_KEYBOARD].present = 1;
     SET_IDT_ENTRY(idt[IDT_BY_RTC], IDT_INTERUPT_40);
@@ -161,17 +164,18 @@ void print_exception(uint32_t exception_num)
         // return 256 to execute
         cli();
         PCB_t *parent;
-        if (page_array.num_using == 0||(curr_terminal->num_task == 0))
+        if (page_array.num_using == 0 || (curr_terminal->num_task == 0))
         {
             printf("halt nothing");
             // system_execute((uint8_t *)"shell");
         }
         // try to deactivate task, get parent task
-        if(curr_task()->vidmap == 1) {
-        PDE_4KB_t *user_vid_pde = (PDE_4KB_t *)(&page_directory.pde[VID_PAGE_INDEX]);
-        clear_PDE_4KB(user_vid_pde);
+        if (curr_task()->vidmap == 1)
+        {
+            PDE_4KB_t *user_vid_pde = (PDE_4KB_t *)(&page_directory.pde[VID_PAGE_INDEX]);
+            clear_PDE_4KB(user_vid_pde);
         }
-            /* remove current task from run_queue */
+        /* remove current task from run_queue */
         remove_task_from_run_queue(curr_task());
 
         parent = deactivate_task(curr_task());
@@ -410,7 +414,7 @@ asmlinkage int32_t system_new(int32_t type, void *fname, void *dir_name)
     {
         return fs_ifkid(type, fname, &dir_dentry); //-1 not , 0 yes and flie is dir, 1 yes and file is file
     }
-    
+
     return -3;
 }
 

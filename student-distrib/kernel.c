@@ -25,6 +25,7 @@
 #include "svga/vga.h"
 #include "mouse.h"
 #include "GUI/gui.h"
+#include "sb16.h"
 
 #include "memory.h"
 #include "task.h"
@@ -224,7 +225,7 @@ void entry(unsigned long magic, unsigned long addr)
 
 #ifdef RUN_TESTS
     /* Run tests */
-    // launch_tests();
+    launch_tests();
 #endif
     /* Execute the first program ("shell") ... */
 

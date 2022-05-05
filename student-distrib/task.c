@@ -495,7 +495,6 @@ int32_t system_execute(const uint8_t *command)
         remove_task_from_run_queue(new_task->parent);
         add_task_to_run_queue(new_task);
     }
-
     // Losd file into memory
     file_load(&task_dentry, (uint8_t *)TASK_VIR_ADDR + TASK_VIR_OFFSET);
     // todo: Context Switch
@@ -807,7 +806,6 @@ void start_task()
  * Side Effects:
  * return value: returning the specified value to its parent process
  */
-
 int32_t task_switch()
 {
 

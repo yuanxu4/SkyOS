@@ -24,7 +24,7 @@
 #include "types.h"
 /* set pit frequency to 100 hz */
 #define PIT_FREQUENCY 1000
-#define PIT_IRQNUM  0
+#define PIT_IRQNUM 0
 
 int32_t pit_timer;
 /* just for rtc init */
@@ -33,9 +33,6 @@ void pit_init();
 /* the handler for rtc interrupt */
 void pit_interrupt_handler();
 
-
 #endif
 
 #endif
-
-

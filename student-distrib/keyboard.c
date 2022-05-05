@@ -11,6 +11,7 @@
 #include "paging.h"
 #include "types.h"
 #include "x86_desc.h"
+#include "vidmem.h"
 
 /* keyboard buffer */
 static uint8_t kb_buf[kb_bufsize];
@@ -89,6 +90,7 @@ void keyboard_init(void)
     cap_on_flag = 0;
     shift_on_flag = 0;
     ctrl_on_flag = 0;
+    alt_on_flag = 0;
     enable_irq(KEYBARD_IRQ);
 }
 
@@ -159,6 +161,15 @@ void set_flag(uint8_t scancode)
         break;
     case control_release:
         ctrl_on_flag = 0;
+        break;
+    case ALT:
+        alt_on_flag = 1;
+        break;
+    case ALT_RELEASE:
+        alt_on_flag = 0;
+        break;
+    case ENTER_RELEASE:
+        curr_terminal->enter_flag = 0;
         break;
     default:
         break;
@@ -379,7 +390,8 @@ int32_t terminal_read(int32_t fd, void *buf, int32_t nbytes)
     int32_t copied; // number has copied
     uint8_t *to;    // copy to
     uint8_t *from;  // copy from
-    sti();          // interrupt gate has set IF to 0, we need set 1 back
+    curr_task()->terminal->buf_flag = 1;
+    sti(); // interrupt gate has set IF to 0, we need set 1 back
     while (curr_task()->terminal->enter_flag == 0)
     {
     } // read function waiting

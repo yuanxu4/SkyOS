@@ -12,13 +12,12 @@
 extern terminal_t _terminal_dp[MAX_TERMINAL_NUM];
 extern uint32_t cur_terminal_id;
 extern terminal_t *curr_terminal;
-extern PCB_t *curr_task(); // defined in boot.
+extern PCB_t *curr_task();            // defined in boot.
 extern page_usage_array_t page_array; // manage pages
 
 int screen_x;
 int screen_y;
 char *video_mem = (char *)0x2000000;
-
 
 /* void clear(void);
  * Inputs: void
@@ -34,6 +33,24 @@ void clear(void)
     }
     screen_x = 0;
     screen_y = 0;
+    update_cursor(0, 0);
+}
+
+/* void clear_sche(void);
+ * Inputs: void
+ * Return Value: none
+ * Function: Clears video memory */
+void clear_sche(void)
+{
+    int32_t i;
+    int index = curr_terminal->terminal_id - 1;
+    for (i = 0; i < NUM_ROWS * NUM_COLS; i++)
+    {
+        *(uint8_t *)(video_mem + (i << 1)) = ' ';
+        *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
+    }
+    _terminal_dp[index].cursor_x = 0;
+    _terminal_dp[index].cursor_y = 0;
     update_cursor(0, 0);
 }
 
@@ -404,7 +421,6 @@ void scroll_down_oneline()
     }
 }
 
-
 /* void char_to_mem;
  * Inputs: c -- show char on the screen
  *          screen_x --
@@ -446,7 +462,7 @@ void char_to_mem_sche(c)
  *  Function: Output a character to the console */
 void putc(uint8_t c)
 {
-    
+
     if (page_array.num_using == 0)
     {
         // putc_sche(c);
@@ -459,7 +475,7 @@ void putc(uint8_t c)
         /* change line  */
         if (c == '\n' || c == '\r')
         {
-            if ( _terminal_dp[index].cursor_y == NUM_ROWS - 1)
+            if (_terminal_dp[index].cursor_y == NUM_ROWS - 1)
             {
                 scroll_down_oneline();
                 _terminal_dp[index].cursor_x = 0; // begin at start of screen
@@ -493,8 +509,9 @@ void putc(uint8_t c)
             }
             else
             {
-                *(uint8_t *)(video_mem + ((NUM_COLS * _terminal_dp[index].cursor_y + 
-                            _terminal_dp[index].cursor_x - 1) << 1)) = ' ';
+                *(uint8_t *)(video_mem + ((NUM_COLS * _terminal_dp[index].cursor_y +
+                                           _terminal_dp[index].cursor_x - 1)
+                                          << 1)) = ' ';
                 _terminal_dp[index].cursor_x--;
             }
         }
@@ -534,16 +551,13 @@ void putc(uint8_t c)
             {
                 char_to_mem(c);
             }
-            
         }
         /* update the cursor if update the location */
         if (curr_task()->terminal->terminal_id == cur_terminal_id)
         {
-            update_cursor(_terminal_dp[index].cursor_x,_terminal_dp[index].cursor_y);
+            update_cursor(_terminal_dp[index].cursor_x, _terminal_dp[index].cursor_y);
         }
     }
-    
-    
 }
 
 /* void putc(uint8_t c);
@@ -552,103 +566,100 @@ void putc(uint8_t c)
  *  Function: Output a character to the console */
 void putc_sche(uint8_t c)
 {
-    
+
     if (page_array.num_using == 0)
     {
         // putc_sche(c);
     }
     else
     {
-        
-            int index = curr_terminal->terminal_id - 1;
-            int i;
 
-            /* change line  */
-            if (c == '\n' || c == '\r')
+        int index = curr_terminal->terminal_id - 1;
+        int i;
+
+        /* change line  */
+        if (c == '\n' || c == '\r')
+        {
+            if (_terminal_dp[index].cursor_y == NUM_ROWS - 1)
             {
-                if ( _terminal_dp[index].cursor_y == NUM_ROWS - 1)
-                {
-                    scroll_down_oneline();
-                    _terminal_dp[index].cursor_x = 0; // begin at start of screen
-                    _terminal_dp[index].cursor_y = NUM_ROWS - 1;
-                }
-                else
-                {
-                    _terminal_dp[index].cursor_y++; // else
-                    _terminal_dp[index].cursor_x = 0;
-                }
-            }
-            else if (c == 0)
-            {
-                /* do nothing */
-            }
-            /* if press backspace */
-            else if (c == '\b')
-            {
-                /* if the screen_x is at the beginning of line */
-                if ((_terminal_dp[index].cursor_y != 0) && (_terminal_dp[index].cursor_x == 0))
-                {
-                    *(uint8_t *)(video_mem + ((NUM_COLS * _terminal_dp[index].cursor_y + _terminal_dp[index].cursor_x - 1) << 1)) = ' ';
-                    _terminal_dp[index].cursor_y--;
-                    _terminal_dp[index].cursor_x = NUM_COLS - 1;
-                    /* if at the start of screen*/
-                }
-                else if ((_terminal_dp[index].cursor_y == 0) && (_terminal_dp[index].cursor_x == 0))
-                {
-                    _terminal_dp[index].cursor_x = 0;
-                    _terminal_dp[index].cursor_y = 0;
-                }
-                else
-                {
-                    *(uint8_t *)(video_mem + ((NUM_COLS * _terminal_dp[index].cursor_y + 
-                                _terminal_dp[index].cursor_x - 1) << 1)) = ' ';
-                    _terminal_dp[index].cursor_x--;
-                }
-            }
-            /* if press tab */
-            else if (c == '\t')
-            {
-                if ((_terminal_dp[index].cursor_y >= NUM_COLS - 4) && (_terminal_dp[index].cursor_y == NUM_ROWS - 1))
-                {
-                    scroll_down_oneline();
-                    /* new char printed */
-                    for (i = 0; i < 4; i++)
-                    {
-                        char_to_mem_sche(' ');
-                    }
-                    _terminal_dp[index].cursor_y = NUM_ROWS - 1;
-                }
-                else
-                {
-                    for (i = 0; i < 4; i++)
-                    {
-                        char_to_mem_sche(' ');
-                    }
-                }
+                scroll_down_oneline();
+                _terminal_dp[index].cursor_x = 0; // begin at start of screen
+                _terminal_dp[index].cursor_y = NUM_ROWS - 1;
             }
             else
             {
-                /* scroll down */
-                if ((_terminal_dp[index].cursor_x == NUM_COLS - 1) && (_terminal_dp[index].cursor_y == NUM_ROWS - 1))
-                {
-                    scroll_down_oneline();
-                    /* the first character of last line */
-                    _terminal_dp[index].cursor_y--;
-                    char_to_mem_sche(c);
-                    _terminal_dp[index].cursor_y = NUM_ROWS - 1;
-                }
-                else
-                {
-                    char_to_mem_sche(c);
-                }
-                
+                _terminal_dp[index].cursor_y++; // else
+                _terminal_dp[index].cursor_x = 0;
             }
-            
-            update_cursor(_terminal_dp[index].cursor_x,_terminal_dp[index].cursor_y);
-               
+        }
+        else if (c == 0)
+        {
+            /* do nothing */
+        }
+        /* if press backspace */
+        else if (c == '\b')
+        {
+            /* if the screen_x is at the beginning of line */
+            if ((_terminal_dp[index].cursor_y != 0) && (_terminal_dp[index].cursor_x == 0))
+            {
+                *(uint8_t *)(video_mem + ((NUM_COLS * _terminal_dp[index].cursor_y + _terminal_dp[index].cursor_x - 1) << 1)) = ' ';
+                _terminal_dp[index].cursor_y--;
+                _terminal_dp[index].cursor_x = NUM_COLS - 1;
+                /* if at the start of screen*/
+            }
+            else if ((_terminal_dp[index].cursor_y == 0) && (_terminal_dp[index].cursor_x == 0))
+            {
+                _terminal_dp[index].cursor_x = 0;
+                _terminal_dp[index].cursor_y = 0;
+            }
+            else
+            {
+                *(uint8_t *)(video_mem + ((NUM_COLS * _terminal_dp[index].cursor_y +
+                                           _terminal_dp[index].cursor_x - 1)
+                                          << 1)) = ' ';
+                _terminal_dp[index].cursor_x--;
+            }
+        }
+        /* if press tab */
+        else if (c == '\t')
+        {
+            if ((_terminal_dp[index].cursor_y >= NUM_COLS - 4) && (_terminal_dp[index].cursor_y == NUM_ROWS - 1))
+            {
+                scroll_down_oneline();
+                /* new char printed */
+                for (i = 0; i < 4; i++)
+                {
+                    char_to_mem_sche(' ');
+                }
+                _terminal_dp[index].cursor_y = NUM_ROWS - 1;
+            }
+            else
+            {
+                for (i = 0; i < 4; i++)
+                {
+                    char_to_mem_sche(' ');
+                }
+            }
+        }
+        else
+        {
+            /* scroll down */
+            if ((_terminal_dp[index].cursor_x == NUM_COLS - 1) && (_terminal_dp[index].cursor_y == NUM_ROWS - 1))
+            {
+                scroll_down_oneline();
+                /* the first character of last line */
+                _terminal_dp[index].cursor_y--;
+                char_to_mem_sche(c);
+                _terminal_dp[index].cursor_y = NUM_ROWS - 1;
+            }
+            else
+            {
+                char_to_mem_sche(c);
+            }
+        }
+
+        update_cursor(_terminal_dp[index].cursor_x, _terminal_dp[index].cursor_y);
     }
-    
-    
 }
 /* int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix);
  * Inputs: uint32_t value = number to convert
@@ -1052,19 +1063,22 @@ int32_t close(int32_t fd)
     return result;
 }
 
-void outportb(int port, int data) {
+void outportb(int port, int data)
+{
     outb(data, port);
 }
 
-uint8_t inportb (int port) {
+uint8_t inportb(int port)
+{
     return inb(port);
 }
 
-void outport(int port, int data) {
+void outport(int port, int data)
+{
     outw(data, port);
 }
 
-char* get_video_men(){
+char *get_video_men()
+{
     return video_mem;
 }
-
