@@ -61,8 +61,7 @@ const char scancode_bothon[keynum] = {
 
 void scancode_output(uint8_t scancode);
 void set_flag(uint8_t scancode);
-void printkey_on_curr_terminal(uint8_t keystroke);
-void printf_on_curr_terminal(int8_t *string);
+
 
 void onto_terminal_putc(uint8_t c)
 {
