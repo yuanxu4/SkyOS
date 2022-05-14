@@ -26,7 +26,7 @@ int main()
     {
         while (1)
         {
-            ece391_fdputs(1, (uint8_t *)"existing file: use i to insert, use a to append, r to rewrite, exit to exit\n");
+            ece391_fdputs(1, (uint8_t *)"existing file: use a to append, r to rewrite, exit to exit\n");
             if (-1 == (cnt = ece391_read(0, buf, BUFSIZE - 1)))
             {
                 ece391_fdputs(1, (uint8_t *)"read from keyboard failed\n");
@@ -38,82 +38,6 @@ int main()
             if (0 == ece391_strcmp(buf, (uint8_t *)"exit"))
             {
                 return 0;
-            }
-            else if (0 == ece391_strcmp(buf, (uint8_t *)"i"))
-            {
-                if (-1 == (fd = ece391_open((uint8_t *)fname)))
-                {
-                    ece391_fdputs(1, (uint8_t *)"file open failed\n");
-                    return -1;
-                }
-                uint8_t *tmp_buf = ece391_alloc(SIZE_4MB);
-                // int32_t cursor_position;
-                int32_t file_size;
-                // int32_t prev_idx, curr_idx;
-                if ((file_size = file_disp(fd, 1, tmp_buf)) == -1)
-                {
-                    ece391_free(tmp_buf);
-                    return -1;
-                }
-                while (1)
-                {
-                    if (-1 == (cnt = ece391_read(0, tmp_buf, BUFSIZE << 1)))
-                    {
-                        ece391_fdputs(1, (uint8_t *)"read from keyboard failed\n");
-                        return 3;
-                    }
-                    if (cnt > 0 && '\n' == tmp_buf[cnt - 1])
-                        tmp_buf[cnt] = '\0';
-                    if (0 == ece391_strcmp(tmp_buf, (uint8_t *)":wq\n"))
-                    {
-                        break;
-                    }
-                    if (-1 == ece391_close(fd))
-                    {
-                        ece391_fdputs(1, (uint8_t *)"file close failed\n");
-                        return -1;
-                    }
-                    // reopen to reset position in file
-                    if (-1 == (fd = ece391_open((uint8_t *)fname)))
-                    {
-                        ece391_fdputs(1, (uint8_t *)"file open failed\n");
-                        return -1;
-                    }
-                    if (-1 == ece391_write(fd, tmp_buf, cnt))
-                        return 3;
-                    // // todo
-                    // // a function to update cursor and buf************************************
-                    // int32_t i;
-                    // prev_idx = 0;
-                    // curr_idx = 0;
-                    // cursor_position = file_size;
-                    // while (buf[i] != '\n')
-                    // {
-                    //     if (buf[i] >= NUM_128 && buf[i + 1] >= NUM_128)
-                    //     {
-                    //         prev_idx = curr_idx;
-                    //         curr_idx = i;
-                    //         // put buf[prev_idx, curr_idx] starting at tmp_buf[cursor_position]*****************
-
-                    //         file_size += (curr_idx - prev_idx);
-                    //         cursor_position = (buf[i] - NUM_128) * NUM_CHAR_PER_LINE + (buf[i + 1] - NUM_128);
-                    //         i += 2;
-                    //         continue;
-                    //     }
-                    //     i++;
-                    // }
-                }
-
-                // tmp_buf;
-                // curr_position;
-                // if (-1 == ece391_write(fd, tmp_buf, SIZE_4MB))
-                //     return 3;
-                ece391_free(tmp_buf);
-                if (-1 == ece391_close(fd))
-                {
-                    ece391_fdputs(1, (uint8_t *)"file close failed\n");
-                    return -1;
-                }
             }
             else if (0 == ece391_strcmp(buf, (uint8_t *)"a"))
             {
@@ -166,7 +90,7 @@ int main()
                     }
                     if (cnt > 0 && '\n' == buf[cnt - 1])
                         buf[cnt] = '\0';
-                    if (0 == ece391_strcmp(buf, (uint8_t *)":wq"))
+                    if (0 == ece391_strcmp(buf, (uint8_t *)":wq\n"))
                     {
                         break;
                     }
